@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+      - cargo-registry:/root/.cargo/registry
+      - cargo-git:/root/.cargo/git
+    working_dir: /workspace
+    command: /bin/bash
+    environment:
+      - RUST_LOG=debug
+
+  # Build service
+  build:
+    extends:
+      service: dev
+    command: make build-all
+
+  # Test service
+  test:
+    extends:
+      service: dev
+    command: make test-all
+
+  # Documentation service
+  docs:
+    extends:
+      service: dev
+    command: make doc
+    volumes:
+      - ./docs:/workspace/docs
+
+  # QEMU x86_64
+  qemu-x86:
+    extends:
+      service: dev
+    command: make run
+    privileged: true
+
+  # QEMU ARM64
+  qemu-arm:
+    extends:
+      service: dev
+    command: make run-arm
+    privileged: true
+
+  # Benchmark service
+  bench:
+    extends:
+      service: dev
+    command: make bench
+
+  # Lint service
+  lint:
+    extends:
+      service: dev
+    command: make lint
+
+  # Coverage service
+  coverage:
+    extends:
+      service: dev
+    command: make coverage
+    volumes:
+      - ./coverage:/workspace/coverage
+
+volumes:
+  cargo-registry:
+  cargo-git:

@@ -1,0 +1,26 @@
+# Nuva OS Dependency Analyzer - Exemption Configuration
+#
+# This file allows temporary exemptions for dependency violations.
+# Each exemption must include a reason and a deadline for resolution.
+#
+# Format:
+# [[exemption]]
+# module = "kernel::xxx"
+# reason = "Description of why this is exempted"
+# deadline = "YYYY-MM-DD"
+# types = ["Layer Violation"]  # or ["*"] for all types
+#
+# Available types:
+#   "Layer Violation"          - Lower layer depending on higher layer
+#   "Circular Dependency"     - Circular module dependency
+#   "Direct Cross-Layer Dependency" - Cross-layer dependency without abstraction
+#   "HAL Upward Dependency"   - L0 (HAL) depending on higher layers
+#   "HAL Concrete Impl Reference" - L1-L4 referencing HAL concrete implementation
+#   "Kernel Reverse Dependency" - L1 (Kernel) depending on L2/L3/L4
+
+# Example (uncomment and modify as needed):
+# [[exemption]]
+# module = "kernel::legacy::bridge"
+# reason = "Legacy bridge module, scheduled for refactoring in Q2 2026"
+# deadline = "2026-06-30"
+# types = ["Kernel Reverse Dependency"]

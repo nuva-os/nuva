@@ -1,0 +1,54 @@
+# HAL Layer Build Configuration
+#
+# Hardware Abstraction Layer - Layer 0
+# No dependencies on other layers
+
+[package]
+name = "nuva-hal"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["arm64"]
+
+# Architecture features
+arm64 = []
+x64 = []
+loongarch64 = []
+
+# Platform features
+kirin9020 = ["arm64"]
+snapdragon8gen4 = ["arm64"]
+generic-x64 = ["x64"]
+intel-core = ["x64"]
+amd-ryzen = ["x64"]
+
+# Component features
+cpu = []
+gpu = []
+npu = []
+quantum = []
+power = []
+
+[dependencies]
+# No dependencies - HAL is the lowest layer
+
+[build-dependencies]
+cbindgen = "0.24"
+
+[lib]
+name = "nuva_hal"
+path = "lib.rs"
+
+# Layer-specific build profile
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Strict checks for HAL
+[package.metadata.layer]
+level = 0
+visibility = "public"
+allowed_deps = []

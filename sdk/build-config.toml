@@ -1,0 +1,197 @@
+# Nuva OS
+#
+# Copyright (C) 2026 Nuva OS Team
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Nuva OS Build Configuration
+# 
+# This file defines build targets and their configurations
+# for the multi-architecture plugin system.
+
+[build]
+default-target = "arm64-mobile"
+lto = true
+codegen-units = 1
+
+# ============================================================================
+# Architecture Targets
+# ============================================================================
+
+[target.arm64-mobile]
+arch = "aarch64"
+device-type = "mobile"
+features = ["neon", "crypto"]
+disabled-features = ["sve"]
+opt-level = "s"
+lto = true
+debug = false
+
+[target.arm64-server]
+arch = "aarch64"
+device-type = "server"
+features = ["neon", "sve", "crypto"]
+opt-level = 3
+lto = true
+debug = false
+
+[target.arm64-desktop]
+arch = "aarch64"
+device-type = "desktop"
+features = ["neon", "crypto"]
+opt-level = 2
+lto = false
+debug = true
+
+[target.x64-desktop]
+arch = "x86_64"
+device-type = "desktop"
+features = ["sse", "sse2", "avx", "avx2"]
+disabled-features = ["avx512"]
+opt-level = 2
+lto = false
+debug = true
+
+[target.x64-server]
+arch = "x86_64"
+device-type = "server"
+features = ["sse", "sse2", "avx", "avx2", "avx512"]
+opt-level = 3
+lto = true
+debug = false
+
+[target.loongarch-desktop]
+arch = "loongarch64"
+device-type = "desktop"
+features = ["lsx", "lasx"]
+opt-level = 2
+lto = false
+debug = true
+
+[target.loongarch-server]
+arch = "loongarch64"
+device-type = "server"
+features = ["lsx", "lasx", "lbt"]
+opt-level = 3
+lto = true
+debug = false
+
+# ============================================================================
+# Platform-Specific Configurations
+# ============================================================================
+
+[platform.kirin]
+vendor = "hisilicon"
+arch = "arm64"
+features = ["npu", "gpu-turbo"]
+power-management = "smart"
+
+[platform.kirin9000]
+extends = "kirin"
+cpu-cores = 8
+big-cores = 4
+little-cores = 4
+features = ["npu", "gpu-turbo", "da-vinci-npu"]
+
+[platform.kirin9010]
+extends = "kirin"
+cpu-cores = 8
+features = ["npu", "gpu-turbo", "da-vinci-npu-v2"]
+
+[platform.snapdragon]
+vendor = "qualcomm"
+arch = "arm64"
+features = ["npu", "adreno-gpu"]
+
+[platform.loongson]
+vendor = "loongson"
+arch = "loongarch64"
+features = ["lsx", "lasx"]
+
+[platform.loongson-3a6000]
+extends = "loongson"
+cpu-cores = 4
+device-type = "desktop"
+features = ["lsx", "lasx", "lbt"]
+
+[platform.loongson-3c6000]
+extends = "loongson"
+cpu-cores = 16
+device-type = "server"
+features = ["lsx", "lasx", "lbt", "lvz"]
+
+# ============================================================================
+# Module Configurations
+# ============================================================================
+
+[module.kernel]
+enabled = true
+required = true
+
+[module.hal-arm64]
+enabled = true
+condition = "arch = arm64"
+depends = ["kernel"]
+
+[module.hal-x64]
+enabled = true
+condition = "arch = x86_64"
+depends = ["kernel"]
+
+[module.hal-loongarch]
+enabled = true
+condition = "arch = loongarch64"
+depends = ["kernel"]
+
+[module.npu]
+enabled = true
+condition = "device-type = mobile"
+depends = ["kernel", "hal"]
+
+[module.virtualization]
+enabled = true
+condition = "device-type = server"
+depends = ["kernel", "hal"]
+
+[module.gpu-driver]
+enabled = true
+depends = ["kernel", "hal"]
+
+[module.network-stack]
+enabled = true
+depends = ["kernel"]
+
+[module.filesystem]
+enabled = true
+depends = ["kernel"]
+
+# ============================================================================
+# Feature Flags
+# ============================================================================
+
+[features]
+# Default features for each architecture
+default-arm64 = ["neon", "aes", "pmull", "sha1", "sha2"]
+default-x64 = ["sse", "sse2", "fxsr", "xsave"]
+default-loongarch = ["lsx", "lasx"]
+
+# Optional features
+sve = []           # ARM64 SVE
+avx512 = []        # x86 AVX-512
+lvz = []           # LoongArch Virtualization
+lbt = []           # LoongArch Binary Translation
+
+# Device features
+npu = []           # Neural Processing Unit
+gpu-turbo = []     # GPU Turbo
+crypto = []        # Hardware Crypto

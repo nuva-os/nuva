@@ -1,0 +1,61 @@
+# Library Layer Build Configuration
+#
+# Library Layer - Layer 2
+# Can depend on Kernel API and HAL traits
+
+[package]
+name = "nuva-lib"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["std", "ai", "net"]
+
+# Core features
+std = []              # Standard library
+alloc = []            # Memory allocation
+sync = []             # Synchronization primitives
+
+# Library features
+ai = []               # AI/ML library
+lang = []             # Language support
+net = []              # Network library
+gfx = []              # Graphics library
+ui = []               # UI library
+data = []             # Data structures
+
+# AI features
+inference = []        # Inference engine
+training = []         # Training framework
+npu = []              # NPU support
+
+[dependencies]
+# Kernel API dependency
+nuva-kernel = { path = "../kernel", default-features = false }
+
+# HAL traits (through abstraction)
+nuva-hal-traits = { path = "../hal/traits" }
+
+# Internal libraries
+nuva-core = { path = "core" }
+nuva-ai = { path = "ai", optional = true }
+nuva-lang = { path = "lang", optional = true }
+nuva-net = { path = "net", optional = true }
+nuva-gfx = { path = "gfx", optional = true }
+nuva-ui = { path = "ui", optional = true }
+
+[lib]
+name = "nuva_lib"
+path = "lib.rs"
+
+# Layer-specific build profile
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[package.metadata.layer]
+level = 2
+visibility = "public"
+allowed_deps = ["kernel", "hal"]
+# Note: HAL access must be through traits only

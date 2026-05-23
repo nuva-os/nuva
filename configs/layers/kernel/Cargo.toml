@@ -1,0 +1,67 @@
+# Kernel Layer Build Configuration
+#
+# Kernel Layer - Layer 1
+# Can only depend on HAL layer
+
+[package]
+name = "nuva-kernel"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["arm64", "smp"]
+
+# Architecture features
+arm64 = []
+x64 = []
+loongarch64 = []
+
+# Kernel features
+smp = []              # Symmetric multiprocessing
+preempt = []          # Preemptive scheduling
+debug = []            # Debug mode
+trace = []            # Tracing support
+
+# Subsystem features
+mm = []               # Memory management
+sched = []            # Scheduler
+fs = []               # File system
+ipc = []              # IPC
+driver = []           # Driver framework
+plugin = []           # Plugin system
+security = []         # Security subsystem
+quantum = []          # Quantum support
+
+[dependencies]
+# Only HAL dependency allowed
+nuva-hal = { path = "../hal" }
+
+# Internal dependencies (same layer)
+nuva-arch = { path = "arch" }
+
+[build-dependencies]
+
+[lib]
+name = "nuva_kernel"
+path = "lib.rs"
+
+[[bin]]
+name = "nuva-kernel"
+path = "main.rs"
+
+# Layer-specific build profile
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Kernel-specific optimizations
+[profile.release.package.nuva-kernel]
+opt-level = 3
+lto = "fat"
+
+[package.metadata.layer]
+level = 1
+visibility = "restricted"
+allowed_deps = ["hal"]

@@ -1,0 +1,98 @@
+# Nuva OS
+#
+# Copyright (C) 2026 Nuva OS Team
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[package]
+name = "nuva"
+version = "1.0.0"
+edition = "2021"
+authors = ["Nuva OS Team <team@nuva-os.org>"]
+license = "Apache-2.0"
+description = "Nuva OS - A modern, quantum-safe, AI-native operating system"
+repository = "https://github.com/nuva-os/nuva"
+keywords = ["os", "kernel", "quantum", "ai", "embedded"]
+categories = ["embedded", "hardware-support", "os"]
+
+[lib]
+name = "nuva"
+path = "lib.rs"
+
+[[bin]]
+name = "nuva_kernel"
+path = "main.rs"
+
+[features]
+default = []
+arm64 = []
+x64 = []
+loongarch64 = []
+kirin = ["arm64"]
+kirin9000 = ["arm64"]
+kirin9010 = ["arm64"]
+kirin9020 = ["arm64", "kirin"]
+snapdragon8gen4 = ["arm64"]
+loongson3a6000 = ["loongarch64"]
+loongson3c6000 = ["loongarch64"]
+intel_core = ["x64"]
+amd_ryzen = ["x64"]
+debug = []
+smp = []
+skip_dep_check = []
+
+[dependencies]
+# Core dependencies
+spin = "0.9"
+log = { version = "0.4", default-features = false }
+bitflags = "2.3"
+
+# Allocator
+linked_list_allocator = "0.10"
+
+# Async runtime (optional)
+embassy-sync = { version = "0.2", optional = true }
+
+[dev-dependencies]
+# Testing
+proptest = "1.2"
+criterion = "0.5"
+
+[build-dependencies]
+# Build tools
+cc = "1.0"
+
+[profile.dev]
+panic = "abort"
+opt-level = 0
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.test]
+panic = "abort"
+
+[workspace]
+members = [
+    "tools/dep_analyzer",
+]
+
+[[bench]]
+name = "performance_bench"
+harness = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-none", "aarch64-unknown-none"]
