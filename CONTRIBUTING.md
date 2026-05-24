@@ -26,6 +26,9 @@ Please be respectful and constructive in all interactions. We are committed to p
 2. Use the Feature Request template
 3. Describe the feature and use case
 4. Explain why it would be useful
+5. Improve the core components
+6. Chip manufacturer support
+7. UI framework support
 
 ### Submitting Code
 
