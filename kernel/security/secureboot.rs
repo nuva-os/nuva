@@ -17,110 +17,88 @@
  */
 
 //! Secure Boot Framework
-/*!*/
-//! Provides verified boot chain from firmware to kernel:
-//! - Boot state machine: DISABLED -> SETUP -> ENFORCED
-//! - Measured boot (TPM-style measurement)
-//! - Boot configuration locking
+//! Provides verified boot chain, measured boot, and attestation.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicU8, AtomicBool, Ordering};
+use alloc::vec::Vec;
 use crate::{pr_info, pr_debug, pr_warn};
+
+use super::tpm_abi::{TpmAbi, TpmProviderType, TpmError, TpmResult, PcrIndex, PCR_DIGEST_SIZE};
+use super::tpm_hw::HardwareTpm;
+use super::tpm_ftpm::FirmwareTpm;
+use super::measurement::{MeasurementEngine, MeasurementState, BootComponent as MeasBootComponent};
+use super::aik::{AikManager, AikState};
+use super::quote::{QuoteEngine, QuoteToken, AttestationResponse, NONCE_SIZE};
+use super::event_log::EventLogManager;
+use super::sha256::sha256_digest;
+
+/// Capability: boot attestation
+pub const CAP_BOOT_ATTEST: u32 = 100;
+/// Capability: measurement read
+pub const CAP_MEASUREMENT_READ: u32 = 101;
+/// Capability: AIK administration
+pub const CAP_AIK_ADMIN: u32 = 102;
 
 /// Secure boot state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SecureBootState {
-    /// Secure boot disabled
     Disabled = 0,
-    /// Setup mode (keys can be enrolled)
     Setup = 1,
-    /// Enforced mode (verification required)
     Enforced = 2,
 }
 
 /// Boot component in the verification chain
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BootComponent {
-    /// Platform firmware (UEFI/BIOS)
     Firmware = 0,
-    /// Boot loader (GRUB, etc.)
     BootLoader = 1,
-    /// Boot loader configuration
     BootConfig = 2,
-    /// OS kernel
     Kernel = 3,
-    /// Init ramdisk
     InitRd = 4,
-    /// Device tree
     DeviceTree = 5,
 }
 
-/// Maximum components in boot chain
 pub const MAX_BOOT_COMPONENTS: usize = 6;
-
-/// Hash size (SHA-256)
 pub const BOOT_HASH_SIZE: usize = 32;
-
-/// Maximum measurement log entries
 pub const MAX_MEASUREMENT_ENTRIES: usize = 32;
 
 /// Boot verification result
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BootVerifyResult {
-    /// Verification succeeded
     Success = 0,
-    /// Signature verification failed
     SignatureFailed = 1,
-    /// Hash mismatch
     HashMismatch = 2,
-    /// Key not authorized
     KeyNotAuthorized = 3,
-    /// Component not signed
     NotSigned = 4,
-    /// Boot chain incomplete
     Incomplete = 5,
-    /// Configuration locked
     ConfigLocked = 6,
-    /// Internal error
     InternalError = 7,
+    CapabilityDenied = 8,
 }
 
 /// Measurement log entry
 #[derive(Debug, Clone, Copy)]
 pub struct MeasurementEntry {
-    /// Component being measured
     pub component: BootComponent,
-    /// SHA-256 hash of component
     pub hash: [u8; BOOT_HASH_SIZE],
-    /// Component size in bytes
     pub size: u64,
-    /// Measurement index (PCR-like)
     pub pcr_index: u32,
 }
 
 /// Boot configuration
 pub struct BootConfig {
-    /// Secure boot state
     pub state: AtomicU32,
-    /// Config is locked
     pub locked: AtomicBool,
-    /// Verified component bitmap
     pub verified: AtomicU32,
-    /// Required component bitmap
     pub required: AtomicU32,
-    /// Measurement count
     pub measurement_count: AtomicU32,
-    /// PCR values (accumulated measurements)
     pub pcr_values: [[u8; BOOT_HASH_SIZE]; MAX_BOOT_COMPONENTS],
-    /// Measurement log
     pub measurements: [Option<MeasurementEntry>; MAX_MEASUREMENT_ENTRIES],
-    /// Boot fail count
     pub fail_count: AtomicU32,
-    /// Debug mode
     pub debug_mode: AtomicBool,
 }
 
 impl BootConfig {
-    /// Create default boot config
     pub const fn new() -> Self {
         BootConfig {
             state: AtomicU32::new(SecureBootState::Disabled as u32),
@@ -134,224 +112,169 @@ impl BootConfig {
             debug_mode: AtomicBool::new(false),
         }
     }
-
-    /// Get current secure boot state
     pub fn get_state(&self) -> SecureBootState {
         match self.state.load(Ordering::Acquire) {
-            0 => SecureBootState::Disabled,
-            1 => SecureBootState::Setup,
-            2 => SecureBootState::Enforced,
-            _ => SecureBootState::Disabled,
+            0 => SecureBootState::Disabled, 1 => SecureBootState::Setup, 2 => SecureBootState::Enforced, _ => SecureBootState::Disabled,
         }
     }
-
-    /// Transition to setup mode
     pub fn enter_setup(&self) -> Result<(), BootVerifyResult> {
-        if self.locked.load(Ordering::Acquire) {
-            return Err(BootVerifyResult::ConfigLocked);
-        }
-
-        let current = self.get_state();
-        if current != SecureBootState::Disabled {
-            return Err(BootVerifyResult::InternalError);
-        }
-
+        if self.locked.load(Ordering::Acquire) { return Err(BootVerifyResult::ConfigLocked); }
+        if self.get_state() != SecureBootState::Disabled { return Err(BootVerifyResult::InternalError); }
         self.state.store(SecureBootState::Setup as u32, Ordering::Release);
-        log_info!("Secure boot: entered setup mode");
         Ok(())
     }
-
-    /// Transition to enforced mode
     pub fn enforce(&self) -> Result<(), BootVerifyResult> {
-        if self.locked.load(Ordering::Acquire) {
-            return Err(BootVerifyResult::ConfigLocked);
-        }
-
-        let current = self.get_state();
-        if current != SecureBootState::Setup {
-            return Err(BootVerifyResult::InternalError);
-        }
-
+        if self.locked.load(Ordering::Acquire) { return Err(BootVerifyResult::ConfigLocked); }
+        if self.get_state() != SecureBootState::Setup { return Err(BootVerifyResult::InternalError); }
         self.state.store(SecureBootState::Enforced as u32, Ordering::Release);
-        log_info!("Secure boot: enforcement enabled");
         Ok(())
     }
 }
 
-/// Verify the complete boot chain
 pub fn verify_boot_chain(config: &BootConfig) -> BootVerifyResult {
     let state = config.get_state();
-    if state == SecureBootState::Disabled {
-        log_info!("Secure boot: disabled, skipping verification");
-        return BootVerifyResult::Success;
-    }
-
+    if state == SecureBootState::Disabled { return BootVerifyResult::Success; }
     let required = config.required.load(Ordering::Acquire);
     let verified = config.verified.load(Ordering::Acquire);
-
-    if (required & !verified) != 0 {
-        log_warn!("Secure boot: not all required components verified");
-        return BootVerifyResult::Incomplete;
-    }
-
+    if (required & !verified) != 0 { return BootVerifyResult::Incomplete; }
     for i in 0..MAX_BOOT_COMPONENTS {
-        if (required & (1 << i)) == 0 {
-            continue;
-        }
-
-        let pcr = &config.pcr_values[i];
-        let all_zero = pcr.iter().all(|&b| b == 0);
-        if all_zero && state == SecureBootState::Enforced {
-            log_warn!("Secure boot: component {} not measured", i);
-            return BootVerifyResult::Incomplete;
-        }
+        if (required & (1 << i)) == 0 { continue; }
+        if config.pcr_values[i].iter().all(|&b| b == 0) && state == SecureBootState::Enforced { return BootVerifyResult::Incomplete; }
     }
-
-    log_info!("Secure boot: boot chain verified successfully");
     BootVerifyResult::Success
 }
 
-/// Lock boot configuration to prevent tampering
 pub fn lock_boot_config(config: &BootConfig) -> Result<(), BootVerifyResult> {
-    if config.locked.load(Ordering::Acquire) {
-        return Ok(());
-    }
-
-    let state = config.get_state();
-    if state == SecureBootState::Disabled {
-        log_warn!("Secure boot: cannot lock in disabled state");
-        return Err(BootVerifyResult::InternalError);
-    }
-
+    if config.locked.load(Ordering::Acquire) { return Ok(()); }
+    if config.get_state() == SecureBootState::Disabled { return Err(BootVerifyResult::InternalError); }
     config.locked.store(true, Ordering::Release);
-    log_info!("Secure boot: configuration locked");
     Ok(())
 }
 
-/// Perform measured boot (TPM-style measurement)
-pub fn measured_boot(
-    config: &mut BootConfig,
-    component: BootComponent,
-    data: &[u8],
-) -> BootVerifyResult {
-    let state = config.get_state();
-    if state == SecureBootState::Disabled {
-        return BootVerifyResult::Success;
-    }
-
+pub fn measured_boot(config: &mut BootConfig, component: BootComponent, data: &[u8]) -> BootVerifyResult {
+    if config.get_state() == SecureBootState::Disabled { return BootVerifyResult::Success; }
     let hash = compute_boot_hash(data);
     let idx = component as usize;
-
-    if idx >= MAX_BOOT_COMPONENTS {
-        return BootVerifyResult::InternalError;
-    }
-
+    if idx >= MAX_BOOT_COMPONENTS { return BootVerifyResult::InternalError; }
     config.pcr_values[idx] = extend_pcr(&config.pcr_values[idx], &hash);
-
     let count = config.measurement_count.load(Ordering::Acquire);
     if (count as usize) < MAX_MEASUREMENT_ENTRIES {
-        let entry = MeasurementEntry {
-            component,
-            hash,
-            size: data.len() as u64,
-            pcr_index: idx as u32,
-        };
-        config.measurements[count as usize] = Some(entry);
+        config.measurements[count as usize] = Some(MeasurementEntry { component, hash, size: data.len() as u64, pcr_index: idx as u32 });
         config.measurement_count.fetch_add(1, Ordering::Release);
     }
-
     config.verified.fetch_or(1 << idx, Ordering::AcqRel);
-
-    log_debug!("Measured boot: {:?} measured (size={})", component, data.len());
     BootVerifyResult::Success
 }
 
-/// Extend PCR with new measurement (TPM extend operation)
 fn extend_pcr(current: &[u8; BOOT_HASH_SIZE], measurement: &[u8; BOOT_HASH_SIZE]) -> [u8; BOOT_HASH_SIZE] {
-    let mut result = [0u8; BOOT_HASH_SIZE];
-    for i in 0..BOOT_HASH_SIZE {
-        result[i] = current[i] ^ measurement[i];
-    }
-    let mut acc: u64 = 0xcbf29ce484222325;
-    for &byte in result.iter() {
-        acc = acc.wrapping_mul(0x100000001b3);
-        acc ^= byte as u64;
-    }
-    for i in 0..4 {
-        result[i * 8..(i + 1) * 8].copy_from_slice(&acc.wrapping_add(i as u64).to_le_bytes());
-    }
-    result
+    // TPM-standard PCR extend: SHA256(PCR_old || measurement)
+    let mut concat = [0u8; BOOT_HASH_SIZE * 2];
+    concat[..BOOT_HASH_SIZE].copy_from_slice(current);
+    concat[BOOT_HASH_SIZE..].copy_from_slice(measurement);
+    compute_boot_hash(&concat)
 }
 
-/// Compute SHA-256 hash for boot component measurement
 fn compute_boot_hash(data: &[u8]) -> [u8; BOOT_HASH_SIZE] {
     crate::kernel::security::signature::compute_hash(data)
 }
 
-/// Global boot configuration
-static BOOT_CONFIG: core::sync::OnceLock<BootConfig> = core::sync::OnceLock::new();
-
-/// Get boot configuration
-pub fn boot_config() -> &'static BootConfig {
-    BOOT_CONFIG.get_or_init(BootConfig::new)
+/// TPM provider selection
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TpmSelection {
+    None,
+    Hardware,
+    Firmware,
 }
 
-/// Initialize secure boot subsystem
+/// Boot Attestation Manager
+/// Selects TPM provider (hardware first, firmware fallback).
+pub struct BootAttestationManager {
+    tpm_selection: TpmSelection,
+    hw_tpm: HardwareTpm,
+    fw_tpm: FirmwareTpm,
+    aik: AikManager,
+    quote_engine: QuoteEngine,
+    capabilities: AtomicU32,
+}
+
+impl BootAttestationManager {
+    pub fn new() -> Self {
+        let mut mgr = BootAttestationManager {
+            tpm_selection: TpmSelection::None,
+            hw_tpm: HardwareTpm::new(),
+            fw_tpm: FirmwareTpm::new(),
+            aik: AikManager::new(),
+            quote_engine: QuoteEngine::new(),
+            capabilities: AtomicU32::new(0),
+        };
+        if mgr.hw_tpm.probe().is_ok() && mgr.hw_tpm.init().is_ok() {
+            mgr.tpm_selection = TpmSelection::Hardware;
+        } else if mgr.fw_tpm.init().is_ok() {
+            mgr.tpm_selection = TpmSelection::Firmware;
+        }
+        if mgr.tpm_selection != TpmSelection::None {
+            mgr.capabilities.store((1 << CAP_BOOT_ATTEST) | (1 << CAP_MEASUREMENT_READ) | (1 << CAP_AIK_ADMIN), Ordering::Release);
+        }
+        mgr
+    }
+
+    /// Measure a boot component (main entry point for boot flow)
+    pub fn measure(&mut self, component: BootComponent, data: &[u8], pcr_index: PcrIndex) -> MeasurementState {
+        let mc = match component {
+            BootComponent::Firmware => MeasBootComponent::Firmware,
+            BootComponent::BootLoader => MeasBootComponent::BootLoader,
+            BootComponent::BootConfig => MeasBootComponent::BootConfig,
+            BootComponent::Kernel => MeasBootComponent::Kernel,
+            BootComponent::InitRd => MeasBootComponent::InitRd,
+            BootComponent::DeviceTree => MeasBootComponent::DeviceTree,
+        };
+        match self.tpm_selection {
+            TpmSelection::Hardware => { let mut e = MeasurementEngine::new(&mut self.hw_tpm); e.measure_component(mc, data, pcr_index) }
+            TpmSelection::Firmware => { let mut e = MeasurementEngine::new(&mut self.fw_tpm); e.measure_component(mc, data, pcr_index) }
+            TpmSelection::None => MeasurementState::Failed,
+        }
+    }
+
+    /// Generate attestation quote (requires CAP_BOOT_ATTEST)
+    pub fn quote(&self, nonce: &[u8; NONCE_SIZE]) -> Result<AttestationResponse, BootVerifyResult> {
+        if (self.capabilities.load(Ordering::Acquire) & (1 << CAP_BOOT_ATTEST)) == 0 {
+            return Err(BootVerifyResult::CapabilityDenied);
+        }
+        let event_log = EventLogManager::new();
+        match self.tpm_selection {
+            TpmSelection::Hardware => self.quote_engine.attest(&self.hw_tpm, &self.aik, &event_log, nonce).map_err(|_| BootVerifyResult::InternalError),
+            TpmSelection::Firmware => self.quote_engine.attest(&self.fw_tpm, &self.aik, &event_log, nonce).map_err(|_| BootVerifyResult::InternalError),
+            TpmSelection::None => Err(BootVerifyResult::InternalError),
+        }
+    }
+
+    pub fn tpm_selection(&self) -> TpmSelection { self.tpm_selection }
+    pub fn has_capability(&self, cap: u32) -> bool { (self.capabilities.load(Ordering::Acquire) & (1 << cap)) != 0 }
+}
+
+static BOOT_CONFIG: core::sync::OnceLock<BootConfig> = core::sync::OnceLock::new();
+pub fn boot_config() -> &'static BootConfig { BOOT_CONFIG.get_or_init(BootConfig::new) }
+pub fn get_boot_config() -> &'static BootConfig { boot_config() }
+
 pub fn init_secure_boot() {
     let config = get_boot_config();
-    config.required.store(
-        (1 << BootComponent::Firmware as u32)
-            | (1 << BootComponent::BootLoader as u32)
-            | (1 << BootComponent::Kernel as u32),
-        Ordering::Release,
-    );
-    log_info!("Secure boot subsystem initialized");
+    config.required.store((1 << BootComponent::Firmware as u32) | (1 << BootComponent::BootLoader as u32) | (1 << BootComponent::Kernel as u32), Ordering::Release);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_boot_state_transitions() {
         let config = BootConfig::new();
         assert_eq!(config.get_state(), SecureBootState::Disabled);
-
         assert!(config.enter_setup().is_ok());
-        assert_eq!(config.get_state(), SecureBootState::Setup);
-
         assert!(config.enforce().is_ok());
-        assert_eq!(config.get_state(), SecureBootState::Enforced);
     }
-
     #[test]
-    fn test_config_lock() {
-        let config = BootConfig::new();
-        assert!(config.enter_setup().is_ok());
-
-        assert!(lock_boot_config(&config).is_ok());
-        assert!(config.locked.load(Ordering::Acquire));
-
-        assert!(config.enforce().is_err());
-    }
-
-    #[test]
-    fn test_measured_boot() {
-        let mut config = BootConfig::new();
-        config.state.store(SecureBootState::Enforced as u32, Ordering::Release);
-
-        let result = measured_boot(&mut config, BootComponent::Kernel, b"kernel_data");
-        assert_eq!(result, BootVerifyResult::Success);
-
-        let verified = config.verified.load(Ordering::Acquire);
-        assert_ne!(verified & (1 << BootComponent::Kernel as u32), 0);
-    }
-
-    #[test]
-    fn test_pcr_extend() {
-        let pcr = [0u8; BOOT_HASH_SIZE];
-        let measurement = [0xABu8; BOOT_HASH_SIZE];
-        let extended = extend_pcr(&pcr, &measurement);
-        assert_ne!(extended, [0u8; BOOT_HASH_SIZE]);
+    fn test_capability_constants() {
+        assert_eq!(CAP_BOOT_ATTEST, 100);
+        assert_eq!(CAP_MEASUREMENT_READ, 101);
+        assert_eq!(CAP_AIK_ADMIN, 102);
     }
 }

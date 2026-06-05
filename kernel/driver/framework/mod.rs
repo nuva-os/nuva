@@ -46,6 +46,9 @@ use alloc::sync::Arc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+// Nuva native async-first driver operation model
+pub mod nv_operation;
+
 // ============================================================================
 // DeviceTypeDefinition
 // ============================================================================

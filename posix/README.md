@@ -21,7 +21,22 @@ The POSIX compatibility layer provides POSIX-standard compliant interfaces, enab
 
 ## Build Configuration
 
-The POSIX layer is compiled together with the kernel and requires no additional feature flags.
+The POSIX layer is compiled as an **optional feature gate**. Enable it with:
+
+```toml
+[features]
+default = ["nuva_native"]
+posix = []
+bsd_compat = ["posix"]
+```
+
+When the `posix` feature is disabled:
+- `posix/` directory is not compiled
+- `kernel/process/fork.rs`, `signal.rs`, `execve.rs`, `wait4.rs` are not compiled
+- `kernel/ipc/shm.rs`, `shm_ipc.rs` (System V compat) are not compiled
+- Kernel core paths have zero POSIX dependency
+
+When enabled, it provides POSIX-standard interfaces via adapter patterns that map to Nuva native kernel primitives.
 
 ## Public Interface
 

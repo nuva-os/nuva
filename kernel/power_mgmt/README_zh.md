@@ -9,9 +9,10 @@
 | 文件 | 描述 |
 |------|------|
 | `mod.rs` | 模块入口和电源管理框架 |
-| `pm.rs` | 电源管理子系统（挂起/恢复、C-states） |
+| `pm.rs` | 电源管理子系统（挂起/恢复、C-states、域注册、平台power_off/reboot） |
 | `power.rs` | ACPI 电源驱动（Fadt、S3/S5） |
 | `hotplug.rs` | CPU 和内存热插拔支持 |
+| `nvpowermgr/` | AI驱动功耗优化（预算、DVFS、温度、绿色指标、三级降级） |
 
 ## 初始化顺序
 
@@ -28,9 +29,10 @@
 
 ## 公开接口
 
-- `pm` 模块：电源管理子系统，用于挂起、恢复和 CPU C-states（`init_pm()`、`suspend()`、`resume()`、`set_cpu_cstate()`）
+- `pm` 模块：电源管理子系统，用于挂起、恢复、CPU C-states、域注册和平台power_off/reboot（`init_pm()`、`suspend()`、`resume()`、`set_cpu_cstate()`、`power_off()`、`reboot()`）
 - `power` 模块：ACPI 电源驱动，用于系统电源状态管理（`init_acpi()`、`acpi_enter_sleep_state()`、`acpi_shutdown()`）
 - `hotplug` 模块：CPU 和内存热插拔支持（`init_hotplug()`、`hotplug_cpu()`、`hotplug_memory()`）
+- `nvpowermgr` 模块：AI驱动功耗优化，含预算管理、DVFS控制、温度监控、绿色指标和三级降级
 
 ## 向后兼容重导出
 
@@ -39,4 +41,4 @@
 
 ---
 
-*最后更新：2026-05-20 | Nuva OS v1.0.0*
+*最后更新：2026-06-05 | Nuva OS v1.0.0*

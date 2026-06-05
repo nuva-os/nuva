@@ -42,7 +42,8 @@ pub mod services;
 // Application framework
 pub mod application;
 
-// POSIX interface
+// POSIX interface (optional, only for POSIX compatibility)
+#[cfg(feature = "posix")]
 pub mod posix;
 
 // Test module
@@ -103,7 +104,8 @@ fn kernel_init(info: &kernel::platform::PlatformInfo) {
     // Initialize file system
     kernel::fs::filesystem::init_filesystem();
     
-    // Initialize POSIX
+    // Initialize POSIX (optional, only when POSIX compat enabled)
+    #[cfg(feature = "posix")]
     posix::init_posix();
     
     // Initialize HAL (includes platform detection, DT/ACPI, and HAL drivers)

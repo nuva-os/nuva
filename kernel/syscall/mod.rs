@@ -21,6 +21,14 @@ pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::kernel::net::socket::{SockFd, SockAddrInet};
 
+// Nuva native system call interface
+pub mod nuva_syscall;
+
+// NvVulkan system call interface (optional)
+#[cfg(feature = "vulkan")]
+pub mod nv_vulkan_syscall;
+
+#[cfg(feature = "posix")]
 use crate::posix::errno::Errno;
 /// System call number type
 pub type SyscallNum = u64;

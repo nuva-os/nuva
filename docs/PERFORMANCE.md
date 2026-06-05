@@ -164,4 +164,16 @@ and driver management.
 
 <!-- Translation Status: Source (English) | Last Updated: 2026-05-20 -->
 
-*Last updated: 2026-05-20 | Nuva OS v1.0.0*
+*Last updated: 2026-05-30 | Nuva OS 2026-05-30*
+
+## Benchmark Methodology
+
+All benchmarks are measured on the following reference platforms:
+
+| Platform | CPU | Memory | Notes |
+|----------|-----|--------|-------|
+| QEMU virt ARM64 | Cortex-A76 (emulated) | Configurable | Main development target |
+| QEMU virt x86-64 | qemu64 (emulated) | Configurable | x86 reference |
+| QEMU virt RISC-V 64 | rv64g (emulated) | Configurable | RISC-V reference |
+
+> **Note**: QEMU-emulated benchmarks provide relative comparisons, not absolute performance numbers. Real hardware measurements will be published when available. The values shown are design targets based on theoretical analysis of the algorithms used.

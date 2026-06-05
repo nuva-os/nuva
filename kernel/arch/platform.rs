@@ -27,6 +27,8 @@ pub enum Arch {
     X64,
     /// LoongArch64
     LoongArch64,
+    /// RISC-V 64-bit (RV64G)
+    RiscV64,
 }
 
 /// SoC PlatformType
@@ -46,6 +48,8 @@ pub enum Platform {
     Loongson3A6000,
     /// Loongson 3C6000
     Loongson3C6000,
+    /// QEMU virt machine (RISC-V)
+    QemuVirtRiscV,
 }
 
 /// CPU Feature
@@ -86,6 +90,10 @@ pub struct CpuFeatures {
     pub has_bmi: bool,
     /// Support BMI2
     pub has_bmi2: bool,
+    /// Support RISC-V vector extension (V)
+    pub has_v: bool,
+    /// Support RV64G baseline
+    pub has_rv64g: bool,
 }
 
 /// CPU Info
@@ -151,6 +159,8 @@ pub const KIRIN9020_INFO: CpuInfo = CpuInfo {
         has_fma: true,
         has_bmi: false,
         has_bmi2: false,
+        has_v: false,
+        has_rv64g: false,
     },
 };
 
@@ -187,6 +197,8 @@ pub const SNAPDRAGON8GEN4_INFO: CpuInfo = CpuInfo {
         has_fma: true,
         has_bmi: false,
         has_bmi2: false,
+        has_v: false,
+        has_rv64g: false,
     },
 };
 
@@ -223,6 +235,46 @@ pub const GENERIC_X64_INFO: CpuInfo = CpuInfo {
         has_fma: true,
         has_bmi: true,
         has_bmi2: true,
+        has_v: false,
+        has_rv64g: false,
+    },
+};
+
+/// QEMU virt RISC-V CPU Info
+pub const QEMU_VIRT_RISCV_INFO: CpuInfo = CpuInfo {
+    arch: Arch::RiscV64,
+    platform: Platform::QemuVirtRiscV,
+    name: "QEMU virt RISC-V 64",
+    cores: 1,
+    big_cores: 1,
+    little_cores: 0,
+    freq_mhz: 1000,
+    max_freq_mhz: 1000,
+    l1_icache: 32,
+    l1_dcache: 32,
+    l2_cache: 0,
+    l3_cache: 0,
+    features: CpuFeatures {
+        has_neon: false,
+        has_sve: false,
+        has_sve2: false,
+        has_aes: false,
+        has_sha: false,
+        has_crc32: false,
+        has_avx: false,
+        has_avx2: false,
+        has_avx512: false,
+        has_sse: false,
+        has_sse2: false,
+        has_sse3: false,
+        has_ssse3: false,
+        has_sse41: false,
+        has_sse42: false,
+        has_fma: false,
+        has_bmi: false,
+        has_bmi2: false,
+        has_v: true,
+        has_rv64g: true,
     },
 };
 
@@ -270,6 +322,7 @@ impl PlatformManager {
             Platform::AmdRyzen => &GENERIC_X64_INFO,
             Platform::Loongson3A6000 => &GENERIC_X64_INFO,
             Platform::Loongson3C6000 => &GENERIC_X64_INFO,
+            Platform::QemuVirtRiscV => &QEMU_VIRT_RISCV_INFO,
         };
     }
     

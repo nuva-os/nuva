@@ -2,7 +2,103 @@
 
 ## Overview
 
-Nuva OS adopts a microkernel architecture with minimal kernel functionality, user-space services, IPC as the primary communication mechanism, and fault isolation. The system employs a five-layer architecture design (L0-L4), supporting ARM64, x86-64, and LoongArch64 processor architectures, with integrated quantum-safe cryptography and a plugin system.
+Nuva OS adopts a **three-level microkernel architecture** with minimal kernel functionality, equipment-mode system services, user-space applications, IPC as the primary communication mechanism, and fault isolation. The system employs a five-layer architecture design (L0-L4) with three privilege levels (EL2/EL1/EL0), supporting ARM64, x86-64, LoongArch64, and RISC-V 64-bit (RV64G) processor architectures, with integrated quantum-safe cryptography and a plugin system.
+
+**Design Philosophy**: nuva is not unix, nuva is not linux. Nuva OS uses its own native type system, system call interface, and capability-based security model. POSIX compatibility is provided as an optional module (feature flag `posix`), not as a core kernel path.
+
+## Three-Level Privilege Architecture
+
+Nuva OS introduces a **three-level privilege architecture** (EL2/EL1/EL0), superior to traditional two-level (kernel/user) designs:
+
+| Level | Name | Components | Hardware Mapping |
+|-------|------|------------|-----------------|
+| EL2 | Minimal Kernel Mode | Scheduler, IPC, Memory Mgmt, Capability Mgr, IRQ, Timer | ARM64: EL2 / x64: Ring 0 / RISC-V: M-mode / LA64: PLV0 |
+| EL1 | Equipment Mode | Filesystem, Network Stack, Device Drivers, Display Server | ARM64: EL1 / x64: Ring 1 / RISC-V: S-mode / LA64: PLV1 |
+| EL0 | User Mode | Applications, User Libraries | ARM64: EL0 / x64: Ring 3 / RISC-V: U-mode / LA64: PLV3 |
+
+### Cross-Level Access Rules
+
+- **EL1→EL2**: Only through `NvSupervisorCall` (capability-gated, 14 operations)
+- **EL1↔EL0**: Only through NvIPC port message passing
+- **EL2→EL1/EL0**: Only through NvIPC port (kernel-mediated delivery)
+- **Direct cross-level memory access**: Always denied (`CrossLevelAccessDenied`)
+
+### Equipment Mode Fault Isolation
+
+- Each EL1 service runs in independent `NvEquipmentFaultDomain`
+- Service crash **never** affects kernel mode or other services
+- Dual-mechanism detection: DeadName (instant) + heartbeat (periodic)
+- 7-step automatic recovery: check oscillation → mark restarting → isolate → restart → rebind → rebuild → notify
+- Formal invariant: `∀s ∈ EquipmentServices: crash(s) → healthy(KernelMode)`
+
+## Nuva Native System
+
+### Native Type System
+
+Nuva OS defines its own type system in `sysroot/include/nuva/types.h` and `kernel/types.rs`, replacing POSIX/Unix type semantics:
+
+| Nuva Native Type | Replaces | Description |
+|-----------------|----------|-------------|
+| `nuva_process_id_t` / `NuvaProcessId` | `pid_t` | 64-bit capability-based process ID |
+| `nuva_thread_id_t` / `NuvaThreadId` | `tid_t` | 64-bit thread ID |
+| `nuva_capability_id_t` / `NuvaCapabilityId` | `uid_t`/`gid_t` | Capability token ID |
+| `nuva_file_handle_t` / `NuvaFileHandle` | `fd_t` | 64-bit file handle |
+| `nuva_file_offset_t` / `NuvaFileOffset` | `off_t` | 64-bit file offset |
+| `nuva_inode_id_t` / `NuvaInodeId` | `ino_t` | 64-bit inode ID |
+| `NuvaAccessRight` | `mode_t` | Bitflags for access rights (READ/WRITE/EXECUTE/GRANT/REVOKE/etc.) |
+| `NuvaError` | `errno` (i32) | Typed error enum (CapabilityDenied/CapabilityExpired/etc.) |
+| `NuvaEvent` | POSIX signal | Native event notification (Interrupt/TimerExpired/IoComplete/etc.) |
+| `NuvaDiagnostic` | `/proc`/`/sys` | Native diagnostic query interface |
+| `NvPrivilegeLevel` | N/A | Three-level privilege: UserMode(0)/EquipmentMode(1)/KernelMode(2) |
+| `NvSupervisorOp` | N/A | EL1→EL2 controlled operations (14 types: MapDeviceMemory, DmaMap, IrqRequest, etc.) |
+| `NvAddressSpaceId` | N/A | Independent fault domain address space identifier |
+| `NvServiceName` | N/A | Equipment mode service name identifier |
+
+### Native System Call Interface
+
+Nuva native system calls occupy number space `0x0000_0000 - 0x0000_FFFF`, separate from POSIX calls (`0x0001_0000 - 0x0001_FFFF`):
+
+| Category | Call Numbers | Key Interfaces |
+|----------|-------------|----------------|
+| Process | 0x01-0x0F | `NUVA_PROCESS_CREATE/EXECUTE/TERMINATE/YIELD` |
+| Memory | 0x10-0x1F | `NUVA_MEMORY_ALLOCATE/DEALLOCATE/PROTECT/MAP` |
+| IPC | 0x20-0x2F | `NUVA_IPC_PORT_CREATE/DESTROY/SEND/RECEIVE/CALL/REPLY/FORWARD` |
+| File | 0x30-0x3F | `NUVA_FILE_OPEN/CLOSE/READ/WRITE/SEEK/IOCTL` |
+| Capability | 0x40-0x4F | `NUVA_CAPABILITY_GRANT/REVOKE/CHECK/TRANSFER` |
+| Event | 0x50-0x5F | `NUVA_EVENT_REGISTER/NOTIFY/WAIT` |
+| Diagnostic | 0x60-0x6F | `NUVA_DIAG_QUERY/STATS` |
+
+All native system calls require `NuvaCapability` token verification.
+
+### Native Security Model
+
+The `NuvaSecurityHook` trait replaces the Linux LSM imitation pattern:
+
+| Aspect | Old (LSM-style) | New (Nuva native) |
+|--------|-----------------|-------------------|
+| Hook signature | `(*mut c_void, u32) -> i32` | `(NuvaCapabilityId, NuvaResourceHandle, NuvaAccessRight) -> Result<(), NuvaError>` |
+| Module priority | `u32` stacking | `NuvaSecurityPolicy` with `NuvaPolicyPriority` enum |
+| Permission check | `mode_t` bit ops | `NuvaCapability::check()` |
+| Return type | `i32` errno | `Result<(), NuvaError>` |
+
+### POSIX Optional Compatibility Module
+
+POSIX support is **optional** and **not required**. It is controlled by the `posix` feature flag:
+
+- **Default build** (`cargo build`): No POSIX support, smaller kernel
+- **POSIX build** (`cargo build --features posix`): POSIX adapters bridge to Nuva native interfaces
+- **Kernel core path isolation**: Kernel core modules (ipc/mm/security/process/core/sched/fs) must not import POSIX/Unix types or interfaces
+
+### Vulkan Native GPU Integration
+
+Nuva OS integrates Vulkan as its native GPU/compute API with zero-copy direct passthrough:
+
+- **Architecture**: Kernel directly exposes Vulkan-capable GPU devices (no HAL intermediate layer)
+- **Superior to Android**: Eliminates Gralloc+HAL chain; single kernel syscall path
+- **Superior to Apple**: Uses open Vulkan standard instead of proprietary Metal
+- **Security**: NvGpuCapability-based GPU access with fine-grained permissions (Compute/Render/Memory/Present/Video)
+- **Memory**: Zero-copy CPU-GPU shared pages (HOST_VISIBLE+HOST_COHERENT)
+- **Feature flag**: `vulkan` (optional, default off)
 
 ---
 
@@ -64,6 +160,7 @@ Architecture-specific HAL implementations:
 - `arm64/` — ARM64 architecture (CPU, MMU, interrupt controller GIC, timer, FDT boot)
 - `x64/` — x86-64 architecture (CPU, APIC (LAPIC/I/O APIC), IDT, GDT, MMU, Timer (LAPIC Timer + TSC), Power (S3/S5/MWAIT), PageTable (destroy/protect))
 - `loongarch64/` — LoongArch64 architecture (CPU, MMU (3-level page tables, PageTableOps), EIOINTC interrupt controller, UEFI boot, LSX 128-bit SIMD, LASX 256-bit SIMD, LVZ virtualization, LBT binary translation)
+- `riscv64/` — RISC-V 64 architecture (CPU, MMU, interrupt controller PLIC, SBI, timer)
 - `snapdragon/` — Snapdragon 8 Gen 4 SoC (CPU, GPU, NPU)
 
 #### L1 - Kernel Layer
@@ -73,14 +170,15 @@ Microkernel providing minimal core functionality:
 | Component | Description |
 |-----------|-------------|
 | Unified Error Type | `KernelError` enum covering 7 error categories (memory/sched/IPC/driver/fs/sync/security), `KernelResult<T>` alias, POSIX errno mapping, recoverable/user-error classification, **extended variants** (DeadlockDetected, InvalidState, WouldBlock, Timeout, Busy, QuotaExceeded) |
-| Scheduler | CFS/RT/Deadline/Idle/EAS scheduling, load balancing, scheduling domains, **declarative policy configuration** (`SchedPolicyConfig` with hot-update) |
+| Scheduler | **NvScheduler** AI intelligent scheduler (NPU inference, four-level AI scheduling classes, three-tier fallback), CFS/RT/Deadline/Idle/EAS scheduling, **NvBalancer** heterogeneous hardware load balancer, scheduling domains, **declarative policy configuration** (`SchedPolicyConfig` with hot-update) |
+| Power Management | **NvPowerMgr** AI-driven power optimization (power budget, DVFS, thermal monitor, green metrics), ACPI driver (Fadt, S3/S5), PM subsystem |
 | Memory Management | Buddy+SLAB allocators, VMA, page fault handling, NUMA, hotplug, mmap/munmap/mprotect/msync, **Per-CPU page cache (PCP) with watermarks**, **SLAB cache-line alignment (64B)** |
 | IPC | NuvaIPC (Mach-style ports), shared memory, pipes, semaphores, message queues, **zero-copy fast path (<=256B register path)** |
-| Interrupt Handling | Hardware interrupts, exceptions, GIC/APIC/EIOINTC auto-detection |
+| Interrupt Handling | Hardware interrupts, exceptions, GIC/APIC/EIOINTC/PLIC auto-detection |
 | Process Management | Process lifecycle, signal handling, resource limits |
 | Device Management | Device driver framework, device classes, **declarative driver model** (`DeclarativeDriver` trait, `declare_driver!` macro), **declarative power management** (`PmStateMachine`, `declare_pm!` macro) |
 | Synchronization | SpinLock with preemption control and holder tracking, Mutex, Semaphore, RwLock, **PreemptCount** (preempt_disable/enable, allocation constraint check), **RwLock TOCTOU fix** (atomic version check before write), **RCU** (Read-Copy-Update for read-heavy paths), **Per-CPU variables** (cache-line aligned, lock-free access) |
-| Network Stack | TCP/IP stack, socket API, NFSv3 client, SMB2/3 client (organized in `kernel/net_stack/`) |
+| Network Stack | TCP/IP stack (full TCP state machine RFC 793, 11 states, 3-way handshake, retransmit/keepalive/timewait timers), UDP, socket API, firewall (stateless rules, NAT, rate limiting), NFSv3 client, SMB2/3 client (organized in `kernel/net_stack/`) |
 | File System | VFS, NuvaFS, ext4, FAT32, **io_uring** (zero-copy async I/O with ring buffers), page cache, dentry cache, buffer cache |
 | Timer | Kernel timer subsystem, tick/no-tick modes |
 | Plugin System | ELF loader with RELA relocation, registry, sandbox with resource limits, SHA-256 fingerprint, audit with real timestamps, PluginServices kernel interface |
@@ -90,7 +188,8 @@ Microkernel providing minimal core functionality:
 | Tombstone | Crash record capture, storage, and query; crash context collection via HAL, stack backtrace, deduplication, atomic file writes, memory cache fallback |
 | Quantum | QuantumManager, QuantumRng, QKD sessions, PQC context |
 | Platform Detection | PlatformInfo, BootInfoType, detect_platform_info() |
-| Boot Flow | ARM64 FDT + exception vectors, x64 Multiboot2 + GDT/IDT/exceptions, LoongArch64 UEFI boot |
+| Boot Flow | ARM64 FDT + exception vectors, x64 Multiboot2 + GDT/IDT/exceptions, LoongArch64 UEFI boot, RISC-V 64 SBI boot |
+| Architecture Support | ARM64 (`kernel/arch/arm64/`), x86-64 (`kernel/arch/x64/`), LoongArch64 (`kernel/arch/loongarch64/`), RISC-V 64 (`kernel/arch/riscv64/`: boot/SBI, trap, MMU, PLIC, timer, context) |
 
 ##### Kernel Functional Domain Subdirectories
 
@@ -104,7 +203,7 @@ The kernel has been reorganized into functional domain subdirectories for improv
 | `kernel/net_stack/` | Network stack | socket, tcpip |
 | `kernel/storage/` | Storage subsystem | block |
 | `kernel/device/` | Device model and plugins | device_model, driver_plugin, feature_plugin, module, notifier |
-| `kernel/power_mgmt/` | Power management | hotplug, pm, power |
+| `kernel/power_mgmt/` | Power management | hotplug, pm, power, **nvpowermgr** |
 | `kernel/virt/` | Virtualization subsystem | vmx |
 | `kernel/core/` | Core kernel services | cache, cpu, defense, kernel_thread, mempool, perf_tune, posix, random, signal, time, wait, workqueue |
 
@@ -179,7 +278,7 @@ management uses a Nuva-native declarative paradigm with no legacy View/Activity/
 Core memory management features (for details, see [MEMORY.md](MEMORY.md)):
 
 - **Physical Memory**: Buddy+SLAB two-level allocators, Per-CPU page cache, memory zones (DMA/Normal/HighMem)
-- **Virtual Memory**: 4-level page tables (ARM64/x64/LoongArch64), VMA, mmap, COW, huge pages (2MB/1GB)
+- **Virtual Memory**: 4-level page tables (ARM64/x64/LoongArch64), Sv39/Sv48 page tables (RISC-V 64), VMA, mmap, COW, huge pages (2MB/1GB)
 - **Advanced**: NUMA support, memory hotplug, page migration, OOM killer with comprehensive scoring (memory usage, CPU time, nice value, swap usage, oom_score_adj), memory compaction
 
 ### Memory Layout
@@ -205,6 +304,13 @@ Core memory management features (for details, see [MEMORY.md](MEMORY.md)):
 0xFFFF_8000_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF : Kernel space (128TB)
 ```
 
+#### RISC-V 64
+
+```
+0x0000_0000_0000_0000 - 0x0000_3FFF_FFFF_FFFF : User space (256GB, Sv39)
+0xFFFF_C000_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF : Kernel space (256GB, Sv39)
+```
+
 ---
 
 ## Process Scheduling
@@ -218,6 +324,48 @@ Core scheduling features (for details, see [PROCESS.md](PROCESS.md)):
 3. **CFS** — Red-black tree, vruntime-based fair scheduling
 4. **EAS** — Energy-aware CPU selection for big.LITTLE systems
 5. **Idle** — Lowest priority, idle task
+
+### NvScheduler AI Intelligent Scheduler
+
+NvScheduler extends the traditional scheduling framework with AI-driven intelligent scheduling:
+
+- **NPU Inference Engine**: Submits 12-dimensional `SchedFeatureVector` to Da Vinci NPU for scheduling decisions
+- **Four-Level AI Scheduling Classes**: `AI_REALTIME` (NPU→Big, max boost 0-5) > `AI_NORMAL` (Big→NPU, boost 1-3) > `AI_BATCH` (Little, throughput) > `AI_IDLE` (Little, energy)
+- **Three-Tier Fallback**: AI inference → Declarative policy → CFS+RT traditional
+- **AI Task Classifier**: Automatic task classification based on compute ratio, NPU access, and memory usage
+- **Declarative Policy Engine**: Enhanced `SchedPolicyConfig` with `ai_confidence_threshold`, `inference_budget_us`, `power_aware_enabled`, `balancer_driven` fields
+- **Confidence Threshold**: AI decisions with confidence ≥ 50% are used; below threshold triggers fallback
+
+### NvBalancer Heterogeneous Hardware Balancer
+
+NvBalancer distributes workloads across GPU (RTX Spark), NPU (Da Vinci), CPU, and Quantum devices:
+
+- **Device Topology**: `HeteroDeviceTopology` with NUMA mapping, PCIe bandwidth matrix, interconnect latency matrix, generation-based hot-plug tracking
+- **Load Collection**: Per-device real-time metrics (utilization, queue depth, temperature, power, data locality) with degraded fallback on timeout
+- **Balance Optimizer**: Task-device matching + data locality + power efficiency scoring; triggers when load deviation > 30%
+- **Migration Executor**: Checkpoint-save → pause → migrate → resume sequence; overhead limited to ≤ 15% of task execution time
+- **Oscillation Detector**: 32-entry ring buffer detects tasks bouncing between devices (≥ 3 times triggers suppression)
+- **Hot-Plug Support**: Device add/remove with generation counter, running tasks not disrupted
+
+### NvPowerMgr AI-Driven Power Optimization
+
+NvPowerMgr provides comprehensive power management with AI-driven optimization:
+
+- **Power Budget Manager**: System power budget with 5% overshoot allowance; infeasible budget → minimum power mode
+- **DVFS Controller**: Per-device DVFS with safe switching sequences (scale up: voltage→frequency; scale down: frequency→voltage)
+- **Device Power Controller**: Per-device independent power control; critical devices never sleep
+- **Thermal Monitor**: Per-device temperature monitoring; proactive throttling at 85°C; sensor failure → conservative policy
+- **Green Metrics Collector**: Real-time PUE (Power Usage Effectiveness), carbon emission equivalent, power efficiency score
+- **AI Power Optimizer**: NPU-based power optimization model generating DVFS + sleep + throttle plans; performance impact ≤ 10%, energy reduction ≥ 15%
+- **Fallback**: NPU unavailable → heuristic DVFS lookup + temperature thresholds; PMIC failure → maintain current state
+
+### Three-Party Cooperation (NvScheduler ↔ NvBalancer ↔ NvPowerMgr)
+
+- **Scheduling ↔ Power**: NvScheduler evaluates power impact of decisions via NvPowerMgr, selects most power-efficient option
+- **Scheduling ↔ Balance**: NvScheduler drives NvBalancer; balance triggered by AI inference or declarative policy (not fixed thresholds)
+- **Balance ↔ Power**: NvBalancer queries NvPowerMgr device power state, prefers power-efficient devices
+- **Power ↔ Scheduling**: NvPowerMgr never sleeps devices with active high-priority tasks
+- **Invariant Verification**: Runtime checks ensure: (1) scheduling considers power, (2) power considers scheduling, (3) balance is scheduler-driven, (4) AI fallback: perf degradation ≤ 10% and energy reduction ≥ 15%
 
 ---
 
@@ -402,9 +550,14 @@ Nuva OS integrates quantum-safe technology at the HAL layer, providing post-quan
 
 ### QRNG (Quantum Random Number Generator)
 
-- Hardware QRNG detection and initialization
-- Software PRNG fallback
+- Hardware QRNG integration: entropy source detection (MMIO/DeviceTree/ACPI/RISC-V seed/ARM RNDR), entropy pool with SHA-256 conditioning, NIST SP 800-90B health tests (Repetition Count + Adaptive Proportion + Restart)
+- Software PRNG fallback (Xorshift128+)
 - Randomness quality assessment (`RandomnessQuality`)
+
+### QKD (Quantum Key Distribution)
+
+- BB84 protocol implementation with qubit preparation (4 polarization bases) and measurement, basis reconciliation, error estimation, privacy amplification
+- Quantum-secure key exchange between trusted nodes
 
 ### PQC (Post-Quantum Cryptography)
 
@@ -494,7 +647,8 @@ pub trait PqcProvider: Send + Sync {
 
 ### Access Control
 
-- Capability
+- Capability (NvCapability tokens, permission monotonicity, cascading revocation)
+- NvCapability-LSM bridge: capability tokens bridged with Linux Security Module hooks (`kernel/security/security_hook.rs`)
 - ACL (Access Control List)
 - NSM (Nuva Security Module) policy
 
@@ -587,10 +741,11 @@ LoongArch64 uses a memory layout compatible with x86-64:
 
 ### Build Status
 
-All three architectures compile with 0 errors:
+All four architectures compile with 0 errors:
 - ARM64 (kirin9020): ✅
 - x86_64 (intel_core): ✅
 - LoongArch64 (loongson3a6000): ✅
+- RISC-V 64 (qemu_virt): ✅
 
 ---
 
@@ -611,7 +766,7 @@ The Nuva SDK provides developer tooling for building, debugging, profiling, and 
 
 ---
 
-<!-- Translation Status: Source (English) | Last Updated: 2026-05-20 -->
+<!-- Translation Status: Source (English) | Last Updated: 2026-05-30 -->
 
-**Last Updated**: 2026-05-20
+**Last Updated**: 2026-05-30
 **License**: Apache-2.0

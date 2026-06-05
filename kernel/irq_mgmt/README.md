@@ -20,6 +20,7 @@ The `kernel/irq_mgmt/` module provides interrupt request (IRQ) management, inclu
 | ARM64 | GIC (Generic Interrupt Controller) |
 | x86-64 | LAPIC + I/O APIC |
 | LoongArch64 | EIOINTC (Extended I/O Interrupt Controller) |
+| RISC-V 64 | PLIC | Platform-Level Interrupt Controller |
 
 ## Initialization Order
 

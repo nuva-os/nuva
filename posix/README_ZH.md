@@ -21,7 +21,22 @@ POSIX 兼容层提供 POSIX 标准兼容接口，使 Nuva OS 能够运行符合 
 
 ## 构建配置
 
-POSIX 层随内核一起编译，无需额外 feature flag。
+POSIX 层作为**可选的 feature gate** 编译。通过以下方式启用：
+
+```toml
+[features]
+default = ["nuva_native"]
+posix = []
+bsd_compat = ["posix"]
+```
+
+当 `posix` feature 禁用时：
+- `posix/` 目录不参与编译
+- `kernel/process/fork.rs`、`signal.rs`、`execve.rs`、`wait4.rs` 不参与编译
+- `kernel/ipc/shm.rs`、`shm_ipc.rs`（System V 兼容）不参与编译
+- 内核核心路径对 POSIX 零依赖
+
+启用后，通过适配器模式将 POSIX 标准接口映射到 Nuva 原生内核原语。
 
 ## 公开接口
 

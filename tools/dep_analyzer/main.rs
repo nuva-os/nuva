@@ -1,4 +1,21 @@
 /*
+ * Nuva OS - Tools - DepAnalyzer - Main
+ *
+ * Copyright (C) 2026 Nuva OS Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Dependency Analyzer - Architecture Compliance Tool
  *
  * Copyright (C) 2026 Nuva OS Team
@@ -80,6 +97,18 @@ const HAL_TRAIT_ALLOWED_PREFIXES: &[&str] = &[
     "hal::dt::",
 ];
 
+/// Kernel core modules that must not depend on POSIX
+const KERNEL_CORE_MODULES: &[&str] = &[
+    "kernel::core::",
+    "kernel::ipc::",
+    "kernel::sched::",
+    "kernel::mm::",
+    "kernel::security::",
+    "kernel::capability::",
+    "kernel::nv_process::",
+    "kernel::nv_event::",
+];
+
 /// Dependency violation
 #[derive(Debug, Clone)]
 struct Violation {
@@ -120,6 +149,12 @@ enum ViolationType {
 
     /// L1 depends on L2/L3/L4 (reverse dependency)
     KernelReverseDependency,
+
+    /// Kernel core module depends on POSIX module (architecture independence violation)
+    KernelPosixDependency,
+
+    /// Kernel core module uses POSIX errno (architecture independence violation)
+    KernelPosixErrnoUsage,
 }
 
 impl ViolationType {
@@ -131,6 +166,8 @@ impl ViolationType {
             ViolationType::HalUpwardDependency => "HAL Upward Dependency",
             ViolationType::HalConcreteImplReference => "HAL Concrete Impl Reference",
             ViolationType::KernelReverseDependency => "Kernel Reverse Dependency",
+            ViolationType::KernelPosixDependency => "Kernel POSIX Dependency",
+            ViolationType::KernelPosixErrnoUsage => "Kernel POSIX Errno Usage",
         }
     }
 }
@@ -269,6 +306,8 @@ impl DependencyGraph {
         self.check_kernel_reverse_dependency(&mut violations);
         self.check_hal_concrete_impl(&mut violations);
         self.check_circular_dependencies(&mut violations);
+        self.check_kernel_posix_dependency(&mut violations);
+        self.check_kernel_posix_errno(&mut violations);
 
         violations
     }
@@ -414,6 +453,68 @@ impl DependencyGraph {
                         from_layer: *from_layer,
                         to_layer: Layer::Hal,
                         violation_type: ViolationType::HalConcreteImplReference,
+                        severity,
+                    });
+                }
+            }
+        }
+    }
+
+    /// Check kernel core modules for POSIX dependency
+    fn check_kernel_posix_dependency(&self, violations: &mut Vec<Violation>) {
+        for (from_module, deps) in &self.dependencies {
+            let is_core = KERNEL_CORE_MODULES.iter().any(|m| from_module.starts_with(m));
+            if !is_core {
+                continue;
+            }
+
+            for to_module in deps {
+                if to_module.starts_with("posix::") {
+                    let severity =
+                        if self.is_exempted(from_module, &ViolationType::KernelPosixDependency) {
+                            Severity::Warning
+                        } else {
+                            Severity::Error
+                        };
+
+                    let from_layer = self.layers.get(from_module).copied().unwrap_or(Layer::Kernel);
+                    violations.push(Violation {
+                        from_module: from_module.clone(),
+                        to_module: to_module.clone(),
+                        from_layer,
+                        to_layer: Layer::Syslib,
+                        violation_type: ViolationType::KernelPosixDependency,
+                        severity,
+                    });
+                }
+            }
+        }
+    }
+
+    /// Check kernel core modules for POSIX errno usage
+    fn check_kernel_posix_errno(&self, violations: &mut Vec<Violation>) {
+        for (from_module, deps) in &self.dependencies {
+            let is_core = KERNEL_CORE_MODULES.iter().any(|m| from_module.starts_with(m));
+            if !is_core {
+                continue;
+            }
+
+            for to_module in deps {
+                if to_module.contains("posix::errno") {
+                    let severity =
+                        if self.is_exempted(from_module, &ViolationType::KernelPosixErrnoUsage) {
+                            Severity::Warning
+                        } else {
+                            Severity::Error
+                        };
+
+                    let from_layer = self.layers.get(from_module).copied().unwrap_or(Layer::Kernel);
+                    violations.push(Violation {
+                        from_module: from_module.clone(),
+                        to_module: to_module.clone(),
+                        from_layer,
+                        to_layer: Layer::Syslib,
+                        violation_type: ViolationType::KernelPosixErrnoUsage,
                         severity,
                     });
                 }
@@ -649,6 +750,8 @@ fn main() {
         eprintln!("  - Kernel reverse dependency (L1 -> L2/L3/L4)");
         eprintln!("  - HAL concrete implementation references");
         eprintln!("  - Circular dependencies");
+        eprintln!("  - Kernel core POSIX dependency");
+        eprintln!("  - Kernel core POSIX errno usage");
         eprintln!();
         eprintln!("Configuration: dep_analyzer.toml (optional, for exemptions)");
         std::process::exit(1);

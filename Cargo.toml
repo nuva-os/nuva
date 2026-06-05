@@ -18,7 +18,7 @@
 name = "nuva"
 version = "1.0.0"
 edition = "2021"
-authors = ["Nuva OS Team <team@nuva-os.org>"]
+authors = ["Nuva OS Team <kellen9903@gmail.com>"]
 license = "Apache-2.0"
 description = "Nuva OS - A modern, quantum-safe, AI-native operating system"
 repository = "https://github.com/nuva-os/nuva"
@@ -34,10 +34,15 @@ name = "nuva_kernel"
 path = "main.rs"
 
 [features]
-default = []
+default = ["nuva_native"]
+nuva_native = []
+posix = []
+bsd_compat = ["posix"]
 arm64 = []
 x64 = []
 loongarch64 = []
+riscv64 = []
+qemu_virt = ["riscv64"]
 kirin = ["arm64"]
 kirin9000 = ["arm64"]
 kirin9010 = ["arm64"]
@@ -95,4 +100,4 @@ name = "performance_bench"
 harness = false
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-none", "aarch64-unknown-none"]
+targets = ["x86_64-unknown-none", "aarch64-unknown-none", "riscv64-unknown-none"]

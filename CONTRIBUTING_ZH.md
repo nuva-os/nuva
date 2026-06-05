@@ -2,7 +2,7 @@
 
 感谢您对为 Nuva OS 贡献的关注！本文档提供了贡献的指南和说明。
 
-> 最后更新：2026-05-21
+> 最后更新：2026-05-30
 
 ## 行为准则
 
@@ -64,6 +64,9 @@ cargo build --target x86_64-unknown-none
 
 # Build for ARM64
 cargo build --target aarch64-unknown-none
+
+# Build for RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64
 
 # Build with features
 cargo build --features kirin9020
@@ -144,7 +147,7 @@ cargo clippy -- -W clippy::all
 ```
 nuva/
 ├── kernel/           # Kernel implementation
-│   ├── arch/        # Architecture-specific (arm64, loongarch64, x64)
+│   ├── arch/        # Architecture-specific (arm64, loongarch64, riscv64, x64)
 │   ├── mm/          # Memory management
 │   ├── process/     # Process management
 │   ├── sched/       # Scheduler
@@ -157,7 +160,7 @@ nuva/
 │   ├── gpu/         # GPU abstraction
 │   ├── npu/         # NPU abstraction
 │   └── quantum/     # Quantum cryptography
-├── lib/              # Core libraries
+├── syslib/           # 系统库
 │   ├── brain/       # AI engine
 │   ├── lang/        # Nuva language
 │   ├── net/         # Network library
@@ -297,7 +300,7 @@ Closes #123
 - **文档**：[docs/](docs/)
 - **Issue**：[GitHub Issues](https://github.com/nuva-os/nuva/issues)
 - **讨论**：[GitHub Discussions](https://github.com/nuva-os/nuva/discussions)
-- **邮箱**：team@nuva-os.org
+- **邮箱**：kellen9903@gmail.com
 
 ## 致谢
 

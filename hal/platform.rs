@@ -171,6 +171,13 @@ impl PlatformInfo {
                 return false;
             }
         }
+        #[cfg(feature = "riscv64")]
+        {
+            if self.arch != Arch::RiscV64 {
+                log_error!("Platform mismatch: compiled for RISC-V 64 but detected {:?}", self.arch);
+                return false;
+            }
+        }
         true
     }
 
@@ -293,7 +300,12 @@ fn detect_soc() -> Platform {
 
     #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     {
-        Platform::GenericX64
+        // RISC-V and LoongArch64: default platform
+        #[cfg(target_arch = "riscv64")]
+        { Platform::QemuVirtRiscV }
+
+        #[cfg(not(target_arch = "riscv64"))]
+        { Platform::GenericX64 }
     }
 }
 
@@ -305,7 +317,10 @@ const fn detect_arch() -> Arch {
     #[cfg(target_arch = "x86_64")]
     { Arch::X64 }
 
-    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+    #[cfg(target_arch = "riscv64")]
+    { Arch::RiscV64 }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "riscv64")))]
     { Arch::X64 }
 }
 
@@ -326,7 +341,13 @@ fn detect_core_count() -> u32 {
         4
     }
 
-    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+    #[cfg(target_arch = "riscv64")]
+    {
+        // TODO: Read from FDT /cpus node
+        1
+    }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "riscv64")))]
     { 4 }
 }
 
@@ -342,7 +363,10 @@ fn detect_memory_size() -> u64 {
     #[cfg(feature = "x64")]
     { 16 * 1024 * 1024 * 1024 } // 16 GB typical PC
 
-    #[cfg(not(any(feature = "arm64", feature = "x64")))]
+    #[cfg(feature = "riscv64")]
+    { 1 * 1024 * 1024 * 1024 } // 1 GB QEMU virt default
+
+    #[cfg(not(any(feature = "arm64", feature = "x64", feature = "riscv64")))]
     { 4 * 1024 * 1024 * 1024 }
 }
 
@@ -361,7 +385,12 @@ fn detect_display_info() -> (u32, u32, u32) {
         (1920, 1080, 96) // Typical PC: 1920x1080 @ 96dpi
     }
 
-    #[cfg(not(any(feature = "arm64", feature = "x64")))]
+    #[cfg(feature = "riscv64")]
+    {
+        (0, 0, 0) // RISC-V: headless / serial console
+    }
+
+    #[cfg(not(any(feature = "arm64", feature = "x64", feature = "riscv64")))]
     {
         (1920, 1080, 96)
     }
@@ -382,7 +411,12 @@ fn detect_input_devices() -> InputDeviceSet {
         InputDeviceSet::KEYBOARD | InputDeviceSet::MOUSE // PC: keyboard + mouse
     }
 
-    #[cfg(not(any(feature = "arm64", feature = "x64")))]
+    #[cfg(feature = "riscv64")]
+    {
+        InputDeviceSet::empty() // RISC-V: serial console only
+    }
+
+    #[cfg(not(any(feature = "arm64", feature = "x64", feature = "riscv64")))]
     {
         InputDeviceSet::empty()
     }
@@ -399,7 +433,10 @@ fn detect_power_source() -> PowerSource {
     #[cfg(feature = "x64")]
     { PowerSource::Ac } // PC: AC power
 
-    #[cfg(not(any(feature = "arm64", feature = "x64")))]
+    #[cfg(feature = "riscv64")]
+    { PowerSource::Unknown } // RISC-V: depends on board
+
+    #[cfg(not(any(feature = "arm64", feature = "x64", feature = "riscv64")))]
     { PowerSource::Unknown }
 }
 

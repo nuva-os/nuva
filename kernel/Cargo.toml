@@ -35,6 +35,8 @@ bit_field = { workspace = true }
 default = []
 debug = []
 smp = []
+posix = []
+vulkan = []
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64 = "0.0.10"

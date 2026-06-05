@@ -8,29 +8,32 @@ The Services layer (Layer 3) provides OS-level system services, running in user 
 
 | Submodule | Description |
 |-----------|-------------|
-| app/ | Application service: Activity lifecycle, installer, package manager |
-| ipc/ | IPC service: Binder, channels, shared memory |
-| net/ | Network service: DNS resolution, interface management, TCP/UDP |
-| power/ | Power service: power manager, policies, suspend, wake locks |
-| security/ | Security service: Gatekeeper, Keymaster, permission management, TEE client |
-| form_factor.rs | Form factor manager (phone/tablet/desktop/server adaptive) |
+| app/ | Application management service (install, lifecycle, package, screen) |
+| ipc/ | IPC service (Binder, Channel, Shared Memory) |
+| net/ | Network service (DNS, TCP/UDP, Interface management) |
+| power/ | Power management service (PM policy, wake lock, suspend) |
+| security/ | Security service (Gatekeeper, Keymaster, Permission, TEE client) |
+| form_factor/ | Form factor adaptation service (mobile/tablet/PC detection) |
+| audio/ | Audio service (codec, mixer, resampler, volume, power management) |
+| video/ | Video service (H.264/H.265/VP9/AV1 codec, HW acceleration, frame buffer) |
+| web/ | Web service (HTML/CSS parser, JS engine, DOM, layout, page rendering) |
+| opengl/ | OpenGL service (GPU rendering, pipeline, resource management, software fallback) |
+| sqlite/ | SQLite database service (B-tree, WAL, connection pool, query executor) |
+| image/ | Image service (JPEG/PNG/GIF/WebP/BMP codec, transform, HW acceleration) |
+| core_processing/ | Core processing service (format detection, shared memory transfer, power coordination) |
 
 ## Dependencies
 
 - **Lower dependencies**: hal (L0), kernel (L1), syslib (L2)
 - **Depended by**: application (L4)
 
-## Build Configuration
+### Build Configuration
 
-The services layer is compiled together with the kernel and supports different device types via conditional compilation:
-
-- Mobile devices: enable app, power, security services
-- Server devices: enable ipc, net services
+Services are compiled with the kernel. Feature flags control service inclusion:
+- `mobile` profile: Enables all 13 core services for mobile/tablet deployment
+- `server` profile: Enables network, security, sqlite, and web services
+- Services communicate via Nuva IPC ports with capability-gated access
 
 ## Public Interface
 
-Each service exposes its interface through Binder IPC, supporting both synchronous and asynchronous calls:
-- `AppService` — Application lifecycle management
-- `PowerService` — Power policy and state management
-- `SecurityService` — Permission and key management
-- `NetService` — Network configuration and connection management
+Provides the following service interfaces: `AppService`, `IpcService`, `NetService`, `PowerService`, `SecurityService`, `AudioService`, `VideoService`, `WebService`, `OpenGLService`, `SqliteService`, `ImageService`, `CoreProcessingService`, `FormFactorService`.

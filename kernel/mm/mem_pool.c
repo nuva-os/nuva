@@ -17,10 +17,14 @@
  */
 
 /**
- * Optimized Memory Pool Allocator
+ * FFI Compatibility Layer - Not for kernel core use
  *
- * This module implements a high-performance, O(1) memory pool allocator
- * for kernel critical paths. Features:
+ * Optimized Memory Pool Allocator (FFI wrapper)
+ *
+ * The kernel core path uses the Rust-native NuvaMemPool implementation.
+ * This C file is retained for external C/C++ code only.
+ *
+ * Original features:
  * - O(1) allocation and deallocation
  * - Zero fragmentation
  * - Thread-safe with atomic operations

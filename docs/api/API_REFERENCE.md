@@ -842,4 +842,4 @@ const char* nuva_hal_get_version_string(void);
 ---
 
 **Document Version**: 1.2.0  
-**Last Updated**: 2026-05-15
+**Last Updated**: 2026-05-30

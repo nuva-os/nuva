@@ -970,5 +970,5 @@ const char* version_str = nuva_hal_get_version_string();
 ---
 
 **文档版本**: 1.2.0  
-**最后更新**: 2026-05-15  
+**最后更新**: 2026-05-30  
 **维护者**: Nuva OS Team

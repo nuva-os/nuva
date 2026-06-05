@@ -102,3 +102,7 @@ kernel/tombstone/
 - 查询需要 `CAP_SYS_PTRACE` 或 `CAP_SYS_ADMIN`
 - 清理需要 `CAP_SYS_ADMIN`
 - 生产路径中无 panic/unwrap/expect，所有错误通过 `Result<T, TombstoneError>` 返回
+
+---
+
+**最后更新**：2026 年 5 月 30 日

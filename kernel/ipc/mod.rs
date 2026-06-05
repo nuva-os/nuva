@@ -36,7 +36,7 @@
 //! # Example
 //!
 //! ```rust
-//! use kernel::ipc::nuvaipc::{FastPathIpc, QueuePriority};
+//! use kernel::ipc::nvipc::{FastPathIpc, QueuePriority};
 //! let ipc = FastPathIpc::new();
 //! let port_id = 1234;
 //! // Send a small message
@@ -51,26 +51,34 @@
 // Re-export print macros from crate root
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
 pub mod ipc;
-pub mod nuvaipc; // Nuva high-performance IPC (primary IPC mechanism)
+pub mod nvipc; // Nuva high-performance IPC (primary IPC mechanism)
 pub mod l4_ipc; // L4 Lattice IPC
-pub mod shm_ipc; // SharedMemory IPC
 pub mod l4; // L4 IPC Framework
-pub mod shm; // SharedMemoryFramework
+
+// System V IPC compatibility (optional, only for POSIX compatibility)
+// Migrated from: System V shmget/shmat/shmdt → NvMemoryRegion + cap_transfer
+// Migrated from: System V semget/semop → NvIpcPort + semaphore message
+// Migrated from: System V msgget/msgsnd/msgrcv → NvIpcPort message
+#[cfg(feature = "posix")]
+pub mod shm_ipc; // SharedMemory IPC (System V compatible)
+#[cfg(feature = "posix")]
+pub mod shm; // SharedMemoryFramework (System V compatible)
 
 // Re-export IpcError for submodules
 pub use ipc::IpcError;
 
-// Re-export nuvaipc as the main IPC interface
-pub use nuvaipc as mach;
+// Re-export nvipc as the main IPC interface
+pub use nvipc as mach;
 
 // Re-export NuvaIPC fast path for convenience
-pub use nuvaipc::{
+pub use nvipc::{
  FastPathIpc, ZeroCopyManager, ZeroCopyDescriptor, 
  LockFreeQueue, BatchProcessor, IPC_STATS,
 };
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
+#[cfg(feature = "posix")]
 use crate::posix::errno::Errno;
 /// IPC key type
 pub type IpcKey = u32;

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Nuva OS - HAL - Gpu
  * 
  * Copyright (C) 2026 Nuva OS Team
@@ -16,7 +16,26 @@
  * limitations under the License.
  */
 
+/* GPU HAL Module - Legacy Compatibility Layer
+ *
+ * When the "vulkan" feature is enabled, Vulkan-capable GPUs use the
+ * NvVulkan direct passthrough path (kernel/vulkan/) instead of this
+ * HAL layer. This module is retained as a fallback for non-Vulkan GPUs.
+ *
+ * Architecture: nuva is not unix, nuva is not linux.
+ * Nuva uses Vulkan direct passthrough (superior to Android's Gralloc+HAL
+ * chain and Apple's Metal+IOKit model). This HAL is a legacy fallback.
+ */
 
+
+
+// Submodules
+pub mod ring_buffer;
+pub mod gart;
+pub mod fence;
+pub mod reset;
+pub mod command_queue;
+pub mod maleoon;
 /// GPU State
 // Re-export print macros from crate root
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};

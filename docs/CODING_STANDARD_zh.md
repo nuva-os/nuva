@@ -39,10 +39,29 @@
 
 ### 1.2 设计哲学
 
-- **Unix 原则**：小而专注的模块，做好一件事
-- **策略与机制分离**：kernel 提供机制，用户空间决定策略
-- **一切皆文件**：尽可能使用统一接口
+- **nuva is not unix, nuva is not linux**：Nuva OS 拥有自己的设计范式，非源自 Unix 或 Linux
+- **基于能力的安全模型**：通过能力令牌进行访问控制，而非 Unix uid/gid/mode_t
+- **IPC 为原语**：Mach 风格端口消息传递是基本通信机制
+- **策略与机制分离**：内核提供机制，用户空间决定策略
+- **原生优先**：使用 Nuva 原生接口（NuvaProcessId、NuvaFileHandle、NuvaError）替代 POSIX 类型
 - **快速失败**：尽早检测和报告错误
+- **POSIX 可选**：POSIX 兼容是可选模块（`feature = "posix"`），非内核核心组成部分
+
+### 1.2.1 内核核心路径禁止模式
+
+以下模式在内核核心模块（ipc、mm、security、process、core、sched、fs）中**禁止使用**：
+
+| 禁止模式 | Nuva 原生替代 |
+|---------|-------------|
+| `pid_t`、`uid_t`、`gid_t`、`mode_t` | `NuvaProcessId`、`NuvaCapabilityId`、`NuvaAccessRight` |
+| `fd_t`、`off_t`、`ino_t` | `NuvaFileHandle`、`NuvaFileOffset`、`NuvaInodeId` |
+| `fork()`/`exec()` | `NuvaProcess::create()`/`execute()` |
+| `SIGHUP`/`SIGKILL`/`SIGTERM` | `NuvaEvent` 通过 `NuvaNotificationPort` |
+| `mmap()`/`munmap()`/`mprotect()` | `NuvaMemoryRegion` 配合 `NuvaAccessRight` |
+| `errno` (i32) | `NuvaError` 枚举 |
+| `/proc`/`/sys` 文件系统读取 | `NuvaDiagnostic::query()` |
+| `use crate::posix::*` | 使用 `crate::types::*` 原生接口 |
+| `use crate::bsd::*` | 直接使用 Nuva 原生子系统 |
 
 ### 1.3 禁止模式 — Android 兼容代码
 
@@ -1137,4 +1156,4 @@ jobs:
 
 <!-- Translation Status: Chinese Translation | Last Updated: 2026-05-22 | Synchronized with English version -->
 
-**最后更新**：2026 年 5 月 22 日
+**最后更新**：2026 年 5 月 30 日

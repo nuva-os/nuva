@@ -20,6 +20,7 @@ Syslib 层（Layer 2）提供面向应用和服务的系统库集合。可依赖
 | std/ | 标准库：集合、基础类型、IO |
 | runtime/ | 运行时库：Arc、元数据、协议 |
 | dispatch/ | 并发框架（GCD 风格）：线程池、信号量、队列、分组 |
+| nv_vulkan/ | 原生 Vulkan 集成库（NV Vulkan API 绑定） |
 | posix/ | POSIX 兼容层：系统调用封装 |
 
 ## 依赖关系

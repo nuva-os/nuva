@@ -412,6 +412,13 @@ fn register_builtin_plugins(_manager: &mut ArchPluginManager) {
     //     use super::loongarch64::plugin::LoongArch64Plugin;
     //     let _ = _manager.register(Box::new(LoongArch64Plugin::new()));
     // }
+
+    // RISC-V 64 plugin - TODO: implement riscv64::plugin::RiscV64Plugin
+    // #[cfg(feature = "riscv64")]
+    // {
+    //     use super::riscv64::plugin::RiscV64Plugin;
+    //     let _ = _manager.register(Box::new(RiscV64Plugin::new()));
+    // }
 }
 
 /// Get current architecture operations
@@ -476,6 +483,15 @@ impl ArchFeatures {
             features: FEATURE_SIMD_128 | FEATURE_SIMD_256 | FEATURE_FPU | FEATURE_ATOMIC,
         }
     }
+
+    /// Get RISC-V 64 features
+    #[cfg(target_arch = "riscv64")]
+    pub fn riscv64() -> Self {
+        Self {
+            arch_type: ArchType::RiscV64,
+            features: FEATURE_SIMD_128 | FEATURE_FPU | FEATURE_ATOMIC | FEATURE_VECTORIZATION,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -487,6 +503,7 @@ mod tests {
         assert_eq!(ArchType::Arm64.to_string(), "arm64");
         assert_eq!(ArchType::X64.to_string(), "x86_64");
         assert_eq!(ArchType::LoongArch64.to_string(), "loongarch64");
+        assert_eq!(ArchType::RiscV64.to_string(), "riscv64");
     }
 
     #[test]

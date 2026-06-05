@@ -2,7 +2,92 @@
 
 ## 概述
 
-Nuva OS 采用微内核架构，具有最小的 kernel 功能、运行在用户空间的服务、以 IPC 作为主要通信机制以及故障隔离。系统采用五层架构设计（L0-L4），支持 ARM64、x86-64 和 LoongArch64 三种处理器架构，并集成量子安全密码学和插件系统。
+Nuva OS 采用微内核架构，具有最小的 kernel 功能、运行在用户空间的服务、以 IPC 作为主要通信机制以及故障隔离。系统采用五层架构设计（L0-L4），支持 ARM64、x86-64、LoongArch64 和 RISC-V 64位（RV64G）四种处理器架构，并集成量子安全密码学和插件系统。
+
+**设计哲学**：nuva 不是 unix，nuva 不是 linux。Nuva OS 使用自己的原生类型系统、系统调用接口和基于能力（capability）的安全模型。POSIX 兼容性作为可选模块（特性标志 `posix`）提供，而非核心内核路径。
+
+## 三级特权架构
+
+Nuva OS 引入**三级特权架构**（EL2/EL1/EL0），优于传统的两级（内核/用户）设计：
+
+| 级别 | 名称 | 组件 | 硬件映射 |
+|-------|------|------------|-----------------|
+| EL2 | 最小内核模式 | 调度器、IPC、内存管理、能力管理器、IRQ、定时器 | ARM64: EL2 / x64: Ring 0 / RISC-V: M-mode / LA64: PLV0 |
+| EL1 | 设备模式 | 文件系统、网络栈、设备驱动、显示服务器 | ARM64: EL1 / x64: Ring 1 / RISC-V: S-mode / LA64: PLV1 |
+| EL0 | 用户模式 | 应用程序、用户库 | ARM64: EL0 / x64: Ring 3 / RISC-V: U-mode / LA64: PLV3 |
+
+### 跨级别访问规则
+
+- **EL1→EL2**：仅通过 `NvSupervisorCall`（能力关控，14 种操作）
+- **EL1↔EL0**：仅通过 NvIPC 端口消息传递
+- **EL2→EL1/EL0**：仅通过 NvIPC 端口（内核中介传递）
+- **直接跨级内存访问**：始终拒绝（`CrossLevelAccessDenied`）
+
+### 设备模式故障隔离
+
+- 每个 EL1 服务运行在独立的 `NvEquipmentFaultDomain` 中
+- 服务崩溃**绝不**影响内核模式或其他服务
+- 双重检测机制：DeadName（即时）+ heartbeat（周期性）
+- 7 步自动恢复：检查震荡 → 标记重启中 → 隔离 → 重启 → 重绑定 → 重建 → 通知
+- 形式化不变量：`∀s ∈ EquipmentServices: crash(s) → healthy(KernelMode)`
+
+## Nuva 原生系统
+
+### 原生类型系统
+
+Nuva OS 在 `sysroot/include/nuva/types.h` 和 `kernel/types.rs` 中定义了自己的类型系统，替代 POSIX/Unix 类型语义：
+
+| Nuva 原生类型 | 替代 | 说明 |
+|--------------|------|------|
+| `nuva_process_id_t` / `NuvaProcessId` | `pid_t` | 64 位基于能力的进程 ID |
+| `nuva_thread_id_t` / `NuvaThreadId` | `tid_t` | 64 位线程 ID |
+| `nuva_capability_id_t` / `NuvaCapabilityId` | `uid_t`/`gid_t` | 能力令牌 ID |
+| `nuva_file_handle_t` / `NuvaFileHandle` | `fd_t` | 64 位文件句柄 |
+| `nuva_file_offset_t` / `NuvaFileOffset` | `off_t` | 64 位文件偏移 |
+| `nuva_inode_id_t` / `NuvaInodeId` | `ino_t` | 64 位 inode ID |
+| `NuvaAccessRight` | `mode_t` | 访问权限位标志（READ/WRITE/EXECUTE/GRANT/REVOKE 等） |
+| `NuvaError` | `errno`（i32） | 类型化错误枚举（CapabilityDenied/CapabilityExpired 等） |
+| `NuvaEvent` | POSIX signal | 原生事件通知（Interrupt/TimerExpired/IoComplete 等） |
+| `NuvaDiagnostic` | `/proc`/`/sys` | 原生诊断查询接口 |
+| `NvPrivilegeLevel` | N/A | 三级特权级别（用户模式/设备模式/内核模式） |
+| `NvSupervisorOp` | N/A | EL1→EL2 受控操作（14 种操作：MapDeviceMemory、DmaMap、IrqRequest 等） |
+| `NvAddressSpaceId` | N/A | 地址空间标识符 |
+| `NvServiceName` | N/A | EL1 设备模式服务名称 |
+
+### 原生系统调用接口
+
+Nuva 原生系统调用占用编号空间 `0x0000_0000 - 0x0000_FFFF`，与 POSIX 调用（`0x0001_0000 - 0x0001_FFFF`）分离：
+
+| 类别 | 调用编号 | 关键接口 |
+|------|---------|---------|
+| 进程 | 0x01-0x0F | `NUVA_PROCESS_CREATE/EXECUTE/TERMINATE/YIELD` |
+| 内存 | 0x10-0x1F | `NUVA_MEMORY_ALLOCATE/DEALLOCATE/PROTECT/MAP` |
+| IPC | 0x20-0x2F | `NUVA_IPC_PORT_CREATE/DESTROY/SEND/RECEIVE/CALL/REPLY/FORWARD` |
+| 文件 | 0x30-0x3F | `NUVA_FILE_OPEN/CLOSE/READ/WRITE/SEEK/IOCTL` |
+| 能力 | 0x40-0x4F | `NUVA_CAPABILITY_GRANT/REVOKE/CHECK/TRANSFER` |
+| 事件 | 0x50-0x5F | `NUVA_EVENT_REGISTER/NOTIFY/WAIT` |
+| 诊断 | 0x60-0x6F | `NUVA_DIAG_QUERY/STATS` |
+
+所有原生系统调用都需要 `NuvaCapability` 令牌验证。
+
+### 原生安全模型
+
+`NuvaSecurityHook` trait 替代了 Linux LSM 模仿模式：
+
+| 方面 | 旧模式（LSM 风格） | 新模式（Nuva 原生） |
+|------|-------------------|-------------------|
+| 钩子签名 | `(*mut c_void, u32) -> i32` | `(NuvaCapabilityId, NuvaResourceHandle, NuvaAccessRight) -> Result<(), NuvaError>` |
+| 模块优先级 | `u32` 堆叠 | `NuvaSecurityPolicy` 及 `NuvaPolicyPriority` 枚举 |
+| 权限检查 | `mode_t` 位运算 | `NuvaCapability::check()` |
+| 返回类型 | `i32` errno | `Result<(), NuvaError>` |
+
+### POSIX 可选兼容模块
+
+POSIX 支持是**可选的**且**非必需的**，由 `posix` 特性标志控制：
+
+- **默认构建**（`cargo build`）：无 POSIX 支持，内核更小
+- **POSIX 构建**（`cargo build --features posix`）：POSIX 适配器桥接到 Nuva 原生接口
+- **内核核心路径隔离**：内核核心模块（ipc/mm/security/process/core/sched/fs）不得导入 POSIX/Unix 类型或接口
 
 ---
 
@@ -64,6 +149,7 @@ HAL 提供统一的硬件访问接口，屏蔽底层硬件差异：
 - `arm64/` — ARM64 架构（CPU、MMU、中断控制器 GIC、定时器、FDT 引导）
 - `x64/` — x86-64 架构（CPU、APIC（LAPIC/I/O APIC）、IDT、GDT、MMU、定时器（LAPIC Timer + TSC）、电源（S3/S5/MWAIT）、页表（destroy/protect））
 - `loongarch64/` — LoongArch64 架构（CPU、MMU（3级页表、PageTableOps）、EIOINTC 中断控制器、UEFI 引导、LSX 128位 SIMD、LASX 256位 SIMD、LVZ 虚拟化、LBT 二进制翻译）
+- `riscv64/` — RISC-V 64 架构（CPU、MMU、中断控制器 PLIC、SBI、定时器）
 - `snapdragon/` — Snapdragon 8 Gen 4 SoC（CPU、GPU、NPU）
 
 #### L1 - 内核层 (Kernel)
@@ -76,10 +162,10 @@ HAL 提供统一的硬件访问接口，屏蔽底层硬件差异：
 | 调度器 | CFS/RT/Deadline/Idle/EAS 调度，负载均衡，调度域，**声明式策略配置**（`SchedPolicyConfig` 热更新），**Per-CPU 运行队列**（`PerCpuRunQueue` 缓存行对齐） |
 | 内存管理 | Buddy+SLAB 分配器，VMA，页错误处理，NUMA，热插拔，**VMA 红黑树增强**（`max_end` 加速查找、`VmaMergePolicy` 延迟合并），**OOM 综合评分** |
 | IPC | NuvaIPC（Mach 风格端口消息），共享内存，管道，信号量，消息队列，**零拷贝快速路径**（<=256B 寄存器路径） |
-| 中断处理 | 硬件中断，异常，GIC/APIC/EIOINTC 自动检测 |
+| 中断处理 | 硬件中断，异常，GIC/APIC/EIOINTC/PLIC 自动检测 |
 | 进程管理 | 进程生命周期，信号处理，资源限制 |
 | 设备管理 | 设备驱动框架，设备类，**声明式驱动模型**（`DeclarativeDriver` trait、`declare_driver!`、`declare_resource!` 宏），**声明式电源管理**（`PmStateMachine`、`declare_pm!` 宏），**兼容字符串哈希表**（`CompatibleHashTable` O(1) 匹配） |
-| 网络栈 | TCP/IP 协议栈，Socket API，NFSv3 客户端，SMB2/3 客户端 |
+| 网络栈 | TCP/IP 协议栈（完整 TCP 状态机 RFC 793、11 种状态、三次握手、重传/保活/timewait 定时器），UDP，Socket API，防火墙（无状态规则、NAT、速率限制），NFSv3 客户端，SMB2/3 客户端 |
 | 文件系统 | VFS，NuvaFS，ext4，FAT32，io_uring，页缓存，dentry 缓存，缓冲区缓存 |
 | 定时器 | 内核定时时子系统，tick/no-tick 模式 |
 | 插件系统 | ELF 加载器（RELA 重定位），注册表，沙箱（资源限制），SHA-256 指纹，审计（真实时间戳），PluginServices 内核接口 |
@@ -89,7 +175,8 @@ HAL 提供统一的硬件访问接口，屏蔽底层硬件差异：
 | Tombstone | 崩溃记录捕获、存储和查询；通过 HAL 收集崩溃上下文、栈回溯、去重、原子文件写入、内存缓存回退 |
 | 量子 | QuantumManager、QuantumRng、QKD 会话、PQC 上下文 |
 | 平台检测 | PlatformInfo，BootInfoType，detect_platform_info() |
-| 引导流程 | ARM64 FDT + 异常向量表，x64 Multiboot2 + GDT/IDT/异常处理，LoongArch64 UEFI 引导 |
+| 引导流程 | ARM64 FDT + 异常向量表，x64 Multiboot2 + GDT/IDT/异常处理，LoongArch64 UEFI 引导，RISC-V 64 SBI 引导 |
+| 架构支持 | ARM64 (`kernel/arch/arm64/`)、x86-64 (`kernel/arch/x64/`)、LoongArch64 (`kernel/arch/loongarch64/`)、RISC-V 64 (`kernel/arch/riscv64/`：boot/SBI、trap、MMU、PLIC、timer、context) |
 | 同步原语 | SpinLock（抢占控制+持有者追踪），Mutex，Semaphore，RwLock，**PreemptCount**（preempt_disable/enable，分配约束检查），**RwLock TOCTOU 修复**（原子版本检查），**RCU**（读-拷贝-更新，用于读多写少路径），**Per-CPU 变量**（缓存行对齐，无锁访问） |
 
 ##### 内核功能域子目录
@@ -178,7 +265,7 @@ L4 层是完全声明式的 — 所有 UI、窗口、事件、渲染和资源管
 核心内存管理特性（详见 [MEMORY_zh.md](MEMORY_zh.md)）：
 
 - **物理内存**：Buddy+SLAB 两级分配器、Per-CPU 页缓存、内存区域（DMA/Normal/HighMem）
-- **虚拟内存**：4 级页表（ARM64/x64/LoongArch64）、VMA、mmap、COW、大页（2MB/1GB）
+- **虚拟内存**：4 级页表（ARM64/x64/LoongArch64）、Sv39/Sv48 页表（RISC-V 64）、VMA、mmap、COW、大页（2MB/1GB）
 - **高级特性**：NUMA 支持、内存热插拔、页面迁移、OOM Killer、内存整理
 
 ### 内存布局
@@ -204,6 +291,13 @@ L4 层是完全声明式的 — 所有 UI、窗口、事件、渲染和资源管
 0xFFFF_8000_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF : Kernel space (128TB)
 ```
 
+#### RISC-V 64
+
+```
+0x0000_0000_0000_0000 - 0x0000_3FFF_FFFF_FFFF : User space (256GB, Sv39)
+0xFFFF_C000_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF : Kernel space (256GB, Sv39)
+```
+
 ---
 
 ## 进程调度
@@ -217,6 +311,48 @@ L4 层是完全声明式的 — 所有 UI、窗口、事件、渲染和资源管
 3. **CFS** — 红黑树，基于 vruntime 的公平调度
 4. **EAS** — 面向 big.LITTLE 系统的能耗感知 CPU 选择
 5. **Idle** — 最低优先级，空闲任务
+
+### NvScheduler AI智能调度器
+
+NvScheduler在传统调度框架基础上扩展了AI驱动的智能调度：
+
+- **NPU推理引擎**：向达芬奇NPU提交12维`SchedFeatureVector`获取调度决策
+- **四级AI调度类别**：`AI_REALTIME`（NPU→大核，最大boost 0-5）> `AI_NORMAL`（大核→NPU，boost 1-3）> `AI_BATCH`（小核，吞吐优先）> `AI_IDLE`（小核，节能优先）
+- **三级降级**：AI推理 → 声明式策略 → CFS+RT传统调度
+- **AI任务分类器**：基于计算比、NPU访问和内存使用自动分类任务
+- **声明式策略引擎**：增强的`SchedPolicyConfig`，新增`ai_confidence_threshold`、`inference_budget_us`、`power_aware_enabled`、`balancer_driven`字段
+- **置信度阈值**：置信度≥50%的AI决策被采用；低于阈值触发降级
+
+### NvBalancer异构硬件均衡器
+
+NvBalancer在GPU(RTX Spark)、NPU(达芬奇)、CPU和量子设备间分配工作负载：
+
+- **设备拓扑**：`HeteroDeviceTopology`含NUMA映射、PCIe带宽矩阵、互联延迟矩阵、基于generation的热插拔追踪
+- **负载采集**：per-device实时指标（利用率/队列深度/温度/功耗/数据局部性），超时时降级到最近有效快照
+- **均衡优化器**：任务-设备匹配+数据局部性+功耗效率评分；负载偏差>30%时触发均衡
+- **迁移执行器**：检查点保存→暂停→迁移→恢复序列；迁移开销≤原任务执行时间15%
+- **震荡检测器**：32项环形缓冲区检测任务在设备间反复迁移（≥3次触发抑制）
+- **热插拔支持**：设备添加/移除配合generation计数器，运行中任务不受影响
+
+### NvPowerMgr AI驱动功耗优化
+
+NvPowerMgr提供AI驱动的全面功耗管理：
+
+- **功耗预算管理器**：系统功耗预算，5%超限容许；预算不可行时进入最小功耗模式
+- **DVFS控制器**：per-device DVFS，安全切换序列（升压→升频；降频→降压）
+- **设备功耗控制器**：per-device独立功耗控制；关键设备永不休眠
+- **温度监控器**：per-device温度监控；85°C主动降功耗；传感器异常→保守策略
+- **绿色计算指标采集器**：实时PUE、碳排放当量、功耗效率评分
+- **AI功耗优化器**：NPU功耗优化模型，生成DVFS+休眠+节流计划；性能影响≤10%，能耗降低≥15%
+- **降级策略**：NPU不可用→启发式DVFS查表+温度阈值；PMIC失败→保持当前状态
+
+### 三方协同（NvScheduler ↔ NvBalancer ↔ NvPowerMgr）
+
+- **调度↔功耗**：NvScheduler通过NvPowerMgr评估决策的功耗影响，选择功耗效率最优方案
+- **调度↔均衡**：NvScheduler驱动NvBalancer；均衡由AI推理或声明式策略触发（非固定阈值）
+- **均衡↔功耗**：NvBalancer查询NvPowerMgr设备功耗状态，优先选择功耗效率高的设备
+- **功耗↔调度**：NvPowerMgr不休眠有活跃高优先级任务的设备
+- **不变量验证**：运行时检查确保：(1)调度考虑功耗，(2)功耗考虑调度，(3)均衡由调度驱动，(4)AI降级：性能降幅≤10%且能耗降低≥15%
 
 ---
 
@@ -401,9 +537,14 @@ Nuva OS 在 HAL 层集成量子安全技术，提供抗量子密码学支持：
 
 ### QRNG（量子随机数生成器）
 
-- 硬件 QRNG 检测与初始化
-- 软件 PRNG 回退
+- 硬件 QRNG 集成：熵源检测（MMIO/DeviceTree/ACPI/RISC-V seed/ARM RNDR）、SHA-256 条件熵池、NIST SP 800-90B 健康测试（重复计数+自适应比例+重启）
+- 软件 PRNG 回退（Xorshift128+）
 - 随机数质量评估（`RandomnessQuality`）
+
+### QKD（量子密钥分发）
+
+- BB84 协议实现：量子比特制备（4 种偏振基）与测量、基矢比对、误差估计、隐私放大
+- 可信节点间量子安全密钥交换
 
 ### PQC（后量子密码学）
 
@@ -493,7 +634,8 @@ pub trait PqcProvider: Send + Sync {
 
 ### 访问控制
 
-- 能力（Capability）
+- 能力（Capability）：NvCapability 令牌、权限单调性、级联撤销
+- NvCapability-LSM 桥接：能力令牌与 Linux 安全模块钩子桥接（`kernel/security/security_hook.rs`）
 - ACL（访问控制列表）
 - NSM（Nuva 安全模块）策略
 
@@ -586,10 +728,11 @@ LoongArch64 使用与 x86-64 兼容的内存布局：
 
 ### 编译状态
 
-三架构均已实现 0 error 编译通过：
+四架构均已实现 0 error 编译通过：
 - ARM64 (kirin9020): ✅
 - x86_64 (intel_core): ✅
 - LoongArch64 (loongson3a6000): ✅
+- RISC-V 64 (qemu_virt): ✅
 
 ---
 
@@ -610,7 +753,7 @@ Nuva SDK 提供面向开发者的工具链，包括构建、调试、性能分�
 
 ---
 
-<!-- 翻译状态：中文翻译 | 最后更新：2026-05-20 | 与英文版同步 -->
+<!-- 翻译状态：中文翻译 | 最后更新：2026-05-30 | 与英文版同步 -->
 
-**最后更新**：2026 年 5 月 20 日
+**最后更新**：2026 年 5 月 30 日
 **许可证**：Apache-2.0

@@ -968,5 +968,5 @@ See the `examples/` directory:
 ---
 
 **Document Version**: 1.2.0  
-**Last Updated**: 2026-05-15  
+**Last Updated**: 2026-05-30  
 **Maintainer**: Nuva OS Team

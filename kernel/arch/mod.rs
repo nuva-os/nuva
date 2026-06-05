@@ -37,6 +37,9 @@ pub mod x64;
 #[cfg(target_arch = "loongarch64")]
 pub mod loongarch64;
 
+#[cfg(target_arch = "riscv64")]
+pub mod riscv64;
+
 use core::fmt;
 
 /// Physical Address
@@ -333,6 +336,11 @@ impl CpuContext {
             // Interrupts enabled, reserved bit 1 set
             ctx.pstate = 0x202; // RFLAGS with IF set
         }
+        #[cfg(target_arch = "riscv64")]
+        {
+            // SPP=0 (User mode), SPIE=1 (Interrupts enabled after sret)
+            ctx.pstate = 0x00000020;
+        }
 
         ctx
     }
@@ -425,6 +433,11 @@ pub fn current_arch() -> &'static dyn ArchOps {
     &loongarch64::LOONGARCH64_ARCH
 }
 
+#[cfg(target_arch = "riscv64")]
+pub fn current_arch() -> &'static dyn ArchOps {
+    &riscv64::RISCV64_ARCH
+}
+
 /// InitializeArchitecture
 pub fn init_arch() {
     current_arch().init();
@@ -442,5 +455,8 @@ pub const SIGRETURN_TRAMPOLINE: usize = 0xFFFF0000; // VDSO sigreturn stub addre
 #[cfg(target_arch = "x86_64")]
 pub const SIGRETURN_TRAMPOLINE: usize = 0xFFFF800000000000; // VDSO sigreturn stub address
 
-#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
+#[cfg(target_arch = "riscv64")]
+pub const SIGRETURN_TRAMPOLINE: usize = 0xFFFF800000000000; // VDSO sigreturn stub address
+
+#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "riscv64")))]
 pub const SIGRETURN_TRAMPOLINE: usize = 0;

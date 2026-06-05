@@ -35,6 +35,7 @@ pub mod mem_map;
 pub mod page_table;
 pub mod mempool_opt;
 pub mod npu_mem;
+pub mod region;
 
 // Re-export key types
 pub use percpu_cache::{PerCpuPageCache, PerCpuPageCacheManager, init_pcp_cache as init_percpu_cache};
@@ -44,6 +45,7 @@ pub use compaction::{MemoryCompactor, CompactResult, init_memory_compaction};
 pub use stats::{MemoryStats, MemoryMonitor, MemoryPressure, get_memory_monitor, init_memory_monitoring};
 pub use reclaim::{PageReclaimer, ReclaimError, init_reclaimer, reclaim_pages};
 pub use cow::{CowManager, CowEntry, CowError, init_cow, create_cow_page};
+pub use region::{NvMemoryRegion, NvMemoryType};
 
 // Re-export unified API
 pub use api::{

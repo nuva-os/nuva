@@ -1,4 +1,21 @@
 /*
+ * Nuva OS - Kernel - Net - Nfs
+ *
+ * Copyright (C) 2026 Nuva OS Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Nuva OS - Kernel - NFS v3 Client
  *
  * Copyright (C) 2026 Nuva OS Team
@@ -846,4 +863,702 @@ impl NfsClientStats {
             bytes_written: AtomicU64::new(0),
         }
     }
+}
+
+// ============================================================================
+// Standalone XDR encoding/decoding helpers
+// ============================================================================
+
+/// XDR encode a u32 (big-endian) into a buffer
+#[inline]
+pub fn xdr_encode_u32(v: u32, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&v.to_be_bytes());
+}
+
+/// XDR encode a u64 (big-endian) into a buffer
+#[inline]
+pub fn xdr_encode_u64(v: u64, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&v.to_be_bytes());
+}
+
+/// XDR decode a u32 from a byte slice at the given offset.
+/// Returns the decoded value and the next offset.
+pub fn xdr_decode_u32(buf: &[u8], offset: usize) -> Option<(u32, usize)> {
+    if offset + 4 > buf.len() {
+        return None;
+    }
+    let val = u32::from_be_bytes([buf[offset], buf[offset+1], buf[offset+2], buf[offset+3]]);
+    Some((val, offset + 4))
+}
+
+/// XDR decode a u64 from a byte slice at the given offset.
+/// Returns the decoded value and the next offset.
+pub fn xdr_decode_u64(buf: &[u8], offset: usize) -> Option<(u64, usize)> {
+    if offset + 8 > buf.len() {
+        return None;
+    }
+    let val = u64::from_be_bytes([
+        buf[offset], buf[offset+1], buf[offset+2], buf[offset+3],
+        buf[offset+4], buf[offset+5], buf[offset+6], buf[offset+7],
+    ]);
+    Some((val, offset + 8))
+}
+
+/// XDR encode a variable-length opaque byte sequence.
+pub fn xdr_encode_opaque(data: &[u8], buf: &mut Vec<u8>) {
+    xdr_encode_u32(data.len() as u32, buf);
+    buf.extend_from_slice(data);
+    let pad = (4 - (data.len() % 4)) % 4;
+    if pad > 0 {
+        buf.extend_from_slice(&[0u8; 3][..pad]);
+    }
+}
+
+/// XDR encode a string (same wire format as opaque).
+pub fn xdr_encode_string(s: &str, buf: &mut Vec<u8>) {
+    xdr_encode_opaque(s.as_bytes(), buf);
+}
+
+/// XDR decode a variable-length opaque from a byte slice.
+/// Returns the slice reference into the original buffer and the next offset.
+pub fn xdr_decode_opaque<'a>(buf: &'a [u8], offset: usize) -> Option<(&'a [u8], usize)> {
+    let (len, data_start) = xdr_decode_u32(buf, offset)?;
+    let len = len as usize;
+    let padded = data_start + ((len + 3) / 4) * 4;
+    if padded > buf.len() {
+        return None;
+    }
+    Some((&buf[data_start..data_start + len], padded))
+}
+
+/// XDR encode a file handle.
+pub fn xdr_encode_fh(fh: &NfsFileHandle, buf: &mut Vec<u8>) {
+    xdr_encode_u32(fh.len, buf);
+    buf.extend_from_slice(fh.as_bytes());
+    let pad = (4 - (fh.len as usize % 4)) % 4;
+    if pad > 0 {
+        buf.extend_from_slice(&[0u8; 3][..pad]);
+    }
+}
+
+/// XDR decode a file handle from a byte slice at offset.
+/// Returns the file handle and the next offset.
+pub fn xdr_decode_fh(buf: &[u8], offset: usize) -> (NfsFileHandle, usize) {
+    let mut fh = NfsFileHandle::new();
+    if offset + 4 > buf.len() {
+        return (fh, offset);
+    }
+    let len = u32::from_be_bytes([buf[offset], buf[offset+1], buf[offset+2], buf[offset+3]]) as usize;
+    let len = len.min(64);
+    let data_start = offset + 4;
+    if data_start + len <= buf.len() {
+        fh.data[..len].copy_from_slice(&buf[data_start..data_start + len]);
+        fh.len = len as u32;
+    }
+    let padded = ((len + 3) / 4) * 4;
+    (fh, data_start + padded)
+}
+
+/// XDR encode an NFS time value.
+pub fn xdr_encode_nfstime(t: &NfsTime, buf: &mut Vec<u8>) {
+    xdr_encode_u64(t.seconds, buf);
+    xdr_encode_u32(t.nseconds, buf);
+}
+
+/// XDR decode an NFS time value from a byte slice.
+pub fn xdr_decode_nfstime(buf: &[u8], offset: usize) -> (NfsTime, usize) {
+    if offset + 12 > buf.len() {
+        return (NfsTime::new(), offset);
+    }
+    let seconds = u64::from_be_bytes([
+        buf[offset], buf[offset+1], buf[offset+2], buf[offset+3],
+        buf[offset+4], buf[offset+5], buf[offset+6], buf[offset+7],
+    ]);
+    let nseconds = u32::from_be_bytes([buf[offset+8], buf[offset+9], buf[offset+10], buf[offset+11]]);
+    (NfsTime { seconds, nseconds }, offset + 12)
+}
+
+/// XDR decode NfsFattr from a byte slice at offset.
+/// Returns the attributes and the next offset.
+pub fn xdr_decode_fattr(buf: &[u8], offset: usize) -> (NfsFattr, usize) {
+    let default = NfsFattr {
+        ftype: NfsFileType::Reg, mode: 0, nlink: 0, uid: 0, gid: 0,
+        size: 0, used: 0, rdev: NfsSpecData { specdata1: 0, specdata2: 0 },
+        fsid: 0, fileid: 0, atime: NfsTime::new(), mtime: NfsTime::new(), ctime: NfsTime::new(),
+    };
+    if offset + 84 > buf.len() {
+        return (default, offset);
+    }
+    let ftype_val = u32::from_be_bytes([buf[offset], buf[offset+1], buf[offset+2], buf[offset+3]]);
+    let ftype = match ftype_val {
+        1 => NfsFileType::Reg, 2 => NfsFileType::Dir, 3 => NfsFileType::Blk,
+        4 => NfsFileType::Chr, 5 => NfsFileType::Lnk, 6 => NfsFileType::Sock,
+        7 => NfsFileType::Fifo, _ => NfsFileType::Reg,
+    };
+    let mode = u32::from_be_bytes([buf[offset+4], buf[offset+5], buf[offset+6], buf[offset+7]]);
+    let nlink = u32::from_be_bytes([buf[offset+8], buf[offset+9], buf[offset+10], buf[offset+11]]);
+    let uid = u32::from_be_bytes([buf[offset+12], buf[offset+13], buf[offset+14], buf[offset+15]]);
+    let gid = u32::from_be_bytes([buf[offset+16], buf[offset+17], buf[offset+18], buf[offset+19]]);
+    let size = u64::from_be_bytes([
+        buf[offset+20], buf[offset+21], buf[offset+22], buf[offset+23],
+        buf[offset+24], buf[offset+25], buf[offset+26], buf[offset+27],
+    ]);
+    let used = u64::from_be_bytes([
+        buf[offset+28], buf[offset+29], buf[offset+30], buf[offset+31],
+        buf[offset+32], buf[offset+33], buf[offset+34], buf[offset+35],
+    ]);
+    let rdev1 = u32::from_be_bytes([buf[offset+36], buf[offset+37], buf[offset+38], buf[offset+39]]);
+    let rdev2 = u32::from_be_bytes([buf[offset+40], buf[offset+41], buf[offset+42], buf[offset+43]]);
+    let fsid = u64::from_be_bytes([
+        buf[offset+44], buf[offset+45], buf[offset+46], buf[offset+47],
+        buf[offset+48], buf[offset+49], buf[offset+50], buf[offset+51],
+    ]);
+    let fileid = u64::from_be_bytes([
+        buf[offset+52], buf[offset+53], buf[offset+54], buf[offset+55],
+        buf[offset+56], buf[offset+57], buf[offset+58], buf[offset+59],
+    ]);
+    let (atime, _) = xdr_decode_nfstime(buf, offset + 60);
+    let (mtime, _) = xdr_decode_nfstime(buf, offset + 68);
+    let (ctime, _) = xdr_decode_nfstime(buf, offset + 76);
+    (
+        NfsFattr { ftype, mode, nlink, uid, gid, size, used,
+            rdev: NfsSpecData { specdata1: rdev1, specdata2: rdev2 },
+            fsid, fileid, atime, mtime, ctime,
+        },
+        offset + 84,
+    )
+}
+
+// ============================================================================
+// NfsRpcClient — full RPC client with auth_unix credential support
+// ============================================================================
+
+/// RPC auth_unix credential (flavor = 1)
+#[repr(C)]
+pub struct RpcAuthUnix {
+    /// Stamp (arbitrary, for server to detect replays)
+    pub stamp: u32,
+    /// Machine name
+    pub machine_name: String,
+    /// Effective UID
+    pub uid: u32,
+    /// Effective GID
+    pub gid: u32,
+    /// Supplementary GIDs
+    pub gids: Vec<u32>,
+}
+
+impl Default for RpcAuthUnix {
+    fn default() -> Self {
+        RpcAuthUnix {
+            stamp: 0,
+            machine_name: String::new(),
+            uid: 0,
+            gid: 0,
+            gids: Vec::new(),
+        }
+    }
+}
+
+impl RpcAuthUnix {
+    /// XDR encode the auth_unix credential into a buffer.
+    /// Format: stamp, machine_name (string), uid, gid, gids (array of u32)
+    pub fn xdr_encode(&self, buf: &mut Vec<u8>) {
+        // Auth flavor
+        xdr_encode_u32(RpcAuthFlavor::Unix as u32, buf);
+        // Credential body length placeholder — we will back-patch
+        let body_pos = buf.len();
+        xdr_encode_u32(0, buf);
+        let body_start = buf.len();
+
+        // stamp
+        xdr_encode_u32(self.stamp, buf);
+        // machine name (string)
+        xdr_encode_string(&self.machine_name, buf);
+        // uid
+        xdr_encode_u32(self.uid, buf);
+        // gid
+        xdr_encode_u32(self.gid, buf);
+        // gids (XDR array: length + elements)
+        xdr_encode_u32(self.gids.len() as u32, buf);
+        for &g in &self.gids {
+            xdr_encode_u32(g, buf);
+        }
+
+        // Back-patch body length
+        let body_end = buf.len();
+        let body_len = (body_end - body_start) as u32;
+        let len_bytes = body_len.to_be_bytes();
+        buf[body_pos] = len_bytes[0];
+        buf[body_pos + 1] = len_bytes[1];
+        buf[body_pos + 2] = len_bytes[2];
+        buf[body_pos + 3] = len_bytes[3];
+
+        // Verifier — AUTH_NONE
+        xdr_encode_u32(RpcAuthFlavor::None as u32, buf);
+        xdr_encode_u32(0, buf);
+    }
+
+    /// Create a simple auth_unix with (uid, gid) and no supplementary groups.
+    pub fn simple(uid: u32, gid: u32, hostname: &str) -> Self {
+        RpcAuthUnix {
+            stamp: 0,
+            machine_name: String::from(hostname),
+            uid,
+            gid,
+            gids: Vec::new(),
+        }
+    }
+}
+
+/// NfsRpcClient manages a full ONC RPC v2 connection to an NFS server,
+/// supporting both AUTH_NONE and AUTH_UNIX credentials and proper
+/// RPC record marking (TCP framing), XID generation, and response parsing.
+pub struct NfsRpcClient {
+    /// Underlying NFS client transport
+    pub client: NfsClient,
+    /// Authentication credential
+    pub auth: RpcAuthUnix,
+    /// Auth_flavor used for RPC messages
+    pub auth_flavor: RpcAuthFlavor,
+}
+
+impl NfsRpcClient {
+    /// Create a new RPC client connected to the given server.
+    pub fn new(addr: u32, port: u16, params: &NfsMountParams) -> Self {
+        NfsRpcClient {
+            client: NfsClient::new(addr, port, params),
+            auth: RpcAuthUnix::simple(0, 0, "nuva"),
+            auth_flavor: RpcAuthFlavor::None,
+        }
+    }
+
+    /// Create a new RPC client with AUTH_UNIX credentials.
+    pub fn new_with_auth(addr: u32, port: u16, params: &NfsMountParams, auth: RpcAuthUnix) -> Self {
+        NfsRpcClient {
+            client: NfsClient::new(addr, port, params),
+            auth,
+            auth_flavor: RpcAuthFlavor::Unix,
+        }
+    }
+
+    /// Establish transport connection.
+    pub fn connect(&mut self) -> Result<(), NfsStatus> {
+        self.client.connect_transport()
+    }
+
+    /// Allocate the next XID.
+    pub fn next_xid(&self) -> u32 {
+        self.client.xid_counter.fetch_add(1, Ordering::AcqRel)
+    }
+
+    /// Build a complete RPC call message, including the RPC header,
+    /// credential, verifier, and procedure-specific arguments.
+    /// Returns the assembled call buffer ready for transmission.
+    pub fn build_rpc_call(&self, xid: u32, program: u32, version: u32, procedure: u32, args: &[u8]) -> Vec<u8> {
+        let mut buf = Vec::new();
+
+        // RPC header
+        xdr_encode_u32(xid, &mut buf);                   // XID
+        xdr_encode_u32(0, &mut buf);                      // msg_type = CALL
+        xdr_encode_u32(2, &mut buf);                      // rpc_version = 2
+        xdr_encode_u32(program, &mut buf);                // program
+        xdr_encode_u32(version, &mut buf);                // version
+        xdr_encode_u32(procedure, &mut buf);               // procedure
+
+        // Credential
+        match self.auth_flavor {
+            RpcAuthFlavor::None => {
+                xdr_encode_u32(RpcAuthFlavor::None as u32, &mut buf);
+                xdr_encode_u32(0, &mut buf);  // zero-length body
+            }
+            RpcAuthFlavor::Unix => {
+                self.auth.xdr_encode(&mut buf);
+                // auth.xdr_encode() already includes verifier — skip below
+                buf.extend_from_slice(args);
+                return buf;
+            }
+            _ => {
+                xdr_encode_u32(self.auth_flavor as u32, &mut buf);
+                xdr_encode_u32(0, &mut buf);
+            }
+        }
+
+        // Verifier — AUTH_NONE
+        xdr_encode_u32(RpcAuthFlavor::None as u32, &mut buf);
+        xdr_encode_u32(0, &mut buf);
+
+        // Procedure-specific arguments
+        buf.extend_from_slice(args);
+
+        buf
+    }
+
+    /// Send an RPC call and receive the reply.
+    pub fn send_rpc(&mut self, call_buf: &[u8]) -> Result<Vec<u8>, NfsStatus> {
+        self.client.rpc_call(call_buf)
+    }
+
+    /// Parse the RPC reply header and validate the expected XID.
+    /// Returns the offset to the NFS procedure result (past the RPC and NFS accept headers).
+    pub fn parse_rpc_reply(&self, reply: &[u8], expected_xid: u32) -> Result<usize, NfsStatus> {
+        if reply.len() < 24 {
+            log_warn!("NFS: RPC reply too short: {} bytes", reply.len());
+            return Err(NfsStatus::ErrIo);
+        }
+
+        // XID (4 bytes)
+        let (xid, off) = xdr_decode_u32(reply, 0).ok_or(NfsStatus::ErrIo)?;
+        if xid != expected_xid {
+            log_warn!("NFS: XID mismatch: got {} expected {}", xid, expected_xid);
+            return Err(NfsStatus::ErrIo);
+        }
+
+        // msg_type (4 bytes) — must be REPLY (1)
+        let (msg_type, off) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+        if msg_type != RPC_MSG_REPLY {
+            log_warn!("NFS: expected REPLY (1), got {}", msg_type);
+            return Err(NfsStatus::ErrIo);
+        }
+
+        // reply_stat (4 bytes) — MSG_ACCEPTED = 0
+        let (reply_stat, off) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+        if reply_stat != 0 {
+            // MSG_DENIED
+            let (reject_stat, _) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+            log_warn!("NFS: RPC call denied, reject_stat={}", reject_stat);
+            return Err(NfsStatus::ErrAcces);
+        }
+
+        // auth verifier (flavor + length + body)
+        let (verf_flavor, off) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+        let (verf_len, off) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+        let verf_body_padded = (((verf_len as usize) + 3) / 4) * 4;
+        let off = off + verf_body_padded;
+
+        // accept_stat (4 bytes) — SUCCESS = 0
+        let (accept_stat, off) = xdr_decode_u32(reply, off).ok_or(NfsStatus::ErrIo)?;
+        if accept_stat != RPC_ACCEPT_OK {
+            // Map accept_stat codes
+            let err = match accept_stat {
+                1 => NfsStatus::ErrPerm,    // PROG_UNAVAIL
+                2 => NfsStatus::ErrInval,   // PROG_MISMATCH
+                3 => NfsStatus::ErrInval,   // PROC_UNAVAIL
+                4 => NfsStatus::ErrInval,   // GARBAGE_ARGS
+                5 => NfsStatus::ErrIo,      // SYSTEM_ERR
+                _ => NfsStatus::ErrIo,
+            };
+            log_warn!("NFS: RPC accept_stat error: {}", accept_stat);
+            return Err(err);
+        }
+
+        // offset now points to the NFS procedure result
+        Ok(off)
+    }
+
+    /// Decode the NFS status from the procedure result.
+    /// Returns the offset past the status field, or an error if the status is non-OK.
+    pub fn decode_nfs_status(&self, buf: &[u8], offset: usize) -> Result<usize, NfsStatus> {
+        let (status, off) = xdr_decode_u32(buf, offset).ok_or(NfsStatus::ErrIo)?;
+        if status == 0 {
+            Ok(off)
+        } else {
+            Err(match status {
+                1 => NfsStatus::ErrPerm,
+                2 => NfsStatus::ErrNoent,
+                5 => NfsStatus::ErrIo,
+                6 => NfsStatus::ErrNxio,
+                13 => NfsStatus::ErrAcces,
+                17 => NfsStatus::ErrExist,
+                18 => NfsStatus::ErrXdev,
+                20 => NfsStatus::ErrNotdir,
+                21 => NfsStatus::ErrIsdir,
+                22 => NfsStatus::ErrInval,
+                27 => NfsStatus::ErrFbig,
+                28 => NfsStatus::ErrNospc,
+                30 => NfsStatus::ErrRoFs,
+                31 => NfsStatus::ErrMlink,
+                63 => NfsStatus::ErrNametoolong,
+                66 => NfsStatus::ErrNotempty,
+                69 => NfsStatus::ErrDquot,
+                70 => NfsStatus::ErrStale,
+                10001 => NfsStatus::ErrBadHandle,
+                10003 => NfsStatus::ErrBadCookie,
+                10004 => NfsStatus::ErrNotSync,
+                10007 => NfsStatus::ErrBadType,
+                10008 => NfsStatus::ErrJukebox,
+                _ => NfsStatus::ErrIo,
+            })
+        }
+    }
+}
+
+// ============================================================================
+// Standalone NFS RPC operation functions
+// These use an NfsRpcClient to perform common NFS v3 operations.
+// ============================================================================
+
+/// NULL RPC probe — verifies server connectivity without performing any file operation.
+/// Returns Ok(()) if the server responds correctly.
+pub fn nfs_null_probe(rpc: &mut NfsRpcClient) -> Result<(), NfsStatus> {
+    rpc.connect()?;
+
+    let xid = rpc.next_xid();
+    let call_buf = rpc.build_rpc_call(
+        xid,
+        100003,             // NFS program
+        3,                  // NFS v3
+        nfs3_proc::NULL,    // NULL procedure
+        b"",                // no args
+    );
+
+    let reply = rpc.send_rpc(&call_buf)?;
+    rpc.parse_rpc_reply(&reply, xid)?;
+
+    log_info!("NFS: NULL probe succeeded for {:#x}:{}", rpc.client.server_addr, rpc.client.server_port);
+    Ok(())
+}
+
+/// RPC program numbers
+pub mod rpc_program {
+    pub const MOUNT: u32 = 100005;
+    pub const NFS: u32 = 100003;
+    pub const NLM: u32 = 100021;
+    pub const STATMON: u32 = 100024;
+}
+
+/// MOUNT protocol v3 procedure numbers
+pub mod mount3_proc {
+    pub const NULL: u32 = 0;
+    pub const MNT: u32 = 1;
+    pub const DUMP: u32 = 2;
+    pub const UMNT: u32 = 3;
+    pub const UMNTALL: u32 = 4;
+    pub const EXPORT: u32 = 5;
+}
+
+/// Mount a remote NFS export via the MOUNT protocol v3.
+/// Sends a MOUNT RPC call to get the root file handle.
+/// Returns the root file handle on success.
+pub fn nfs_mount(rpc: &mut NfsRpcClient, export_path: &str) -> Result<NfsFileHandle, NfsStatus> {
+    rpc.connect()?;
+    rpc.client.state.store(nfs_client_state::MOUNTING, Ordering::Release);
+
+    log_info!("NFS: mounting {} on {:#x}:{}", export_path, rpc.client.server_addr, rpc.client.server_port);
+
+    // --- MOUNT protocol: MNT procedure ---
+    // Build arguments: dirpath (string)
+    let mut args = Vec::new();
+    xdr_encode_string(export_path, &mut args);
+
+    let xid = rpc.next_xid();
+    let call_buf = rpc.build_rpc_call(
+        xid,
+        rpc_program::MOUNT,
+        3,                     // MOUNT v3
+        mount3_proc::MNT,
+        &args,
+    );
+
+    let reply = rpc.send_rpc(&call_buf)?;
+    let off = rpc.parse_rpc_reply(&reply, xid)?;
+
+    // MOUNT reply: status (u32) + file_handle (opaque) + flavors list
+    let (status, off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    if status != 0 {
+        log_warn!("NFS: MOUNT returned status {}", status);
+        rpc.client.state.store(nfs_client_state::ERROR, Ordering::Release);
+        return Err(NfsStatus::ErrPerm);
+    }
+
+    let (fh, _) = xdr_decode_fh(&reply, off);
+    rpc.client.root_fh = fh;
+    rpc.client.state.store(nfs_client_state::ACTIVE, Ordering::Release);
+
+    log_info!("NFS: mounted {}, root_fh len={}", export_path, fh.len);
+    Ok(fh)
+}
+
+/// Lookup a file/directory name within a directory on the NFS server.
+/// Returns the file handle and attributes of the found entry.
+pub fn nfs_lookup(rpc: &mut NfsRpcClient, dir_fh: &NfsFileHandle, name: &str) -> Result<(NfsFileHandle, NfsFattr), NfsStatus> {
+    let xid = rpc.next_xid();
+    log_debug!("NFS lookup: xid={} name={}", xid, name);
+
+    // Build arguments: dir (fh) + name (string)
+    let mut args = Vec::new();
+    xdr_encode_fh(dir_fh, &mut args);
+    xdr_encode_string(name, &mut args);
+
+    let call_buf = rpc.build_rpc_call(xid, rpc_program::NFS, 3, nfs3_proc::LOOKUP, &args);
+    let reply = rpc.send_rpc(&call_buf)?;
+    let off = rpc.parse_rpc_reply(&reply, xid)?;
+    let off = rpc.decode_nfs_status(&reply, off)?;
+
+    // LOOKUP reply: object_fh + obj_attributes (post_op_attr)
+    let (fh, off) = xdr_decode_fh(&reply, off);
+    // Read post_op_attr: has_attributes (u32) + fattr3 (if true)
+    let (has_attr, off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    let attr = if has_attr != 0 {
+        let (attr, _) = xdr_decode_fattr(&reply, off);
+        attr
+    } else {
+        NfsFattr {
+            ftype: NfsFileType::Reg, mode: 0, nlink: 0, uid: 0, gid: 0,
+            size: 0, used: 0, rdev: NfsSpecData { specdata1: 0, specdata2: 0 },
+            fsid: 0, fileid: 0, atime: NfsTime::new(), mtime: NfsTime::new(), ctime: NfsTime::new(),
+        }
+    };
+
+    Ok((fh, attr))
+}
+
+/// Read data from a file on the NFS server.
+/// Returns the actual data read (may be less than `count`).
+pub fn nfs_read(rpc: &mut NfsRpcClient, file_fh: &NfsFileHandle, offset: u64, count: u32) -> Result<Vec<u8>, NfsStatus> {
+    let xid = rpc.next_xid();
+    let actual_count = if count > rpc.client.rsize { rpc.client.rsize } else { count };
+    log_debug!("NFS read: xid={} offset={} count={}", xid, offset, actual_count);
+
+    // Build arguments: file (fh) + offset (u64) + count (u32)
+    let mut args = Vec::new();
+    xdr_encode_fh(file_fh, &mut args);
+    xdr_encode_u64(offset, &mut args);
+    xdr_encode_u32(actual_count, &mut args);
+
+    let call_buf = rpc.build_rpc_call(xid, rpc_program::NFS, 3, nfs3_proc::READ, &args);
+    let reply = rpc.send_rpc(&call_buf)?;
+    let off = rpc.parse_rpc_reply(&reply, xid)?;
+    let off = rpc.decode_nfs_status(&reply, off)?;
+
+    // READ reply: attributes (post_op_attr) + count (u32) + eof (bool) + data (opaque)
+    let (has_attr, mut off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    if has_attr != 0 {
+        let (_, attr_end) = xdr_decode_fattr(&reply, off);
+        off = attr_end;
+    }
+    let (_data_count, off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    let (_eof, off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    let (data_slice, _) = xdr_decode_opaque(&reply, off).unwrap_or((&[], off));
+
+    Ok(data_slice.to_vec())
+}
+
+/// Write data to a file on the NFS server.
+/// Returns the number of bytes actually written and the write stability used.
+pub fn nfs_write(rpc: &mut NfsRpcClient, file_fh: &NfsFileHandle, offset: u64, data: &[u8], stable: NfsStableHow) -> Result<(u32, NfsStableHow), NfsStatus> {
+    let xid = rpc.next_xid();
+    let write_len = if data.len() as u32 > rpc.client.wsize {
+        rpc.client.wsize as usize
+    } else {
+        data.len()
+    };
+    log_debug!("NFS write: xid={} offset={} len={}", xid, offset, write_len);
+
+    // Build arguments: file (fh) + offset (u64) + count (u32) + stable (u32) + data (opaque)
+    let mut args = Vec::new();
+    xdr_encode_fh(file_fh, &mut args);
+    xdr_encode_u64(offset, &mut args);
+    xdr_encode_u32(write_len as u32, &mut args);
+    xdr_encode_u32(stable as u32, &mut args);
+    // data as XDR opaque
+    xdr_encode_opaque(&data[..write_len], &mut args);
+
+    let call_buf = rpc.build_rpc_call(xid, rpc_program::NFS, 3, nfs3_proc::WRITE, &args);
+    let reply = rpc.send_rpc(&call_buf)?;
+    let off = rpc.parse_rpc_reply(&reply, xid)?;
+    let off = rpc.decode_nfs_status(&reply, off)?;
+
+    // WRITE reply: attributes (wcc_data) + count (u32) + committed (u32) + verf (u64)
+    // wcc_data: before (pre_op_attr) + after (post_op_attr)
+    // pre_op_attr: has_attributes (u32) + size/u64 + mtime/u32 + ctime/u32 (if present)
+    let (has_pre, mut off) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    if has_pre != 0 {
+        // size (u64)
+        off += 8;
+        // mtime (nfstime = u64 + u32 = 12 bytes)
+        off += 12;
+        // ctime (nfstime = 12 bytes)
+        off += 12;
+    }
+    // post_op_attr
+    let (has_post, off_val) = xdr_decode_u32(&reply, off).ok_or(NfsStatus::ErrIo)?;
+    let off2 = if has_post != 0 {
+        let (_, attr_end) = xdr_decode_fattr(&reply, off_val);
+        attr_end
+    } else {
+        off_val
+    };
+
+    let (count, off2) = xdr_decode_u32(&reply, off2).ok_or(NfsStatus::ErrIo)?;
+    let (committed, _) = xdr_decode_u32(&reply, off2).ok_or(NfsStatus::ErrIo)?;
+    // verf at off2 + 4, skip for now
+
+    let how = match committed {
+        0 => NfsStableHow::Unstable,
+        1 => NfsStableHow::DataSync,
+        _ => NfsStableHow::FileSync,
+    };
+
+    Ok((count, how))
+}
+
+/// Get file attributes from the NFS server.
+pub fn nfs_getattr(rpc: &mut NfsRpcClient, file_fh: &NfsFileHandle) -> Result<NfsFattr, NfsStatus> {
+    let xid = rpc.next_xid();
+    log_debug!("NFS getattr: xid={}", xid);
+
+    // Build arguments: object (fh)
+    let mut args = Vec::new();
+    xdr_encode_fh(file_fh, &mut args);
+
+    let call_buf = rpc.build_rpc_call(xid, rpc_program::NFS, 3, nfs3_proc::GETATTR, &args);
+    let reply = rpc.send_rpc(&call_buf)?;
+    let off = rpc.parse_rpc_reply(&reply, xid)?;
+    let off = rpc.decode_nfs_status(&reply, off)?;
+
+    // GETATTR reply: attributes (fattr3)
+    let (attr, _) = xdr_decode_fattr(&reply, off);
+    Ok(attr)
+}
+
+/// Convert an NfsStatus to a POSIX errno value.
+pub fn nfs_status_to_errno(status: NfsStatus) -> i32 {
+    match status {
+        NfsStatus::Ok => 0,
+        NfsStatus::ErrPerm => -1,       // EPERM
+        NfsStatus::ErrNoent => -2,      // ENOENT
+        NfsStatus::ErrIo => -5,         // EIO
+        NfsStatus::ErrNxio => -6,       // ENXIO
+        NfsStatus::ErrAcces => -13,     // EACCES
+        NfsStatus::ErrExist => -17,     // EEXIST
+        NfsStatus::ErrXdev => -18,      // EXDEV
+        NfsStatus::ErrNotdir => -20,    // ENOTDIR
+        NfsStatus::ErrIsdir => -21,     // EISDIR
+        NfsStatus::ErrInval => -22,     // EINVAL
+        NfsStatus::ErrFbig => -27,      // EFBIG
+        NfsStatus::ErrNospc => -28,     // ENOSPC
+        NfsStatus::ErrRoFs => -30,      // EROFS
+        NfsStatus::ErrMlink => -31,     // EMLINK
+        NfsStatus::ErrNametoolong => -36, // ENAMETOOLONG
+        NfsStatus::ErrNotempty => -39,  // ENOTEMPTY
+        NfsStatus::ErrDquot => -122,    // EDQUOT
+        NfsStatus::ErrStale => -116,    // ESTALE
+        NfsStatus::ErrBadHandle => -100, // EBADH
+        _ => -5, // EIO
+    }
+}
+
+/// Mount entry point — combines MOUNT protocol with NFS probe.
+/// Returns the root file handle for the mounted export.
+pub fn nfs_mount_and_probe(addr: u32, port: u16, params: &NfsMountParams) -> Result<(NfsRpcClient, NfsFileHandle), NfsStatus> {
+    let mut rpc = NfsRpcClient::new(addr, port, params);
+
+    // First, probe server with a NULL RPC
+    nfs_null_probe(&mut rpc)?;
+
+    // Then mount the export
+    let root_fh = nfs_mount(&mut rpc, &params.export_path)?;
+
+    Ok((rpc, root_fh))
 }

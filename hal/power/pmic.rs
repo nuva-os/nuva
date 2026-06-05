@@ -338,30 +338,27 @@ impl PmicDriver {
     }
 }
 
+fn pmic_ops_init() -> i32 { get_pmic_driver().init() }
+fn pmic_ops_get_info() -> PowerInfo { get_pmic_driver().get_power_info() }
+fn pmic_ops_set_state(state: PowerState) -> i32 { get_pmic_driver().set_power_state(state) }
+fn pmic_ops_get_domain(domain: PowerDomainType) -> PowerDomainState { get_pmic_driver().get_domain_state(domain) }
+fn pmic_ops_set_domain(domain: PowerDomainType, state: PowerDomainState) -> i32 { get_pmic_driver().set_domain_state(domain, state) }
+fn pmic_ops_suspend() -> i32 { get_pmic_driver().suspend() }
+fn pmic_ops_resume() -> i32 { get_pmic_driver().resume() }
+fn pmic_ops_power_off() -> i32 { get_pmic_driver().power_off() }
+fn pmic_ops_reboot() -> i32 { get_pmic_driver().reboot() }
+
 /// PMIC HAL operations
 pub static PMIC_POWER_OPS: PowerHalOps = PowerHalOps {
-    init: || 0,
-    get_power_info: || PowerInfo {
-        state: PowerState::Running,
-        ac_online: true,
-        usb_online: false,
-        battery: BatteryStatus {
-            present: true,
-            charging: true,
-            capacity: 85,
-            voltage: 4200,
-            current: 500,
-            temperature: 30000,
-            health: 95,
-        },
-    },
-    set_power_state: |_state| 0,
-    get_domain_state: |_domain| PowerDomainState::On,
-    set_domain_state: |_domain, _state| 0,
-    suspend: || 0,
-    resume: || 0,
-    power_off: || 0,
-    reboot: || 0,
+    init: pmic_ops_init,
+    get_power_info: pmic_ops_get_info,
+    set_power_state: pmic_ops_set_state,
+    get_domain_state: pmic_ops_get_domain,
+    set_domain_state: pmic_ops_set_domain,
+    suspend: pmic_ops_suspend,
+    resume: pmic_ops_resume,
+    power_off: pmic_ops_power_off,
+    reboot: pmic_ops_reboot,
 };
 
 static mut PMIC_DRIVER: PmicDriver = PmicDriver::new();

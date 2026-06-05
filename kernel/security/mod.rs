@@ -33,13 +33,34 @@ pub mod secureboot;
 pub mod memcrypt;
 pub mod dilithium_sign;
 pub mod ai_cap;
+pub mod x509;
+pub mod cert_validator;
+pub mod cert_chain;
+pub mod trust_store;
+pub mod revocation;
+pub mod capability_guard;
+pub mod sha256;
+pub mod tpm_abi;
+pub mod tpm_hw;
+pub mod tpm_ftpm;
+pub mod measurement;
+pub mod event_log;
+pub mod aik;
+pub mod quote;
+pub mod pqc_provider;
+pub mod pqc_compliance;
 
 // Re-export key types
 pub use aslr::{AslrState, MmStruct, init_aslr, randomize_stack, randomize_mmap};
 pub use stack_canary::{StackCanary, TaskStackCanary, init_stack_canary, get_global_canary};
 
 // Re-export NSM/LSM types
+#[allow(deprecated)]
 pub use security_hook::{SecurityHook, SecurityModule};
+pub use security_hook::{
+    NuvaSecurityHook, NuvaSecurityModule, NuvaSecurityPolicy,
+    NuvaPolicyPriority, NuvaPolicyRuleSet,
+};
 pub use capability::{CapSet, cap};
 pub use credential::Credentials;
 pub use nsm_manager::{SecurityManager as NsmSecurityManager, SecStats, SecId, capable, has_capability};
@@ -60,6 +81,43 @@ pub use secureboot::{
     MeasurementEntry, verify_boot_chain, lock_boot_config, measured_boot,
     init_secure_boot, get_boot_config,
     MAX_BOOT_COMPONENTS, BOOT_HASH_SIZE,
+    BootAttestationManager, TpmSelection,
+    CAP_BOOT_ATTEST, CAP_MEASUREMENT_READ, CAP_AIK_ADMIN,
+};
+
+pub use tpm_abi::{TpmAbi, TpmError, TpmResult, TpmProviderType, PcrIndex, PCR_DIGEST_SIZE, DEFAULT_PCR_COUNT};
+pub use tpm_hw::{HardwareTpm, TpmInterface};
+pub use tpm_ftpm::FirmwareTpm;
+pub use measurement::{MeasurementEngine, MeasurementState, BootComponent as MeasBootComponent};
+pub use event_log::{EventLogManager, MeasurementEvent};
+pub use aik::{AikManager, AikState, AikError};
+pub use quote::{QuoteEngine, QuoteToken, AttestationResponse, QuoteError, NONCE_SIZE};
+pub use sha256::{sha256_digest, SHA256_DIGEST_SIZE};
+
+// Re-export code signing verification chain types
+pub use x509::{
+    X509Certificate, TbsCertificate, DistinguishedName, ValidityPeriod,
+    SubjectPublicKeyInfo, BasicConstraints, ExtKeyUsage, ExtKeyUsageSet,
+    KeyIdentifier, AuthorityInfoAccess, CrlDistributionPoints, Extensions,
+    X509Error, oid_to_signature_algorithm,
+    KU_DIGITAL_SIGNATURE, KU_KEY_CERT_SIGN, KU_CRL_SIGN,
+};
+pub use cert_validator::{CertValidator, ConstraintError};
+pub use cert_chain::{
+    CertChain, CertChainVerifier, ChainVerifier,
+    ChainVerifyResult, ChainVerifyStatus, ChainVerifyError,
+    VerifyOptions, CERT_CHAIN_MAX_DEPTH,
+};
+pub use trust_store::{
+    TrustStore, TrustStoreOps, TrustAnchor, SignaturePolicy,
+    TAF_EXPLICIT, TAF_SYSTEM, TAF_REVOKED, TAF_DISABLED, TAF_PQC_CAPABLE,
+};
+pub use revocation::{
+    RevocationChecker, RevocationStatus, RevocationError, RevocationMode,
+    RevocationConfig, OcspChecker, CrlChecker, CompositeRevocationChecker,
+};
+pub use capability_guard::{
+    CapabilityGuard, SecurityToken, TrustStoreError, CAP_TRUST_ADMIN,
 };
 
 pub use memcrypt::{

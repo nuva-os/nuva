@@ -2,7 +2,106 @@
 
 ## Overview
 
-The system call module provides POSIX-compatible interfaces for user-space applications to interact with the kernel. It includes a complete system call number table, error code definitions, signal handling, and io_uring related system calls.
+The system call module provides both **Nuva native** and **POSIX-compatible** interfaces for user-space applications to interact with the kernel. Nuva native system calls (number space `0x0000_0000 - 0x0000_FFFF`) are the primary interface, based on capability tokens and Nuva native types. POSIX system calls (`0x0001_0000 - 0x0001_FFFF`) are available as an optional compatibility module (feature flag `posix`).
+
+---
+
+## Nuva Native System Calls
+
+### Number Space
+
+Nuva native system calls occupy `0x0000_0000 - 0x0000_FFFF`, independent from POSIX calls.
+
+### Process Management (0x01-0x0F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x01 | `NUVA_PROCESS_CREATE` | `(capability, config) -> Result<NuvaProcessId, NuvaError>` | Create a new process with capability token |
+| 0x02 | `NUVA_PROCESS_EXECUTE` | `(capability, process, entry) -> Result<(), NuvaError>` | Execute a process entry point |
+| 0x03 | `NUVA_PROCESS_TERMINATE` | `(capability, process, reason) -> Result<(), NuvaError>` | Terminate a process (replaces SIGKILL) |
+| 0x04 | `NUVA_PROCESS_YIELD` | `(capability, process) -> Result<(), NuvaError>` | Yield process execution |
+
+### Memory Management (0x10-0x1F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x10 | `NUVA_MEMORY_ALLOCATE` | `(capability, size, align, access) -> Result<NuvaMemoryRegion, NuvaError>` | Allocate memory region |
+| 0x11 | `NUVA_MEMORY_DEALLOCATE` | `(capability, region) -> Result<(), NuvaError>` | Deallocate memory region |
+| 0x12 | `NUVA_MEMORY_PROTECT` | `(capability, region, access) -> Result<(), NuvaError>` | Change memory access rights |
+| 0x13 | `NUVA_MEMORY_MAP` | `(capability, region, offset) -> Result<*mut u8, NuvaError>` | Map memory region |
+
+### IPC (0x20-0x2F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x20 | `NUVA_IPC_PORT_CREATE` | `(capability) -> Result<NuvaNotificationPort, NuvaError>` | Create IPC port |
+| 0x21 | `NUVA_IPC_PORT_DESTROY` | `(capability, port) -> Result<(), NuvaError>` | Destroy IPC port |
+| 0x22 | `NUVA_IPC_SEND` | `(capability, port, msg) -> Result<(), NuvaError>` | Send message to port |
+| 0x23 | `NUVA_IPC_RECEIVE` | `(capability, port) -> Result<NuvaIpcMessage, NuvaError>` | Receive message from port |
+| 0x24 | `NUVA_IPC_CALL` | `(capability, port, msg) -> Result<NuvaIpcMessage, NuvaError>` | Synchronous RPC call |
+| 0x25 | `NUVA_IPC_REPLY` | `(capability, msg, reply) -> Result<(), NuvaError>` | Reply to message |
+| 0x26 | `NUVA_IPC_FORWARD` | `(capability, msg, dest) -> Result<(), NuvaError>` | Forward message |
+
+### File Operations (0x30-0x3F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x30 | `NUVA_FILE_OPEN` | `(capability, path, access) -> Result<NuvaFileHandle, NuvaError>` | Open file with capability |
+| 0x31 | `NUVA_FILE_CLOSE` | `(handle) -> Result<(), NuvaError>` | Close file handle |
+| 0x32 | `NUVA_FILE_READ` | `(handle, capability, buf) -> Result<usize, NuvaError>` | Read from file |
+| 0x33 | `NUVA_FILE_WRITE` | `(handle, capability, data) -> Result<usize, NuvaError>` | Write to file |
+| 0x34 | `NUVA_FILE_SEEK` | `(handle, offset) -> Result<NuvaFileOffset, NuvaError>` | Seek in file |
+| 0x35 | `NUVA_FILE_IOCTL` | `(handle, capability, cmd, arg) -> Result<u64, NuvaError>` | Device control |
+
+### Capability Operations (0x40-0x4F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x40 | `NUVA_CAPABILITY_GRANT` | `(capability, target, access) -> Result<NuvaCapabilityId, NuvaError>` | Grant capability |
+| 0x41 | `NUVA_CAPABILITY_REVOKE` | `(capability, target) -> Result<(), NuvaError>` | Revoke capability |
+| 0x42 | `NUVA_CAPABILITY_CHECK` | `(capability, access) -> Result<bool, NuvaError>` | Check capability |
+| 0x43 | `NUVA_CAPABILITY_TRANSFER` | `(capability, target) -> Result<NuvaCapabilityId, NuvaError>` | Transfer capability |
+
+### Event Notification (0x50-0x5F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x50 | `NUVA_EVENT_REGISTER` | `(capability, port, event_type) -> Result<(), NuvaError>` | Register for events |
+| 0x51 | `NUVA_EVENT_NOTIFY` | `(capability, target, event) -> Result<(), NuvaError>` | Notify target of event |
+| 0x52 | `NUVA_EVENT_WAIT` | `(capability, port) -> Result<NuvaEvent, NuvaError>` | Wait for event |
+
+### Diagnostic (0x60-0x6F)
+
+| Call Number | Name | Signature | Description |
+|-------------|------|-----------|-------------|
+| 0x60 | `NUVA_DIAG_QUERY` | `(topic) -> Result<NuvaDiagInfo, NuvaError>` | Query system diagnostics (replaces /proc) |
+| 0x61 | `NUVA_DIAG_STATS` | `() -> NuvaDiagStats` | Get diagnostic statistics |
+
+### Vulkan GPU Operations (0x70-0x8F, optional: `vulkan` feature)
+
+| Call Number | Name | Description |
+|-------------|------|-------------|
+| 0x70 | `NV_VULKAN_INSTANCE_CREATE` | Create Vulkan Instance (requires GPU_RENDER cap) |
+| 0x71 | `NV_VULKAN_INSTANCE_DESTROY` | Destroy Vulkan Instance |
+| 0x72 | `NV_VULKAN_DEVICE_ENUMERATE` | Enumerate physical GPU devices |
+| 0x73 | `NV_VULKAN_DEVICE_CREATE` | Create logical Device |
+| 0x74 | `NV_VULKAN_DEVICE_DESTROY` | Destroy logical Device |
+| 0x75 | `NV_VULKAN_MEMORY_ALLOCATE` | Allocate GPU memory (zero-copy) |
+| 0x76 | `NV_VULKAN_MEMORY_FREE` | Free GPU memory |
+| 0x77 | `NV_VULKAN_QUEUE_SUBMIT` | Submit command buffers (zero-copy) |
+| 0x78 | `NV_VULKAN_QUEUE_WAIT` | Wait for queue idle |
+| 0x79-0x7C | Fence/Semaphore ops | Create and wait on sync objects |
+| 0x7D | `NV_VULKAN_SWAPCHAIN_CREATE` | Create swapchain |
+| 0x7E | `NV_VULKAN_SWAPCHAIN_PRESENT` | Present frame |
+| 0x7F-0x83 | Pipeline/Shader/Descriptor | Pipeline, shader, descriptor operations |
+
+All Vulkan syscalls require `capability_id` as first argument (NvGpuCapability token).
+
+---
+
+## POSIX Compatible System Calls (Optional)
+
+The POSIX system call interface is available only when the `posix` feature flag is enabled. These calls occupy number space `0x0001_0000 - 0x0001_FFFF` and internally adapt to Nuva native interfaces.
 
 ---
 
@@ -788,5 +887,5 @@ kernel/syscall/
 
 ---
 
-**Last Updated**: May 15, 2026
+**Last Updated**: May 30, 2026
 **License**: Apache-2.0

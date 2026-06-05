@@ -2,7 +2,75 @@
 
 ## 概述
 
-系统调用模块提供与 POSIX 兼容的接口，供用户空间应用程序与 kernel 交互。包含完整的系统调用号表、错误码定义、信号处理和 io_uring 相关系统调用。
+系统调用模块同时提供 **Nuva 原生**和 **POSIX 兼容**接口，供用户空间应用程序与内核交互。Nuva 原生系统调用（号空间 `0x0000_0000 - 0x0000_FFFF`）是主要接口，基于能力令牌和 Nuva 原生类型。POSIX 系统调用（`0x0001_0000 - 0x0001_FFFF`）作为可选兼容模块（feature flag `posix`）提供。
+
+---
+
+## Nuva 原生系统调用
+
+### 号空间
+
+Nuva 原生系统调用占用 `0x0000_0000 - 0x0000_FFFF`，独立于 POSIX 调用。
+
+### 进程管理 (0x01-0x0F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x01 | `NUVA_PROCESS_CREATE` | `(capability, config) -> Result<NuvaProcessId, NuvaError>` | 使用能力令牌创建新进程 |
+| 0x02 | `NUVA_PROCESS_EXECUTE` | `(capability, process, entry) -> Result<(), NuvaError>` | 执行进程入口点 |
+| 0x03 | `NUVA_PROCESS_TERMINATE` | `(capability, process, reason) -> Result<(), NuvaError>` | 终止进程（替代 SIGKILL） |
+| 0x04 | `NUVA_PROCESS_YIELD` | `(capability, process) -> Result<(), NuvaError>` | 让出进程执行 |
+
+### 内存管理 (0x10-0x1F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x10 | `NUVA_MEMORY_ALLOCATE` | `(capability, size, align, access) -> Result<NuvaMemoryRegion, NuvaError>` | 分配内存区域 |
+| 0x11 | `NUVA_MEMORY_DEALLOCATE` | `(capability, region) -> Result<(), NuvaError>` | 释放内存区域 |
+| 0x12 | `NUVA_MEMORY_PROTECT` | `(capability, region, access) -> Result<(), NuvaError>` | 修改内存访问权限 |
+| 0x13 | `NUVA_MEMORY_MAP` | `(capability, region, offset) -> Result<*mut u8, NuvaError>` | 映射内存区域 |
+
+### IPC (0x20-0x2F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x20 | `NUVA_IPC_PORT_CREATE` | `(capability) -> Result<NuvaNotificationPort, NuvaError>` | 创建 IPC 端口 |
+| 0x21 | `NUVA_IPC_PORT_DESTROY` | `(capability, port) -> Result<(), NuvaError>` | 销毁 IPC 端口 |
+| 0x22 | `NUVA_IPC_SEND` | `(capability, port, msg) -> Result<(), NuvaError>` | 发送消息到端口 |
+| 0x23 | `NUVA_IPC_RECEIVE` | `(capability, port) -> Result<NuvaIpcMessage, NuvaError>` | 从端口接收消息 |
+| 0x24 | `NUVA_IPC_CALL` | `(capability, port, msg) -> Result<NuvaIpcMessage, NuvaError>` | 同步 RPC 调用 |
+| 0x25 | `NUVA_IPC_REPLY` | `(capability, msg, reply) -> Result<(), NuvaError>` | 回复消息 |
+| 0x26 | `NUVA_IPC_FORWARD` | `(capability, msg, dest) -> Result<(), NuvaError>` | 转发消息 |
+
+### 能力操作 (0x40-0x4F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x40 | `NUVA_CAPABILITY_GRANT` | `(capability, target, access) -> Result<NuvaCapabilityId, NuvaError>` | 授予能力 |
+| 0x41 | `NUVA_CAPABILITY_REVOKE` | `(capability, target) -> Result<(), NuvaError>` | 撤销能力 |
+| 0x42 | `NUVA_CAPABILITY_CHECK` | `(capability, access) -> Result<bool, NuvaError>` | 检查能力 |
+| 0x43 | `NUVA_CAPABILITY_TRANSFER` | `(capability, target) -> Result<NuvaCapabilityId, NuvaError>` | 转移能力 |
+
+### 事件通知 (0x50-0x5F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x50 | `NUVA_EVENT_REGISTER` | `(capability, port, event_type) -> Result<(), NuvaError>` | 注册事件 |
+| 0x51 | `NUVA_EVENT_NOTIFY` | `(capability, target, event) -> Result<(), NuvaError>` | 通知目标事件 |
+| 0x52 | `NUVA_EVENT_WAIT` | `(capability, port) -> Result<NuvaEvent, NuvaError>` | 等待事件 |
+
+### 诊断 (0x60-0x6F)
+
+| 调用号 | 名称 | 签名 | 描述 |
+|-------|------|------|------|
+| 0x60 | `NUVA_DIAG_QUERY` | `(topic) -> Result<NuvaDiagInfo, NuvaError>` | 查询系统诊断（替代 /proc） |
+| 0x61 | `NUVA_DIAG_STATS` | `() -> NuvaDiagStats` | 获取诊断统计 |
+
+---
+
+## POSIX 兼容系统调用（可选）
+
+POSIX 系统调用接口仅在启用 `posix` feature flag 时可用。这些调用占用号空间 `0x0001_0000 - 0x0001_FFFF`，内部适配到 Nuva 原生接口。
 
 ---
 
@@ -788,5 +856,5 @@ kernel/syscall/
 
 ---
 
-**最后更新**：2026 年 5 月 15 日
+**最后更新**：2026 年 5 月 30 日
 **许可证**：Apache-2.0

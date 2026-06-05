@@ -25,6 +25,9 @@ pub mod filesystem;
 pub mod page_cache;
 pub mod dcache;
 pub mod io_uring;
+pub mod wal;
+pub mod cow;
+pub mod snapshot;
 
 // Re-export key types
 pub use page_cache::{PageCache, PageCacheEntry, init_page_cache};

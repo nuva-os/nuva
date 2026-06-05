@@ -880,6 +880,193 @@ pub fn get_davinci_hal() -> &'static mut DaVinciNpuHal {
     unsafe { &mut DAVINCI_NPU_HAL }
 }
 
+// ============================================================================
+// NPU Model Memory Manager (Recyclable)
+// ============================================================================
+
+#[derive(Debug, Clone, Copy)]
+pub struct ModelMemBlock {
+    pub offset: u64,
+    pub size: u64,
+    pub model_id: u32,
+    pub allocated: bool,
+}
+
+pub struct ModelMemManager {
+    blocks: [ModelMemBlock; 16],
+    num_blocks: u32,
+    total_size: u64,
+    used_size: u64,
+}
+
+impl ModelMemManager {
+    pub const fn new() -> Self {
+        ModelMemManager {
+            blocks: [ModelMemBlock { offset: 0, size: 0, model_id: 0, allocated: false }; 16],
+            num_blocks: 0,
+            total_size: 0,
+            used_size: 0,
+        }
+    }
+
+    pub fn init(&mut self, total_size: u64) {
+        self.total_size = total_size;
+        self.used_size = 0;
+        self.num_blocks = 0;
+    }
+
+    pub fn alloc(&mut self, model_id: u32, size: u64) -> Option<u64> {
+        let aligned = (size + 63) & !63;
+        let mut best: Option<usize> = None;
+        let mut best_size = u64::MAX;
+
+        for i in 0..self.num_blocks as usize {
+            let b = &self.blocks[i];
+            if !b.allocated && b.size >= aligned && b.size < best_size {
+                best = Some(i);
+                best_size = b.size;
+            }
+        }
+
+        if let Some(idx) = best {
+            let offset = self.blocks[idx].offset;
+            let remaining = self.blocks[idx].size - aligned;
+            self.blocks[idx].size = aligned;
+            self.blocks[idx].model_id = model_id;
+            self.blocks[idx].allocated = true;
+
+            if remaining >= 64 && (self.num_blocks as usize) < 16 {
+                let n = self.num_blocks as usize;
+                self.blocks[n] = ModelMemBlock {
+                    offset: offset + aligned,
+                    size: remaining,
+                    model_id: 0,
+                    allocated: false,
+                };
+                self.num_blocks += 1;
+            }
+
+            self.used_size += aligned;
+            return Some(offset);
+        }
+
+        let offset = self.used_size;
+        if offset + aligned > self.total_size {
+            return None;
+        }
+
+        if (self.num_blocks as usize) < 16 {
+            let n = self.num_blocks as usize;
+            self.blocks[n] = ModelMemBlock {
+                offset,
+                size: aligned,
+                model_id,
+                allocated: true,
+            };
+            self.num_blocks += 1;
+        }
+        self.used_size += aligned;
+        Some(offset)
+    }
+
+    pub fn free(&mut self, model_id: u32) -> bool {
+        for i in 0..self.num_blocks as usize {
+            if self.blocks[i].model_id == model_id && self.blocks[i].allocated {
+                self.used_size -= self.blocks[i].size;
+                self.blocks[i].allocated = false;
+                self.blocks[i].model_id = 0;
+                self.coalesce();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn coalesce(&mut self) {
+        if self.num_blocks < 2 { return; }
+        let n = self.num_blocks as usize;
+        let mut i = 0;
+        while i < n - 1 {
+            if !self.blocks[i].allocated && !self.blocks[i + 1].allocated {
+                let end = self.blocks[i].offset + self.blocks[i].size;
+                if end == self.blocks[i + 1].offset {
+                    self.blocks[i].size += self.blocks[i + 1].size;
+                    for j in (i + 1)..n - 1 {
+                        self.blocks[j] = self.blocks[j + 1];
+                    }
+                    self.num_blocks -= 1;
+                    continue;
+                }
+            }
+            i += 1;
+        }
+    }
+
+    pub fn used(&self) -> u64 { self.used_size }
+    pub fn total(&self) -> u64 { self.total_size }
+}
+
+static mut MODEL_MEM_MGR: ModelMemManager = ModelMemManager::new();
+
+pub fn get_model_mem_manager() -> &'static mut ModelMemManager {
+    unsafe { &mut MODEL_MEM_MGR }
+}
+
+// ============================================================================
+// NPU Interrupt Handler
+// ============================================================================
+
+const NPU_IRQ_INFERENCE_DONE: u32 = 0;
+const NPU_IRQ_INFERENCE_ERROR: u32 = 1;
+const NPU_IRQ_MODEL_LOADED: u32 = 2;
+const NPU_IRQ_HANG: u32 = 3;
+
+pub fn davinci_irq_handler(irq: u32) {
+    let hal = get_davinci_hal();
+    match irq {
+        _ if irq == NPU_IRQ_INFERENCE_DONE => {
+            let head = hal.inference_head.load(Ordering::Acquire);
+            let tail = hal.inference_tail.load(Ordering::Acquire);
+            if head != tail {
+                let idx = head as usize % NPU_MAX_INFERENCE_QUEUE;
+                if hal.inference_queue[idx].state == INFERENCE_STATE_RUNNING {
+                    hal.inference_queue[idx].state = INFERENCE_STATE_COMPLETE;
+                    hal.inference_queue[idx].complete_time = 100;
+                }
+            }
+            let new_head = head.wrapping_add(1);
+            hal.inference_head.store(new_head, Ordering::Release);
+            if new_head == hal.inference_tail.load(Ordering::Acquire) {
+                hal.state = NpuState::Idle;
+            }
+        }
+        _ if irq == NPU_IRQ_INFERENCE_ERROR => {
+            let head = hal.inference_head.load(Ordering::Acquire);
+            let tail = hal.inference_tail.load(Ordering::Acquire);
+            if head != tail {
+                let idx = head as usize % NPU_MAX_INFERENCE_QUEUE;
+                hal.inference_queue[idx].state = INFERENCE_STATE_ERROR;
+            }
+            hal.perf_stats.failed_inferences.fetch_add(1, Ordering::AcqRel);
+        }
+        _ if irq == NPU_IRQ_MODEL_LOADED => {
+            log_debug!("NPU: Model load IRQ acknowledged");
+        }
+        _ if irq == NPU_IRQ_HANG => {
+            log_error!("NPU: Hang detected, resetting");
+            unsafe {
+                DaVinciNpuHal::write_reg(NPU_CTRL_BASE + NPU_CTRL_ENABLE, 0);
+                DaVinciNpuHal::udelay(NPU_POWER_DELAY_US);
+                DaVinciNpuHal::write_reg(NPU_CTRL_BASE + NPU_CTRL_ENABLE, 1);
+            }
+            hal.state = NpuState::Error;
+        }
+        _ => {
+            log_warn!("NPU: Unknown IRQ {}", irq);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

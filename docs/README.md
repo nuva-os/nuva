@@ -7,8 +7,8 @@ Nuva OS is a modern operating system built from scratch in pure Rust, featuring 
 **Version**: v1.0.0
 **License**: Apache 2.0
 **Toolchain**: Rust nightly (configured in `rust-toolchain.toml` with `channel = "nightly"`, components: `rust-src`, `rustfmt`, `clippy`, targets: `aarch64-unknown-none`, `x86_64-unknown-none`)
-**Supported Architectures**: ARM64 (AArch64), x86-64, LoongArch64
-**Build Status**: ARM64 ✅ Passing / x86-64 ✅ Passing / LoongArch64 ✅ Passing
+**Supported Architectures**: ARM64 (AArch64), x86-64, LoongArch64, RISC-V 64 (RV64G)
+**Build Status**: ARM64 ✅ Passing / x86-64 ✅ Passing / LoongArch64 ✅ Passing / RISC-V 64 ✅ Passing
 
 ---
 
@@ -17,9 +17,18 @@ Nuva OS is a modern operating system built from scratch in pure Rust, featuring 
 ```
 Nuva/
 ├── kernel/              # Kernel Layer (L1)
-│   ├── arch/            #   Architecture-specific code (arm64, x64, loongarch64)
+│   ├── arch/            #   Architecture-specific code (arm64, x64, loongarch64, riscv64)
+│   ├── capability/      #   NvCapability security tokens and manager
+│   ├── nv_event/        #   Nuva native event system
+│   ├── nv_process/      #   Nuva native process abstraction
+│   ├── equipment/       #   Equipment mode (EL1) fault isolation
+│   ├── tombstone/       #   Crash diagnostics and forensics
+│   ├── vulkan/          #   Vulkan native GPU subsystem
+│   ├── user/            #   User management (session, permission)
+│   ├── media/           #   Audio/video media subsystem
+│   ├── service/         #   Kernel service registry (SSL, WebKit, etc.)
 │   ├── mm/              #   Memory Management (Buddy, SLAB, VMA, NUMA, COW, HugePage, OOM)
-│   ├── sched/           #   Process Scheduling (CFS, EAS, RT, Load Balancing)
+│   ├── sched/           #   Process Scheduling (NvScheduler, NvBalancer, CFS, EAS, RT)
 │   ├── process/         #   Process Management (fork, execve, signal, wait4)
 │   ├── fs/              #   Kernel File System (VFS, Page Cache, io_uring)
 │   ├── net/             #   Network Stack (TCP/UDP/IPv6/ARP)
@@ -63,6 +72,7 @@ Nuva/
 │   ├── arm64/           #   ARM64 Architecture-Specific Implementation
 │   ├── x64/             #   x86_64 Architecture-Specific Implementation
 │   ├── loongarch64/     #   LoongArch64 Architecture-Specific Implementation (Page Tables, Interrupts, SIMD)
+│   ├── riscv64/         #   RISC-V 64 Architecture-Specific Implementation (CPU, MMU, Interrupt Controller)
 │   └── snapdragon/      #   Qualcomm Snapdragon Platform
 ├── syslib/              # System Library Layer (L2)
 │   ├── core/            #   Core Library (Allocator, Sync Primitives)
@@ -129,17 +139,24 @@ Nuva/
 |--------|-----------|---------------|---------|-------|
 | Memory Management | 95% | 95% | 95% | Buddy/SLAB/VMA/NUMA/COW/HugePage/OOM |
 | Process Scheduling | 90% | 90% | 90% | CFS/EAS/RT/Deadline/Load Balancing |
-| File System | 90% | 90% | 90% | VFS/NuvaFS/ext4/FAT32/io_uring/NFS/SMB |
-| Network Stack | 80% | 85% | 82% | TCP/UDP/IPv6/ARP/Congestion Control |
-| Device Drivers | 75% | 70% | 72% | Device Model/Bus/IRQ/DMA/GPIO/I2C/SPI/DMA-BUF |
-| System Calls | 90% | 90% | 90% | POSIX Interface Coverage |
-| Security Module | 90% | 85% | 87% | LSM/ASLR/Sandbox/Stack Canary/Secure Boot/SHA-256 |
-| Power Management | 85% | 60% | 72% | PMIC/Suspend/Resume/Driver PM Integration |
-| Quantum Security | 85% | 80% | 82% | Kyber/Dilithium/QRNG/QKD |
-| AI/NPU | 90% | 85% | 87% | Da Vinci NPU HAL/ONNX/Predictor/AI Scheduler |
-| Plugin System | 100% | 100% | 100% | ELF Loader/Manager/Sandbox/Registry |
-| LoongArch64 | 95% | 90% | 92% | HAL/Page Tables/Interrupts/SIMD/Extension Detection |
+| NvScheduler AI | 100% | 90% | 95% | AI inference, 4-level classes, 3-tier fallback, NPU integration |
+| NvBalancer HW | 100% | 85% | 92% | Heterogeneous load balancing, oscillation detection, hot-plug |
+| NvPowerMgr | 100% | 85% | 92% | AI power optimization, DVFS, thermal, green metrics |
+| File System | 90% | 90% | 90% | VFS/NuvaFS/ext4/FAT32/io_uring/NFS/SMB/WAL/COW/Snapshot |
+| Network Stack | 90% | 90% | 90% | TCP/UDP/IPv6/ARP/Congestion Control |
+| Device Drivers | 75% | 72% | 73% | Device Model/Bus/IRQ/DMA/GPIO/I2C/SPI/DMA-BUF |
+| System Calls | 90% | 90% | 90% | Nuva native + POSIX compat interface coverage |
+| Security Module | 92% | 90% | 91% | Capability/LSM/ASLR/Sandbox/Stack Canary/Secure Boot/SHA-256 |
+| Power Management | 90% | 80% | 85% | PMIC/Suspend/Resume/DVFS/Thermal/Domain Registration |
+| Quantum Security | 95% | 90% | 92% | Kyber/Dilithium/QRNG/QKD/Hybrid KEM |
+| AI/NPU | 90% | 85% | 87% | Da Vinci NPU HAL/ONNX/Predictor/AI Scheduler/IRQ/ModelMemMgr |
+| RISC-V 64 Support | 85% | 75% | 80% | SBI boot/PLIC/Sv39 3-level walk/trap/QEMU virt |
+| GPU | 90% | 85% | 87% | Maleoon GPU/IRQ/VRAM Allocator/Capability-based access |
+| LoongArch64 Support | 92% | 80% | 86% | HAL/Page Tables/Interrupts/SIMD/LSX/LASX/LVZ/LBT |
+| Plugin System | 100% | 100% | 100% | ELF Loader/Manager/Sandbox/Registry/Signature/Package Manager |
 | SDK | 100% | 100% | 100% | Debugger(DAP)/Profiler(/proc)/PackageManager(HTTP)/CLI/Build |
+| Boot Flow | 100% | 90% | 95% | ARM64 FDT/x64 Multiboot2/LA64 UEFI/RISC-V SBI |
+| Platform Detection | 100% | 90% | 95% | PlatformInfo/BootInfoType/detect_platform_info() |
 
 ---
 
@@ -154,6 +171,7 @@ Nuva/
 | Process | [PROCESS_zh.md](PROCESS_zh.md) | [PROCESS.md](PROCESS.md) | Scheduling, process control, load balancing |
 | Filesystem | [FILESYSTEM_zh.md](FILESYSTEM_zh.md) | [FILESYSTEM.md](FILESYSTEM.md) | VFS, NuvaFS |
 | Syscall | [SYSCALL_zh.md](SYSCALL_zh.md) | [SYSCALL.md](SYSCALL.md) | POSIX interface, error codes |
+| Vulkan GPU | [VULKAN_zh.md](VULKAN_zh.md) | [VULKAN.md](VULKAN.md) | Native Vulkan GPU API, capability-based GPU security |
 | API | [API_zh.md](API_zh.md) | [API.md](API.md) | Kernel API, filesystem API, IPC API |
 
 ### Development Documents
@@ -162,12 +180,16 @@ Nuva/
 |----------|---------|---------|-------------|
 | Quick Start | [QUICK_START_zh.md](QUICK_START_zh.md) | [QUICK_START.md](QUICK_START.md) | Setup, build, run |
 | Coding Standard | [CODING_STANDARD_zh.md](CODING_STANDARD_zh.md) | [CODING_STANDARD.md](CODING_STANDARD.md) | Coding conventions |
+| Nuva Language | [NUVA_LANG_zh.md](NUVA_LANG_zh.md) | [NUVA_LANG.md](NUVA_LANG.md) | Nuva declarative programming language |
+| Performance | [PERFORMANCE_zh.md](PERFORMANCE_zh.md) | [PERFORMANCE.md](PERFORMANCE.md) | Performance optimization strategies |
+| Tombstone | [TOMBSTONE_zh.md](TOMBSTONE_zh.md) | [TOMBSTONE.md](TOMBSTONE.md) | Crash diagnostics subsystem |
 
 ### Planning Documents
 
 | Document | Chinese | English | Description |
 |----------|---------|---------|-------------|
 | Roadmap | [ROADMAP_zh.md](ROADMAP_zh.md) | [ROADMAP.md](ROADMAP.md) | TODO, priorities |
+| Architecture Refactor | [ARCHITECTURE_REFACTOR_ZH.md](ARCHITECTURE_REFACTOR_ZH.md) | [ARCHITECTURE_REFACTOR.md](ARCHITECTURE_REFACTOR.md) | POSIX→Nuva native migration plan |
 
 ### Architecture & Standards
 
@@ -177,6 +199,7 @@ Nuva/
 | Doc Standard | [standards/DOCUMENTATION_STANDARD_zh.md](standards/DOCUMENTATION_STANDARD_zh.md) | [standards/DOCUMENTATION_STANDARD.md](standards/DOCUMENTATION_STANDARD.md) | Documentation standards |
 | Module Template | — | — | Module template (pending creation) |
 | Driver Guide | [development/DRIVER_DEVELOPMENT_GUIDE_zh.md](development/DRIVER_DEVELOPMENT_GUIDE_zh.md) | [development/DRIVER_DEVELOPMENT_GUIDE.md](development/DRIVER_DEVELOPMENT_GUIDE.md) | Driver development |
+| Core Processing | [CORE_PROCESSING_SERVICES_zh.md](CORE_PROCESSING_SERVICES_zh.md) | [CORE_PROCESSING_SERVICES.md](CORE_PROCESSING_SERVICES.md) | L3 core processing services |
 | API Reference | [api/API_REFERENCE_zh.md](api/API_REFERENCE_zh.md) | [api/API_REFERENCE.md](api/API_REFERENCE.md) | HAL API reference |
 
 ---
@@ -194,6 +217,10 @@ Nuva/
 - [层级规则](architecture/LAYER_RULES_zh.md) / [Layer Rules](architecture/LAYER_RULES.md)
 - [驱动开发指南](development/DRIVER_DEVELOPMENT_GUIDE_zh.md) / [Driver Guide](development/DRIVER_DEVELOPMENT_GUIDE.md)
 - [API 参考手册](api/API_REFERENCE_zh.md) / [API Reference](api/API_REFERENCE.md)
+- [Nuva 语言参考](NUVA_LANG_zh.md) / [Nuva Language](NUVA_LANG.md)
+- [Vulkan GPU](VULKAN_zh.md) / [Vulkan GPU](VULKAN.md)
+- [性能优化](PERFORMANCE_zh.md) / [Performance](PERFORMANCE.md)
+- [架构重构](ARCHITECTURE_REFACTOR_ZH.md) / [Architecture Refactor](ARCHITECTURE_REFACTOR.md)
 
 ---
 
@@ -206,8 +233,10 @@ Nuva OS adheres to the following core principles:
 3. **Everything is a File**: Devices, pipes, sockets use unified VFS interface
 4. **Memory Safety**: Leveraging Rust's safety guarantees
 5. **High Performance**: Modern optimization techniques for critical paths
-6. **Post-Quantum Security**: Integrated NIST PQC standard algorithms (Kyber/Dilithium)
-7. **AI Native**: NPU abstraction layer and intelligent optimization
+6. **Post-Quantum Security**: Integrated NIST PQC standard algorithms (Kyber/Dilithium), SHA-256 FIPS 180-4
+7. **AI Native**: NPU abstraction layer (Da Vinci NPU HAL) and intelligent optimization
+8. **Three-Level Microkernel**: EL2/EL1/EL0 privilege separation with NvSupervisorCall
+9. **Capability Security**: NvCapability tokens with permission monotonicity and cascading revocation
 
 ---
 
@@ -321,9 +350,9 @@ Contributions are welcome! Please follow the coding conventions in [CODING_STAND
 
 - **Issues**: https://github.com/nuva-os/nuva/issues
 - **Docs**: [docs/](.) directory
-- **Email**: zhangyujie_china@163.com
+- **Email**: kellen9903@gmail.com
 
 ---
 
-**Last Updated**: May 15, 2026
+**Last Updated**: June 5, 2026
 **Maintainer**: Nuva OS Team

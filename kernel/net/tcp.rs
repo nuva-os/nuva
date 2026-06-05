@@ -1,4 +1,21 @@
 /*
+ * Nuva OS - Kernel - Net - Tcp
+ *
+ * Copyright (C) 2026 Nuva OS Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Nuva OS - Kernel - TCP Protocol
  * 
  * Copyright (C) 2026 Nuva OS Team
@@ -195,6 +212,225 @@ impl TcpState {
             TcpState::Closing => "CLOSING",
             TcpState::LastAck => "LAST_ACK",
             TcpState::TimeWait => "TIME_WAIT",
+        }
+    }
+}
+
+/// TCP State Machine — tracks and validates state transitions per RFC 793.
+///
+/// This struct wraps the raw u32 state value and enforces valid state
+/// transitions. Any invalid transition is logged and clamped.
+pub struct TcpStateMachine {
+    /// Current TCP state (stored as u32 for atomic compatibility)
+    state: AtomicU32,
+}
+
+impl TcpStateMachine {
+    pub const fn new(initial: TcpState) -> Self {
+        TcpStateMachine {
+            state: AtomicU32::new(initial as u32),
+        }
+    }
+
+    /// Get the current state
+    pub fn get_state(&self) -> TcpState {
+        match self.state.load(Ordering::Acquire) {
+            0 => TcpState::Closed,
+            1 => TcpState::Listen,
+            2 => TcpState::SynSent,
+            3 => TcpState::SynReceived,
+            4 => TcpState::Established,
+            5 => TcpState::FinWait1,
+            6 => TcpState::FinWait2,
+            7 => TcpState::CloseWait,
+            8 => TcpState::Closing,
+            9 => TcpState::LastAck,
+            10 => TcpState::TimeWait,
+            _ => TcpState::Closed,
+        }
+    }
+
+    /// Validate and perform a state transition.
+    /// Returns true if the transition was valid, false if it was clamped (logged).
+    pub fn transition(&self, new_state: TcpState) -> bool {
+        let old = self.get_state();
+        if Self::is_valid_transition(old, new_state) {
+            self.state.store(new_state as u32, Ordering::Release);
+            true
+        } else {
+            pr_warn!(
+                "TCP: invalid state transition {} -> {}",
+                old.as_str(),
+                new_state.as_str()
+            );
+            // Clamp to known reachable states for robustness
+            let clamped = Self::clamp_transition(old, new_state);
+            self.state.store(clamped as u32, Ordering::Release);
+            false
+        }
+    }
+
+    /// Directly set the state without validation (e.g. for RST processing).
+    pub fn force_set(&self, new_state: TcpState) {
+        self.state.store(new_state as u32, Ordering::Release);
+    }
+
+    /// Check if a transition from `old` to `new` is valid per RFC 793.
+    ///
+    /// This covers the complete state transition diagram:
+    /// - CLOSED -> LISTEN (passive open)
+    /// - CLOSED -> SYN_SENT (active open)
+    /// - LISTEN -> SYN_RECEIVED (received SYN)
+    /// - LISTEN -> CLOSED (close)
+    /// - SYN_SENT -> CLOSED (timeout/reset)
+    /// - SYN_SENT -> SYN_RECEIVED (simultaneous open)
+    /// - SYN_SENT -> ESTABLISHED (received SYN-ACK)
+    /// - SYN_RECEIVED -> ESTABLISHED (received ACK of SYN)
+    /// - SYN_RECEIVED -> FIN_WAIT_1 (active close while in SYN_RECEIVED)
+    /// - SYN_RECEIVED -> CLOSED (reset)
+    /// - ESTABLISHED -> FIN_WAIT_1 (active close)
+    /// - ESTABLISHED -> CLOSE_WAIT (received FIN)
+    /// - FIN_WAIT_1 -> FIN_WAIT_2 (received ACK of FIN)
+    /// - FIN_WAIT_1 -> CLOSING (received FIN+ACK simultaneously)
+    /// - FIN_WAIT_1 -> CLOSED (reset)
+    /// - FIN_WAIT_2 -> TIME_WAIT (received FIN)
+    /// - CLOSING -> TIME_WAIT (received ACK of FIN)
+    /// - CLOSE_WAIT -> LAST_ACK (active close after receiving FIN)
+    /// - LAST_ACK -> CLOSED (received ACK of FIN)
+    /// - TIME_WAIT -> CLOSED (2MSL timeout)
+    ///
+    /// All other transitions return false.
+    pub fn is_valid_transition(old: TcpState, new: TcpState) -> bool {
+        use TcpState::*;
+        match (old, new) {
+            // Passive open
+            (Closed, Listen) => true,
+            // Active open
+            (Closed, SynSent) => true,
+            // Close while listening
+            (Listen, Closed) => true,
+            // Received SYN in LISTEN (passive open continuation)
+            (Listen, SynReceived) => true,
+            // Received SYN-ACK in SYN_SENT (active open completion)
+            (SynSent, Established) => true,
+            // Received SYN in SYN_SENT (simultaneous open)
+            (SynSent, SynReceived) => true,
+            // Timeout / reset while SYN_SENT
+            (SynSent, Closed) => true,
+            // Received ACK of SYN in SYN_RECEIVED
+            (SynReceived, Established) => true,
+            // Close during SYN_RECEIVED
+            (SynReceived, FinWait1) => true,
+            // Reset in SYN_RECEIVED
+            (SynReceived, Closed) => true,
+            // Active close from ESTABLISHED
+            (Established, FinWait1) => true,
+            // Received FIN in ESTABLISHED (passive close)
+            (Established, CloseWait) => true,
+            // Reset in ESTABLISHED
+            (Established, Closed) => true,
+            // Received ACK of FIN in FIN_WAIT_1
+            (FinWait1, FinWait2) => true,
+            // Received FIN+ACK simultaneously
+            (FinWait1, Closing) => true,
+            // Received FIN in FIN_WAIT_1
+            (FinWait1, TimeWait) => true,
+            // Reset in FIN_WAIT_1
+            (FinWait1, Closed) => true,
+            // Received FIN in FIN_WAIT_2
+            (FinWait2, TimeWait) => true,
+            // Reset in FIN_WAIT_2
+            (FinWait2, Closed) => true,
+            // Active close from CLOSE_WAIT
+            (CloseWait, LastAck) => true,
+            // Reset in CLOSE_WAIT
+            (CloseWait, Closed) => true,
+            // ACK of FIN received in CLOSING
+            (Closing, TimeWait) => true,
+            // Reset in CLOSING
+            (Closing, Closed) => true,
+            // ACK of FIN received in LAST_ACK
+            (LastAck, Closed) => true,
+            // 2MSL timeout in TIME_WAIT
+            (TimeWait, Closed) => true,
+            // Self-transition (timer re-fires, benign duplicate)
+            (s1, s2) if s1 == s2 => true,
+            // All other transitions are invalid
+            _ => false,
+        }
+    }
+
+    /// Clamp an invalid transition to the nearest reachable state.
+    /// This provides robustness when unexpected segments arrive.
+    fn clamp_transition(old: TcpState, new: TcpState) -> TcpState {
+        use TcpState::*;
+        // For bidirectional CLOSED transitions, allow
+        match (old, new) {
+            // If attempting to go to ESTABLISHED from unexpected state, try SYN_RECEIVED
+            (Closed, Established) => SynReceived,
+            // If attempting to go to LISTEN from non-CLOSED, stay where we are
+            (_, Listen) => old,
+            // Default: allow self-transition
+            _ => old,
+        }
+    }
+
+    /// Get the raw atomic state field for compatibility with TcpConnection
+    pub fn atomic_state(&self) -> &AtomicU32 {
+        &self.state
+    }
+}
+
+/// Retransmit queue entry — holds a segment that may need retransmission.
+#[derive(Clone)]
+pub struct RetransmitEntry {
+    /// Sequence number of the first byte in this segment
+    pub seq: u32,
+    /// Length of data in this segment
+    pub len: u16,
+    /// Segment data (header not included, just payload)
+    pub data: [u8; 64],
+    /// Number of times this segment has been retransmitted
+    pub rtx_count: u8,
+    /// Timestamp (ms) of last transmission
+    pub last_sent_ms: u64,
+    /// Whether this segment contains SYN flag
+    pub is_syn: bool,
+    /// Whether this segment contains FIN flag
+    pub is_fin: bool,
+}
+
+impl RetransmitEntry {
+    pub const fn new() -> Self {
+        RetransmitEntry {
+            seq: 0,
+            len: 0,
+            data: [0; 64],
+            rtx_count: 0,
+            last_sent_ms: 0,
+            is_syn: false,
+            is_fin: false,
+        }
+    }
+}
+
+/// Out-of-order segment queue entry — buffered segment that arrived ahead of rcv_nxt.
+#[derive(Clone)]
+pub struct OutOfOrderEntry {
+    /// Sequence number of the first byte
+    pub seq: u32,
+    /// Length of data
+    pub len: u16,
+    /// Segment data
+    pub data: [u8; 128],
+}
+
+impl OutOfOrderEntry {
+    pub const fn new() -> Self {
+        OutOfOrderEntry {
+            seq: 0,
+            len: 0,
+            data: [0; 128],
         }
     }
 }
@@ -846,6 +1082,215 @@ impl TcpConnection {
         }
 
         false
+    }
+}
+
+/// TCP Control Block (TCB) — comprehensive per-connection state.
+///
+/// The TCB wraps a `TcpConnection` together with all the data structures
+/// needed for reliable, ordered octet stream delivery: retransmit queue,
+/// out-of-order segment reassembly buffer, and connection metrics.
+pub struct TcpControlBlock {
+    /// Core connection state (sequence numbers, timers, congestion state)
+    pub conn: TcpConnection,
+    /// State machine for validated state transitions
+    pub sm: TcpStateMachine,
+    /// Retransmission queue (circular buffer of unacknowledged segments)
+    pub rtx_queue: [RetransmitEntry; 32],
+    /// Number of valid entries in rtx_queue (head index at 0, count used entries)
+    pub rtx_queue_head: core::sync::atomic::AtomicU8,
+    pub rtx_queue_len: core::sync::atomic::AtomicU8,
+    /// Out-of-order segment queue (segments that arrived after a gap)
+    pub ooo_queue: [OutOfOrderEntry; 16],
+    /// Number of valid entries in ooo_queue
+    pub ooo_queue_len: core::sync::atomic::AtomicU8,
+    /// Connection creation timestamp (ms)
+    pub created_ms: AtomicU64,
+    /// Total bytes sent
+    pub bytes_sent: AtomicU64,
+    /// Total bytes received
+    pub bytes_received: AtomicU64,
+    /// Whether this TCB is in use
+    pub in_use: AtomicU32,
+}
+
+impl TcpControlBlock {
+    pub fn new(local_addr: u32, local_port: u16, remote_addr: u32, remote_port: u16) -> Self {
+        TcpControlBlock {
+            conn: TcpConnection::new(local_addr, local_port, remote_addr, remote_port),
+            sm: TcpStateMachine::new(TcpState::Closed),
+            rtx_queue: [
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(), RetransmitEntry::new(),
+                RetransmitEntry::new(), RetransmitEntry::new(),
+            ],
+            rtx_queue_head: core::sync::atomic::AtomicU8::new(0),
+            rtx_queue_len: core::sync::atomic::AtomicU8::new(0),
+            ooo_queue: [
+                OutOfOrderEntry::new(), OutOfOrderEntry::new(), OutOfOrderEntry::new(),
+                OutOfOrderEntry::new(), OutOfOrderEntry::new(), OutOfOrderEntry::new(),
+                OutOfOrderEntry::new(), OutOfOrderEntry::new(), OutOfOrderEntry::new(),
+                OutOfOrderEntry::new(), OutOfOrderEntry::new(), OutOfOrderEntry::new(),
+                OutOfOrderEntry::new(), OutOfOrderEntry::new(), OutOfOrderEntry::new(),
+                OutOfOrderEntry::new(),
+            ],
+            ooo_queue_len: core::sync::atomic::AtomicU8::new(0),
+            created_ms: AtomicU64::new(0),
+            bytes_sent: AtomicU64::new(0),
+            bytes_received: AtomicU64::new(0),
+            in_use: AtomicU32::new(1),
+        }
+    }
+
+    /// Get current TCP state
+    pub fn get_state(&self) -> TcpState {
+        self.sm.get_state()
+    }
+
+    /// Enqueue a segment to the retransmit queue.
+    /// Returns true if enqueued successfully, false if queue is full.
+    pub fn enqueue_rtx(&self, entry: RetransmitEntry) -> bool {
+        let len = self.rtx_queue_len.load(Ordering::Acquire);
+        if len >= 32 {
+            pr_warn!("TCP: retransmit queue full, dropping segment seq={}", entry.seq);
+            return false;
+        }
+        // Simple append at the tail
+        let head = self.rtx_queue_head.load(Ordering::Acquire) as usize;
+        let idx = ((head + len as usize) % 32) as usize;
+        // SAFETY: We only write to indices within bounds.
+        unsafe {
+            let ptr = self.rtx_queue.as_ptr() as *mut RetransmitEntry;
+            ptr.add(idx).write(entry);
+        }
+        self.rtx_queue_len.fetch_add(1, Ordering::AcqRel);
+        true
+    }
+
+    /// Remove acknowledged segments from the retransmit queue.
+    /// Removes all entries with (seq + len) <= ack.
+    pub fn ack_rtx_queue(&self, ack: u32) {
+        loop {
+            let len = self.rtx_queue_len.load(Ordering::Acquire);
+            if len == 0 {
+                break;
+            }
+            let head = self.rtx_queue_head.load(Ordering::Acquire) as usize;
+            // SAFETY: index is validated by queue length invariant
+            let entry = unsafe {
+                let ptr = self.rtx_queue.as_ptr() as *const RetransmitEntry;
+                ptr.add(head).read()
+            };
+            let seg_end = entry.seq.wrapping_add(entry.len as u32);
+            // Use wrapping comparison: if ack is beyond segment end, it's fully ACKed
+            if ack.wrapping_sub(seg_end) < ack.wrapping_sub(entry.seq) || ack == seg_end {
+                // Segment fully ACKed, remove from queue
+                self.rtx_queue_head.store(((head + 1) % 32) as u8, Ordering::Release);
+                self.rtx_queue_len.fetch_sub(1, Ordering::AcqRel);
+            } else {
+                // This segment is not yet ACKed, stop here (queue is ordered)
+                break;
+            }
+        }
+    }
+
+    /// Get the oldest unacknowledged segment from the retransmit queue.
+    pub fn oldest_rtx_entry(&self) -> Option<RetransmitEntry> {
+        let len = self.rtx_queue_len.load(Ordering::Acquire);
+        if len == 0 {
+            return None;
+        }
+        let head = self.rtx_queue_head.load(Ordering::Acquire) as usize;
+        // SAFETY: head index is validated by queue length invariant
+        let entry = unsafe {
+            let ptr = self.rtx_queue.as_ptr() as *const RetransmitEntry;
+            ptr.add(head).read()
+        };
+        Some(entry)
+    }
+
+    /// Enqueue an out-of-order segment.
+    /// Returns true if enqueued successfully.
+    pub fn enqueue_ooo(&self, seq: u32, data: &[u8]) -> bool {
+        let len = self.ooo_queue_len.load(Ordering::Acquire);
+        if len >= 16 || data.len() > 128 {
+            pr_warn!("TCP: OOO queue full or segment too large, dropping seq={}", seq);
+            return false;
+        }
+        let idx = len as usize;
+        // SAFETY: index is within bounds
+        unsafe {
+            let ptr = self.ooo_queue.as_ptr() as *mut OutOfOrderEntry;
+            let mut entry = ptr.add(idx);
+            (*entry).seq = seq;
+            (*entry).len = data.len() as u16;
+            let dst = (*entry).data.as_mut_ptr();
+            let src = data.as_ptr();
+            let copy_len = core::cmp::min(data.len(), 128);
+            core::ptr::copy_nonoverlapping(src, dst, copy_len);
+        }
+        self.ooo_queue_len.fetch_add(1, Ordering::AcqRel);
+        true
+    }
+
+    /// Flush out-of-order segments that are now in sequence (seq == rcv_nxt).
+    /// Returns data that can be delivered to the socket.
+    pub fn flush_ooo(&self, rcv_nxt: u32, buf: &mut [u8]) -> usize {
+        let mut written: usize = 0;
+        // Sort by sequence number (simple insertion sort for small queue)
+        // Then flush contiguous segments.
+        let n = self.ooo_queue_len.load(Ordering::Acquire) as usize;
+        let mut next_seq = rcv_nxt;
+
+        // Dequeue and deliver segments in order
+        loop {
+            let n = self.ooo_queue_len.load(Ordering::Acquire) as usize;
+            if n == 0 {
+                break;
+            }
+            // Find segment matching next_seq
+            let mut found = false;
+            for i in 0..n {
+                // SAFETY: index is within bounds
+                let raw = unsafe {
+                    let ptr = self.ooo_queue.as_ptr() as *const OutOfOrderEntry;
+                    ptr.add(i).read()
+                };
+                if raw.seq == next_seq {
+                    let copy_len = core::cmp::min(raw.len as usize, buf.len() - written);
+                    unsafe {
+                        let src = raw.data.as_ptr();
+                        let dst = buf.as_mut_ptr().add(written);
+                        core::ptr::copy_nonoverlapping(src, dst, copy_len);
+                    }
+                    written += copy_len;
+                    next_seq = next_seq.wrapping_add(raw.len as u32);
+                    // Remove this entry by shifting remaining entries down
+                    for j in i..(n - 1) {
+                        unsafe {
+                            let ptr = self.ooo_queue.as_ptr() as *mut OutOfOrderEntry;
+                            let next = ptr.add(j + 1).read();
+                            ptr.add(j).write(next);
+                        }
+                    }
+                    self.ooo_queue_len.fetch_sub(1, Ordering::AcqRel);
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                break; // Gap still exists, stop flushing
+            }
+        }
+        written
     }
 }
 

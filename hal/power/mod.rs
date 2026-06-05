@@ -397,8 +397,7 @@ impl CpuFreqInfo {
         self.cur_freq.store(freq, Ordering::Release);
         self.transitions.fetch_add(1, Ordering::AcqRel);
 
-        // TODO: call DVFS set frequency
-        0
+        dvfs_set_frequency(freq)
     }
 
     /// Get frequency
@@ -587,6 +586,79 @@ pub fn get_power_hal() -> &'static mut PowerHalDevice {
 
 pub fn init_power_hal() {
     log_info!("Power HAL initialized");
+}
+
+// ============================================================================
+// DVFS Hardware Interface
+// ============================================================================
+
+const DVFS_CTRL_BASE: u64 = 0x0B000000;
+const DVFS_CTRL_FREQ: u64 = 0x000;
+const DVFS_CTRL_VOLT: u64 = 0x004;
+const DVFS_CTRL_STATUS: u64 = 0x008;
+
+pub fn dvfs_set_frequency(freq_khz: u32) -> i32 {
+    unsafe {
+        core::ptr::write_volatile((DVFS_CTRL_BASE + DVFS_CTRL_FREQ) as *mut u32, freq_khz);
+        let mut timeout = 100_000u32;
+        while timeout > 0 {
+            let status = core::ptr::read_volatile((DVFS_CTRL_BASE + DVFS_CTRL_STATUS) as *const u32);
+            if status & 0x1 != 0 { return 0; }
+            timeout -= 1;
+        }
+    }
+    -1
+}
+
+pub fn dvfs_set_voltage(voltage_uv: u32) -> i32 {
+    unsafe {
+        core::ptr::write_volatile((DVFS_CTRL_BASE + DVFS_CTRL_VOLT) as *mut u32, voltage_uv);
+    }
+    0
+}
+
+// ============================================================================
+// Thermal Management
+// ============================================================================
+
+const THERMAL_SENSOR_BASE: u64 = 0x0C000000;
+const THERMAL_SENSOR_TEMP: u64 = 0x000;
+const THERMAL_SENSOR_THRESH: u64 = 0x004;
+const THERMAL_SENSOR_CTRL: u64 = 0x008;
+
+const THERMAL_TRIP_PASSIVE: u32 = 85000;
+const THERMAL_TRIP_CRITICAL: u32 = 105000;
+
+pub fn thermal_read_temperature() -> i32 {
+    unsafe {
+        core::ptr::read_volatile((THERMAL_SENSOR_BASE + THERMAL_SENSOR_TEMP) as *const i32)
+    }
+}
+
+pub fn thermal_set_threshold(temp_mc: i32) -> i32 {
+    unsafe {
+        core::ptr::write_volatile((THERMAL_SENSOR_BASE + THERMAL_SENSOR_THRESH) as *mut i32, temp_mc);
+    }
+    0
+}
+
+pub fn thermal_check_and_throttle() -> i32 {
+    let temp = thermal_read_temperature();
+    if temp >= THERMAL_TRIP_CRITICAL as i32 {
+        log_error!("Thermal: Critical temperature {} mC, emergency shutdown", temp);
+        return -2;
+    }
+    if temp >= THERMAL_TRIP_PASSIVE as i32 {
+        let hal = get_power_hal();
+        for i in 0..hal.freq_manager.num_cpus as usize {
+            let info = &hal.freq_manager.cpu_freq[i];
+            let cur = info.get_freq();
+            let throttled = cur * 80 / 100;
+            let _ = info.set_freq(throttled.max(info.min_freq));
+        }
+        return -1;
+    }
+    0
 }
 
 #[cfg(test)]

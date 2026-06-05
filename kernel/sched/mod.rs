@@ -26,17 +26,21 @@ pub mod task;
 pub mod ai_sched;
 pub mod quant_sched;
 pub mod declarative;
+pub mod nv_policy;
+pub mod nvsched;
+pub mod nvbalancer;
 
 // Re-export key types
 pub use rbtree::{RbTree, RbNode};
 pub use sched_domain::{SchedDomain, SchedGroup, LoadBalancer};
 pub use eas::{EnergyModel, PerfDomain, EasData, eas_select_task_rq};
+pub use nv_policy::{NvSchedPolicy, NvDeadlineParams, NvEnergyAwareParams, NvAiOptimizedParams, NvSchedConfig};
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use crate::kernel::process::{Pid, ProcessState};
-
-use crate::posix::errno::Errno;
+use crate::kernel::error::KernelError;
+// Migrated from: posix::errno::Errno → KernelError in scheduler
 // Scheduling policy
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchedPolicy {

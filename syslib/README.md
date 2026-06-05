@@ -20,6 +20,7 @@ The Syslib layer (Layer 2) provides a collection of system libraries for applica
 | std/ | Standard library: collections, basic types, IO |
 | runtime/ | Runtime library: Arc, metadata, protocols |
 | dispatch/ | Concurrency framework (GCD-style): thread pool, semaphore, queue, group |
+| nv_vulkan/ | Native Vulkan integration library (NV Vulkan API bindings) |
 | posix/ | POSIX compatibility layer: system call wrappers |
 
 ## Dependencies

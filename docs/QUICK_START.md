@@ -64,6 +64,9 @@ rustup target add --toolchain nightly x86_64-unknown-none
 # LoongArch64 target (requires custom target JSON)
 rustup target add --toolchain nightly loongarch64-unknown-none
 
+# RISC-V 64 target
+rustup target add --toolchain nightly riscv64-unknown-none
+
 # Install rust-src component (required for no_std builds)
 rustup component add --toolchain nightly rust-src
 
@@ -137,6 +140,8 @@ Nuva OS uses Cargo feature flags to select the target platform and hardware conf
 | `amd_ryzen` | x86_64 | AMD Ryzen series |
 | `loongson3a6000` | LoongArch64 | Loongson 3A6000 |
 | `loongson3c6000` | LoongArch64 | Loongson 3C6000 |
+| `riscv64` | RISC-V 64 | Generic RISC-V 64-bit (RV64G) |
+| `qemu_virt` | RISC-V 64 | QEMU virt machine (implies `riscv64`) |
 | `smp` | Generic | SMP multi-core support |
 | `debug` | Generic | Debug mode |
 
@@ -182,10 +187,29 @@ cargo build --target loongarch64-unknown-none --features loongson3a6000
 cargo build --target loongarch64-unknown-none --features loongson3c6000
 ```
 
+### Build for RISC-V 64
+
+```bash
+# Generic RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64
+
+# QEMU virt machine
+cargo build --target riscv64-unknown-none --features qemu_virt
+
+# Using Makefile
+make build-riscv
+```
+
 ### Release Build
 
 ```bash
 cargo build --target aarch64-unknown-none --features kirin9020 --release
+```
+
+### Release Build for RISC-V 64
+
+```bash
+cargo build --target riscv64-unknown-none --features riscv64 --release
 ```
 
 ---
@@ -274,6 +298,31 @@ qemu-system-loongarch64 \
     -m 1G \
     -nographic \
     -kernel target/loongarch64-unknown-none/debug/nuva_kernel
+```
+
+### RISC-V 64 (QEMU virt)
+
+```bash
+# Build
+cargo build --target riscv64-unknown-none --features qemu_virt
+
+# Run with QEMU virt machine (OpenSBI firmware)
+qemu-system-riscv64 \
+    -machine virt \
+    -m 1G \
+    -nographic \
+    -bios default \
+    -kernel target/riscv64-unknown-none/debug/nuva_kernel
+
+# Run release build
+qemu-system-riscv64 \
+    -machine virt \
+    -nographic \
+    -bios default \
+    -kernel target/riscv64-unknown-none/release/nuva_kernel
+
+# Or using Makefile
+make run-riscv
 ```
 
 ### Common QEMU Arguments
@@ -500,8 +549,8 @@ rustup show
 
 - **GitHub Issues**: https://github.com/nuva-os/nuva/issues
 - **Docs**: [docs/](docs/) directory
-- **Email**: zhangyujie_china@163.com
+- **Email**: kellen9903@gmail.com
 
 ---
 
-**Last Updated**: May 15, 2026
+**Last Updated**: May 30, 2026

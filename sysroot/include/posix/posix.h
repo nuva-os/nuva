@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-/* * Nuva OS POSIX Standard Header
- * Compliant with Standard
-
-
+/* * Nuva OS POSIX Optional Compatibility Module
+ * Not for kernel core use.
+ * Only available when NUVA_POSIX_COMPAT is defined.
  */
 
 #ifndef _POSIX_H
 #define _POSIX_H
+
+#ifdef NUVA_POSIX_COMPAT
 
 /* POSIX Version */
 #define _POSIX_VERSION      201701L
@@ -40,7 +41,7 @@
 #define _POSIX_SYNCHRONIZED_IO 1
 #define _POSIX_TIMERS      1
 
-/* SystemLimit */
+/* System Limits */
 #define _POSIX_ARG_MAX     4096
 #define _POSIX_CHILD_MAX   25
 #define _POSIX_LINK_MAX    8
@@ -60,7 +61,7 @@
 #define _POSIX_STREAM_MAX  8
 #define _POSIX_TZNAME_MAX  6
 
-/* File Mode Types
+/* File Mode Types */
 #define S_IFMT   0170000
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
@@ -78,7 +79,7 @@
 #define S_ISLNK(m)  (((m) & S_IFMT) == S_IFLNK)
 #define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
 
-/* FilePermission */
+/* File Permission */
 #define S_ISUID  04000
 #define S_ISGID  02000
 #define S_ISVTX  01000
@@ -95,7 +96,7 @@
 #define S_IWOTH  0002
 #define S_IXOTH  0001
 
-/* OpenFlag */
+/* Open Flags */
 #define O_RDONLY    0
 #define O_WRONLY    1
 #define O_RDWR      2
@@ -112,7 +113,7 @@
 #define O_NOFOLLOW  0400000
 #define O_CLOEXEC   02000000
 
-/* FileLock */
+/* File Lock */
 #define F_DUPFD    0
 #define F_GETFD    1
 #define F_SETFD    2
@@ -135,7 +136,7 @@
 #define SEEK_CUR   1
 #define SEEK_END   2
 
-/* Error Codes
+/* Error Codes */
 #define EPERM      1
 #define ENOENT     2
 #define ESRCH      3
@@ -234,7 +235,7 @@
 #define ENOMEDIUM  96
 #define EMEDIUMTYPE 97
 
-/* Signal */
+/* Signals */
 #define SIGHUP     1
 #define SIGINT     2
 #define SIGQUIT    3
@@ -286,5 +287,7 @@
 #define WIFSTOPPED(s)  (((s) & 0xff) == 0x7f)
 #define WSTOPSIG(s)    (((s) >> 8) & 0xff)
 #define WIFCONTINUED(s) ((s) == 0xffff)
+
+#endif /* NUVA_POSIX_COMPAT */
 
 #endif /* _POSIX_H */

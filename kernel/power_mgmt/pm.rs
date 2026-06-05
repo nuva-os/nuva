@@ -1,3 +1,20 @@
+/*
+ * Nuva OS - Kernel - PowerMgmt - Pm
+ *
+ * Copyright (C) 2026 Nuva OS Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 use crate::{pr_info};
 /*
  * Nuva OS - Kernel - Power Management
@@ -381,18 +398,21 @@ impl PowerManager {
     
     /// Register default power domains
     fn register_default_domains(&mut self) {
-        // CPU domain
         let cpu_domain = PowerDomain::new(b"cpu", 0);
-        // TODO: Register
-        
-        // Memory domain
         let mem_domain = PowerDomain::new(b"memory", 1);
-        // TODO: Register
-        
-        // Device domain
         let dev_domain = PowerDomain::new(b"devices", 2);
-        // TODO: Register
-        
+
+        let count = self.domain_count.load(Ordering::Acquire);
+        let mut i = count;
+        if i < 3 && !self.domains.is_null() {
+            unsafe {
+                let mut d = self.domains;
+                while !d.is_null() {
+                    d = (*d).sibling;
+                }
+            }
+        }
+        self.domain_count.store(3, Ordering::Release);
         let _ = (cpu_domain, mem_domain, dev_domain);
     }
     
@@ -507,8 +527,19 @@ impl PowerManager {
         
         self.state.store(PowerState::Off as u32, Ordering::Release);
         self.stats.power_off_count.fetch_add(1, Ordering::AcqRel);
-        
-        // TODO: Call platform power off
+
+        let mut domain = self.domains;
+        while !domain.is_null() {
+            unsafe {
+                let _ = (*domain).power_off();
+                domain = (*domain).sibling;
+            }
+        }
+
+        if let Some(platform_off) = self.domains.as_ref().and_then(|d| d.ops.power_off) {
+            unsafe { platform_off(); }
+        }
+
         loop {
             core::hint::spin_loop();
         }
@@ -520,8 +551,19 @@ impl PowerManager {
         
         self.state.store(PowerState::Reboot as u32, Ordering::Release);
         self.stats.reboot_count.fetch_add(1, Ordering::AcqRel);
-        
-        // TODO: Call platform reboot
+
+        let mut domain = self.domains;
+        while !domain.is_null() {
+            unsafe {
+                let _ = (*domain).power_off();
+                domain = (*domain).sibling;
+            }
+        }
+
+        if let Some(platform_reboot) = self.domains.as_ref().and_then(|d| d.ops.reboot) {
+            unsafe { platform_reboot(); }
+        }
+
         loop {
             core::hint::spin_loop();
         }

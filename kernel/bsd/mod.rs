@@ -15,6 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* Legacy Compatibility Layer - Not for kernel core use
+ * BSD compatibility layer providing BSD-style VFS and network interfaces.
+ * Only available when POSIX feature is enabled.
+ */
 
 
 pub mod net;

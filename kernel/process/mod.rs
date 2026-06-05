@@ -26,17 +26,29 @@
 
 // Re-export print macros from crate root
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
+
+// POSIX-compatible process operations (optional, for POSIX compatibility)
+// Migrated from: POSIX fork() → nv_process_spawn (kernel::nv_process)
+// Migrated from: POSIX execve() → nv_process_execute (kernel::nv_process)
+// Migrated from: POSIX signal → nv_event (kernel::nv_event)
+#[cfg(feature = "posix")]
 pub mod fork;
+#[cfg(feature = "posix")]
 pub mod execve;
+#[cfg(feature = "posix")]
 pub mod wait4;
+#[cfg(feature = "posix")]
 pub mod signal;
 pub mod tests;
 
+#[cfg(feature = "posix")]
 pub use fork::*;
+#[cfg(feature = "posix")]
 pub use signal::*;
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::kernel::sched::task::TaskStruct;
+#[cfg(feature = "posix")]
 use crate::kernel::process::signal::{SigSet, SigAltStack, SigAction};
 
 /// Process ID type

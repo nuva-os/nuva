@@ -150,3 +150,7 @@ let caller = CallerIdentity::new(pid, uid);
 ## Error Handling
 
 All services use `Result<T, ServiceError>` return types. No `panic!`/`unwrap()`/`expect()` in production paths. Hardware failures trigger automatic software fallback with warning logs.
+
+---
+
+**Last Updated**: May 30, 2026

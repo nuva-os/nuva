@@ -8,12 +8,19 @@ Services 层（Layer 3）提供操作系统级的系统服务，在微内核架�
 
 | 子模块 | 说明 |
 |--------|------|
-| app/ | 应用服务：Activity 生命周期、安装器、包管理器 |
-| ipc/ | IPC 服务：Binder、通道、共享内存 |
-| net/ | 网络服务：DNS 解析、接口管理、TCP/UDP |
-| power/ | 电源服务：电源管理器、策略、挂起、唤醒锁 |
-| security/ | 安全服务：Gatekeeper、Keymaster、权限管理、TEE 客户端 |
-| form_factor.rs | 形态因子管理器（手机/平板/桌面/服务器自适应） |
+| app/ | 应用管理服务（安装、生命周期、包管理、屏幕管理） |
+| ipc/ | IPC 服务（Binder、Channel、共享内存） |
+| net/ | 网络服务（DNS、TCP/UDP、接口管理） |
+| power/ | 电源管理服务（PM 策略、唤醒锁、挂起） |
+| security/ | 安全服务（Gatekeeper、Keymaster、权限管理、TEE 客户端） |
+| form_factor/ | 形态因子适配服务（手机/平板/PC 检测） |
+| audio/ | 音频服务（编解码器、混音器、重采样、音量、电源管理） |
+| video/ | 视频服务（H.264/H.265/VP9/AV1 编解码、硬件加速、帧缓冲） |
+| web/ | Web 服务（HTML/CSS 解析器、JS 引擎、DOM、布局、页面渲染） |
+| opengl/ | OpenGL 服务（GPU 渲染、管线、资源管理、软件回退） |
+| sqlite/ | SQLite 数据库服务（B 树、WAL、连接池、查询执行器） |
+| image/ | 图像服务（JPEG/PNG/GIF/WebP/BMP 编解码、变换、硬件加速） |
+| core_processing/ | 核心处理服务（格式检测、共享内存传输、电源协调） |
 
 ## 依赖关系
 
@@ -22,15 +29,11 @@ Services 层（Layer 3）提供操作系统级的系统服务，在微内核架�
 
 ## 构建配置
 
-服务层随内核一起编译，通过条件编译支持不同设备类型：
-
-- 移动设备：启用 app、power、security 服务
-- 服务器设备：启用 ipc、net 服务
+服务层随内核一起编译，通过 feature flags 控制服务包含：
+- `mobile` profile：为手机/平板部署启用全部 13 项核心服务
+- `server` profile：启用 network、security、sqlite 和 web 服务
+- 服务通过 Nuva IPC 端口通信，采用 capability-gated 访问控制
 
 ## 公开接口
 
-各服务通过 Binder IPC 暴露接口，支持同步和异步调用：
-- `AppService` — 应用生命周期管理
-- `PowerService` — 电源策略和状态管理
-- `SecurityService` — 权限和密钥管理
-- `NetService` — 网络配置和连接管理
+提供以下服务接口：`AppService`、`IpcService`、`NetService`、`PowerService`、`SecurityService`、`AudioService`、`VideoService`、`WebService`、`OpenGLService`、`SqliteService`、`ImageService`、`CoreProcessingService`、`FormFactorService`。

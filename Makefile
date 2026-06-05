@@ -21,10 +21,13 @@ QEMU := qemu-system-x86_64
 # Targets
 TARGET_X86 := x86_64-unknown-none
 TARGET_ARM := aarch64-unknown-none
+TARGET_RISCV := riscv64-unknown-none
 
 # Features
 FEATURES_X86 := x64
 FEATURES_ARM := arm64
+FEATURES_RISCV := riscv64
+FEATURES_QEMU_VIRT := riscv64,qemu_virt
 FEATURES_KIRIN := arm64,kirin9020
 FEATURES_SNAPDRAGON := arm64,snapdragon8gen4
 
@@ -67,8 +70,13 @@ build-snapdragon:
 	$(CARGO) build --target $(TARGET_ARM) --release --features $(FEATURES_SNAPDRAGON)
 
 .PHONY: build-all
-build-all: build-x86 build-arm
+build-all: build-x86 build-arm build-riscv
 	@echo "$(GREEN)All targets built successfully!$(NC)"
+
+.PHONY: build-riscv
+build-riscv:
+	@echo "$(BLUE)Building for RISC-V 64...$(NC)"
+	$(CARGO) build --target $(TARGET_RISCV) --release --features $(FEATURES_RISCV)
 
 # ============================================================================
 # Development builds
@@ -168,6 +176,11 @@ run-arm: build-arm
 	@echo "$(BLUE)Running ARM64 in QEMU...$(NC)"
 	qemu-system-aarch64 -kernel $(TARGETDIR)/$(TARGET_ARM)/release/nuva_kernel
 
+.PHONY: run-riscv
+run-riscv: build-riscv
+	@echo "$(BLUE)Running RISC-V 64 in QEMU virt...$(NC)"
+	qemu-system-riscv64 -machine virt -nographic -bios default -kernel $(TARGETDIR)/$(TARGET_RISCV)/release/nuva_kernel
+
 # ============================================================================
 # Examples
 # ============================================================================
@@ -253,6 +266,7 @@ package: build-all
 	mkdir -p $(BUILDDIR)/package
 	cp $(TARGETDIR)/$(TARGET_X86)/release/nuva_kernel $(BUILDDIR)/package/
 	cp $(TARGETDIR)/$(TARGET_ARM)/release/nuva_kernel $(BUILDDIR)/package/nuva_kernel_arm64
+	cp $(TARGETDIR)/$(TARGET_RISCV)/release/nuva_kernel $(BUILDDIR)/package/nuva_kernel_riscv64
 	cp -r hal/ffi $(BUILDDIR)/package/
 	cp -r docs $(BUILDDIR)/package/
 	tar -czf $(BUILDDIR)/nuva-$(VERSION).tar.gz -C $(BUILDDIR)/package .
@@ -291,6 +305,7 @@ help:
 	@echo "  make build-kirin    - Build for Kirin 9020"
 	@echo "  make build-snapdragon - Build for Snapdragon 8 Gen 4"
 	@echo "  make build-all      - Build all targets"
+	@echo "  make build-riscv    - Build for RISC-V 64"
 	@echo ""
 	@echo "$(YELLOW)Testing:$(NC)"
 	@echo "  make test           - Run tests"
@@ -308,7 +323,8 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Running:$(NC)"
 	@echo "  make run            - Run in QEMU"
-	@echo "  make run-debug      - Run with debug"
+	@echo "  make run-arm        - Run ARM64 in QEMU"
+	@echo "  make run-riscv      - Run RISC-V 64 in QEMU virt"
 	@echo ""
 	@echo "$(YELLOW)Examples:$(NC)"
 	@echo "  make examples       - Build all examples"
@@ -322,12 +338,12 @@ help:
 # Phony targets
 # ============================================================================
 
-.PHONY: all build build-x86 build-arm build-kirin build-snapdragon build-all
+.PHONY: all build build-x86 build-arm build-riscv build-kirin build-snapdragon build-all
 .PHONY: dev debug
 .PHONY: test test-all coverage
 .PHONY: fmt fmt-check clippy lint audit
 .PHONY: doc doc-open doc-api
-.PHONY: run run-debug run-arm
+.PHONY: run run-debug run-arm run-riscv
 .PHONY: examples example-hal example-quantum example-npu
 .PHONY: bench bench-ipc bench-quantum
 .PHONY: clean clean-all

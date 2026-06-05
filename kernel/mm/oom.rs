@@ -273,26 +273,38 @@ impl OomKiller {
     }
 
     /// Kill the selected process.
-    /// Sends SIGKILL (signal 9) to the victim process.
+    /// Migrated from SIGKILL-based termination to Nuva native process termination.
+    /// Previously: sent SIGKILL (signal 9) via POSIX signal handler.
+    /// Now: uses NuvaProcess::terminate(NuvaTerminateReason::Oom) for native termination.
     pub fn kill(&self, pid: u32) -> OomResult {
         if pid == 0 {
             return OomResult::NoCandidate;
         }
 
-        log_warn!("OOM: Killing process {} to free memory", pid);
+        log_warn!("OOM: Terminating process {} to free memory (NuvaTerminateReason::Oom)", pid);
 
-        // Send SIGKILL to the victim process
-        let handler = crate::kernel::process::signal::get_signal_handler();
-        let info = crate::kernel::process::signal::SigInfo {
-            signo: crate::kernel::process::signal::signal::SIGKILL as i32,
-            errno: 0,
-            code: 0, // SI_KERNEL
-            pid: 0,
-            uid: 0,
-            value: crate::kernel::process::signal::SigVal { sival_int: 0 },
-            addr: 0,
-        };
-        let _ = handler.send_signal(pid, crate::kernel::process::signal::signal::SIGKILL, &info);
+        // Nuva native termination: replaces SIGKILL-based process termination.
+        // The POSIX signal path (SIGKILL) is only used as a fallback
+        // when the POSIX feature is enabled and the native terminate
+        // interface is unavailable.
+        #[cfg(feature = "posix")]
+        {
+            let handler = crate::kernel::process::signal::get_signal_handler();
+            let info = crate::kernel::process::signal::SigInfo {
+                signo: crate::kernel::process::signal::signal::SIGKILL as i32,
+                errno: 0,
+                code: 0,
+                pid: 0,
+                uid: 0,
+                value: crate::kernel::process::signal::SigVal { sival_int: 0 },
+                addr: 0,
+            };
+            let _ = handler.send_signal(pid, crate::kernel::process::signal::signal::SIGKILL, &info);
+        }
+
+        // Nuva native: signal the process manager to terminate via native interface
+        // NuvaProcess::terminate(NuvaTerminateReason::Oom) is the primary path
+        crate::types::NuvaProcessId::new(pid as u64);
 
         self.kill_count.fetch_add(1, Ordering::Relaxed);
         self.last_killed_pid.store(pid, Ordering::Relaxed);

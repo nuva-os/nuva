@@ -101,7 +101,7 @@ nuva-syslib = "0.1.0"
 name = "{}"
 version = "0.1.0"
 edition = "2021"
-authors = ["YuJie.Zhang <zhangyujie_china@163.com>"]
+authors = ["YuJie.Zhang <kellen9903@gmail.com>"]
 description = "A Nuva OS project"
 {}
 

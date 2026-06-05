@@ -21,6 +21,21 @@
 // Re-export print macros from crate root
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
 
+// Nuva native type system (foundation for all native interfaces)
+pub mod types;
+
+// Nuva native capability model (replaces POSIX uid/gid and Linux LSM)
+pub mod capability;
+
+// Nuva native process model (replaces POSIX fork/exec)
+pub mod nv_process;
+
+// Nuva native event notification (replaces POSIX signals)
+pub mod nv_event;
+
+// Equipment mode fault domain and recovery (EL1 services)
+pub mod equipment;
+
 // Existing subdirectory modules (unchanged)
 pub mod arch;
 pub mod debug;
@@ -44,7 +59,14 @@ pub mod tests;
 pub mod timer;
 pub mod tombstone;
 pub mod user;
+
+// BSD compatibility layer (optional, only for POSIX compatibility)
+#[cfg(feature = "posix")]
 pub mod bsd;
+
+// Vulkan native integration (optional, zero-copy GPU direct passthrough)
+#[cfg(feature = "vulkan")]
+pub mod vulkan;
 
 // Root-level modules (not moved)
 pub mod error;
@@ -101,6 +123,7 @@ pub use core::defense;
 pub use core::kernel_thread;
 pub use core::mempool;
 pub use core::perf_tune;
+#[cfg(feature = "posix")]
 pub use core::posix;
 pub use core::random;
 pub use core::signal;
@@ -112,7 +135,7 @@ pub use core::workqueue;
 pub use error::{KernelError, KernelResult};
 
 // Re-export main modules
-pub use ipc::nuvaipc;
+pub use ipc::nvipc;
 pub use quantum::{QuantumManager, QuantumRng, QkdSession, PqcContext, init_quantum};
 
 /// Kernel version

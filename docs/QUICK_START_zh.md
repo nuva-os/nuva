@@ -64,6 +64,9 @@ rustup target add --toolchain nightly x86_64-unknown-none
 # LoongArch64 目标（需要自定义 target JSON）
 rustup target add --toolchain nightly loongarch64-unknown-none
 
+# RISC-V 64 目标
+rustup target add --toolchain nightly riscv64-unknown-none
+
 # 安装 rust-src 组件（no_std 构建必需）
 rustup component add --toolchain nightly rust-src
 
@@ -137,6 +140,8 @@ Nuva OS 使用 Cargo feature flag 选择目标平台和硬件配置。所有 fea
 | `amd_ryzen` | x86_64 | AMD Ryzen 系列 |
 | `loongson3a6000` | LoongArch64 | 龙芯 3A6000 |
 | `loongson3c6000` | LoongArch64 | 龙芯 3C6000 |
+| `riscv64` | RISC-V 64 | 通用 RISC-V 64位 (RV64G) |
+| `qemu_virt` | RISC-V 64 | QEMU virt 虚拟机（隐含 `riscv64`） |
 | `smp` | 通用 | SMP 多核支持 |
 | `debug` | 通用 | 调试模式 |
 
@@ -186,6 +191,22 @@ cargo build --target loongarch64-unknown-none --features loongson3c6000
 
 ```bash
 cargo build --target aarch64-unknown-none --features kirin9020 --release
+```
+
+### 构建 RISC-V 64 版本
+
+```bash
+# 通用 RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64
+
+# QEMU virt 虚拟机
+cargo build --target riscv64-unknown-none --features qemu_virt
+```
+
+### RISC-V 64 发布构建
+
+```bash
+cargo build --target riscv64-unknown-none --features riscv64 --release
 ```
 
 ---
@@ -274,6 +295,28 @@ qemu-system-loongarch64 \
     -m 1G \
     -nographic \
     -kernel target/loongarch64-unknown-none/debug/nuva_kernel
+```
+
+### RISC-V 64（QEMU virt）
+
+```bash
+# 构建
+cargo build --target riscv64-unknown-none --features qemu_virt
+
+# 使用 QEMU virt 虚拟机运行（OpenSBI 固件）
+qemu-system-riscv64 \
+    -machine virt \
+    -m 1G \
+    -nographic \
+    -bios default \
+    -kernel target/riscv64-unknown-none/debug/nuva_kernel
+
+# 运行发布构建
+qemu-system-riscv64 \
+    -machine virt \
+    -nographic \
+    -bios default \
+    -kernel target/riscv64-unknown-none/release/nuva_kernel
 ```
 
 ### QEMU 常用参数
@@ -500,8 +543,8 @@ rustup show
 
 - **GitHub Issues**：https://github.com/nuva-os/nuva/issues
 - **文档**：[docs/](docs/) 目录
-- **邮箱**：team@nuva-os.org
+- **邮箱**：kellen9903@gmail.com
 
 ---
 
-**最后更新**：2026 年 5 月 15 日
+**最后更新**：2026 年 5 月 30 日

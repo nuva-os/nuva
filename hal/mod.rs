@@ -45,8 +45,11 @@ pub mod platform;
 // Quantum technology HAL
 pub mod quantum;
 
-// Device Tree parser (ARM64)
+// Device Tree parser (ARM64 + RISC-V)
 #[cfg(feature = "arm64")]
+pub mod dt;
+
+#[cfg(feature = "riscv64")]
 pub mod dt;
 
 // ACPI table parser (x86_64)
@@ -64,6 +67,10 @@ pub mod x64;
 // LoongArch64 HAL
 #[cfg(feature = "loongarch64")]
 pub mod loongarch64;
+
+// RISC-V 64 HAL
+#[cfg(feature = "riscv64")]
+pub mod riscv64;
 
 // Snapdragon HAL
 #[cfg(feature = "snapdragon8gen4")]
@@ -85,6 +92,12 @@ pub fn init_hal() {
     {
         // Parse ACPI tables for hardware discovery on x86_64
         acpi::init_acpi();
+    }
+
+    #[cfg(feature = "riscv64")]
+    {
+        // Parse FDT for hardware discovery on RISC-V
+        dt::init_dt();
     }
 
     // Step 3: Initialize platform-specific HAL
@@ -118,6 +131,11 @@ pub fn init_hal() {
             // Loongson HAL initialize
             cpu::loongson::get_loongson_hal().init();
         }
+    }
+
+    #[cfg(feature = "riscv64")]
+    {
+        riscv64::init_hal_riscv();
     }
 
     // Step 4: Log final platform summary

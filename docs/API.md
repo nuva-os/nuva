@@ -232,31 +232,35 @@ pub fn set_tensor_data(tensor: &mut Tensor, data: &[u8]) -> Result<()>;
 
 ## 6. Application Framework API
 
-### 6.1 UI Components
+> **Declarative-only paradigm**: The Application Framework exclusively uses the Nuva declarative programming model. Imperative patterns (`create_widget`, `register_handler`, `ActivityManager`, `EventDispatcher`) are prohibited. See [CODING_STANDARD.md](CODING_STANDARD.md) and [NUVA_LANG.md](NUVA_LANG.md).
+
+### 6.1 UI Components (Declarative)
 
 ```rust
-pub fn create_widget(parent: Option<&Widget>, props: WidgetProps) -> Result<Widget>;
-pub fn set_prop(widget: &Widget, key: &str, value: &PropValue) -> Result<()>;
-pub fn get_prop(widget: &Widget, key: &str) -> Result<PropValue>;
-pub fn add_child(parent: &Widget, child: &Widget) -> Result<()>;
-pub fn remove_child(parent: &Widget, child: &Widget) -> Result<()>;
+// component declaration — declarative UI composition
+pub fn component(name: &str, render: ComponentFn) -> Component;
+pub fn compose(children: &[Component]) -> Component;
+pub fn with_props(component: Component, props: &[PropBinding]) -> Component;
+
+// signal-based reactive state
+pub fn signal<T>(initial: T) -> (ReadSignal<T>, WriteSignal<T>);
+pub fn bind<T: Reactive>(signal: &ReadSignal<T>, prop: &str) -> PropBinding;
+pub fn effect<F: FnOnce() + 'static>(f: F) -> Effect;
 ```
 
-### 6.2 Window Management
+### 6.2 Window Management (Declarative)
 
 ```rust
-pub fn create_window(attrs: WindowAttrs) -> Result<Window>;
-pub fn show_window(window: &Window) -> Result<()>;
-pub fn hide_window(window: &Window) -> Result<()>;
-pub fn destroy_window(window: Window) -> Result<()>;
+pub fn window(attrs: WindowAttrs, content: Component) -> Window;
+pub fn with_window_config(window: &Window, config: WindowConfig) -> Window;
 ```
 
-### 6.3 Event Handling
+### 6.3 Event Handling (Declarative)
 
 ```rust
-pub fn register_handler(widget: &Widget, event_type: EventType, handler: EventHandler) -> Result<()>;
-pub fn send_event(event: Event) -> Result<()>;
-pub fn dispatch_event(event: Event) -> Result<()>;
+// events are declared as part of the component model, not registered imperatively
+pub fn on(event_type: EventType, handler: EventHandler) -> EventBinding;
+pub fn signal_from_event<T>(event_type: EventType, mapper: fn(Event) -> T) -> ReadSignal<T>;
 ```
 
 ---
@@ -331,6 +335,43 @@ pub fn notify_kernel_scheduler(task_id: u64, event: AiSchedulerEvent) -> Result<
 pub fn select_cpu_for_task(task: &AiTask) -> Result<u32>;
 pub fn ai_wakeup_boost_external(task: &Task) -> Result<()>;
 pub fn ai_latency_aware_pick_external(candidates: &[Task]) -> Result<Option<&Task>>;
+```
+
+### 9.4 NvScheduler AI Intelligent Scheduler API
+
+```rust
+// NvScheduler system calls
+pub fn nv_sched_submit_task(cap: NuvaCapabilityId, pid: u32, sched_class: u8) -> KernelResult<u64>;
+pub fn nv_sched_set_policy(cap: NuvaCapabilityId, mode: u8) -> KernelResult<()>;
+pub fn nv_sched_get_decision(cap: NuvaCapabilityId, pid: u32) -> KernelResult<(u64, u8, u8)>;
+pub fn nv_sched_set_mode(cap: NuvaCapabilityId, mode: NvSchedMode) -> KernelResult<()>;
+pub fn nv_sched_get_stats(cap: NuvaCapabilityId) -> KernelResult<(u64, u64, u32, u32)>;
+```
+
+### 9.5 NvBalancer Heterogeneous Hardware Balancer API
+
+```rust
+// NvBalancer system calls
+pub fn nv_balancer_query_load(cap: NuvaCapabilityId) -> KernelResult<(u32, u32)>;
+pub fn nv_balancer_get_topology(cap: NuvaCapabilityId) -> KernelResult<(u32, u64)>;
+pub fn nv_balancer_request_balance(cap: NuvaCapabilityId, trigger_pct: u32) -> KernelResult<(usize, u32)>;
+pub fn nv_balancer_register_device(cap: NuvaCapabilityId, device_type: u8, numa_node: u32) -> KernelResult<usize>;
+pub fn nv_balancer_unregister_device(cap: NuvaCapabilityId, device_id: u32) -> KernelResult<()>;
+pub fn nv_balancer_get_stats(cap: NuvaCapabilityId) -> KernelResult<(u64, u64, u64, u32)>;
+```
+
+### 9.6 NvPowerMgr Power Optimization API
+
+```rust
+// NvPowerMgr system calls
+pub fn nv_power_set_budget(cap: NuvaCapabilityId, budget_mw: u32) -> KernelResult<()>;
+pub fn nv_power_get_consumption(cap: NuvaCapabilityId) -> KernelResult<(u32, u32)>;
+pub fn nv_power_get_green_metrics(cap: NuvaCapabilityId) -> KernelResult<(u32, u64, u32)>;
+pub fn nv_power_set_device_dvfs(cap: NuvaCapabilityId, device_index: usize, level: u16) -> KernelResult<()>;
+pub fn nv_power_set_device_state(cap: NuvaCapabilityId, device_index: usize, sleep_level: u8) -> KernelResult<()>;
+pub fn nv_power_get_thermal(cap: NuvaCapabilityId, device_index: usize) -> KernelResult<(u32, bool, u8)>;
+pub fn nv_power_evaluate_impact(cap: NuvaCapabilityId, decision_id: u64) -> KernelResult<(u32, u32)>;
+pub fn nv_power_get_stats(cap: NuvaCapabilityId) -> KernelResult<(u64, u64, u64, u64)>;
 ```
 
 ### 9.4 DaVinci NPU Operations
@@ -870,5 +911,5 @@ All methods perform real HTTP requests to the configured registry.
 
 ---
 
-**Last Updated**: May 15, 2026
+**Last Updated**: May 30, 2026
 **License**: Apache-2.0

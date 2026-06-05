@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-nightly-orange.svg)](https://www.rust-lang.org/)
-[![Platform](https://img.shields.io/badge/platform-ARM64%20%7C%20x86--64%20%7C%20LoongArch64-green.svg)]()
+[![Platform](https://img.shields.io/badge/platform-ARM64%20%7C%20x86--64%20%7C%20LoongArch64%20%7C%20RISC--V%2064-green.svg)]()
 
 [English](README.md) | 简体中文
 
@@ -14,15 +14,15 @@
 
 ## 概述
 
-Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下一代操作系统，专为现代移动和嵌入式设备设计。它在 ARM64、x86-64 和 LoongArch64 架构上提供高性能、抗量子安全和 AI 原生智能。
+Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下一代操作系统，专为现代移动和嵌入式设备设计。它在 ARM64、x86-64、LoongArch64 和 RISC-V 64 (RV64G) 架构上提供高性能、抗量子安全和 AI 原生智能。
 
 ### 核心支柱
 
-- **抗量子安全**：NIST PQC 标准算法（CRYSTALS-Kyber、CRYSTALS-Dilithium），SHA-256 FIPS 180-4，QRNG/QKD 接口
+- **抗量子安全**：NIST PQC 标准算法（CRYSTALS-Kyber、CRYSTALS-Dilithium），SHA-256 FIPS 180-4，硬件 QRNG 集成（MMIO/DT/ACPI 熵源），QKD BB84 协议实现
 - **AI 原生设计**：统一 NPU 抽象（达芬奇 NPU HAL），AI 驱动的调度器（EAS 能耗感知调度）
 - **高性能**：零拷贝 IPC（小消息 <100ns），无锁数据结构，Buddy + SLAB 分配器
 - **插件架构**：ELF 动态加载器，沙箱隔离，热插拔，生命周期管理（100% 已实现）
-- **多架构支持**：ARM64、x86-64、LoongArch64（页表、中断、SIMD 已实现）
+- **多架构支持**：ARM64、x86-64、LoongArch64、RISC-V 64（页表、中断、SIMD 已实现）
 - **完整 SDK**：调试器（DAP 协议）、性能分析器（/proc）、包管理器（HTTP）、CLI、构建系统（100% 已实现）
 
 ## 系统架构
@@ -55,7 +55,7 @@ Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下
 ┌─────────────────────────────────────────────────────────┐
 │                 硬件抽象层 (L0)                           │
 │  CPU │ GPU │ NPU │ 电源 │ 量子 │ FFI │ 输入 │ 设备树      │
-│  ARM64 │ x64 │ LoongArch64 │ Snapdragon │ ACPI           │
+│  ARM64 │ x64 │ LoongArch64 │ RISC-V 64 │ Snapdragon │ ACPI │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -69,7 +69,7 @@ Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下
 | L3 — Services | L0, L1, L2 | 系统服务层 |
 | L4 — Application | L0, L1, L2, L3 | 应用框架层 |
 
-> **最新实现**：SHA-256 FIPS 180-4 · ELF 加载器 · NFS/SMB 客户端 · 达芬奇 NPU HAL · AI 调度器 · LoongArch64 页表/中断/SIMD · 插件沙箱 · SDK 调试器(DAP)/性能分析器(/proc)/包管理器(HTTP)
+> **最新实现**：SHA-256 FIPS 180-4 · ELF 加载器 · NFS/SMB 客户端 · io_uring · TCP 状态机 · 防火墙 · NvCapability-LSM 桥接 · 硬件 QRNG · QKD BB84 · 达芬奇 NPU HAL · AI 调度器 · LoongArch64 页表/中断/SIMD · 插件沙箱 · SDK 调试器(DAP)/性能分析器(/proc)/包管理器(HTTP) · RISC-V Sv39 三级页表遍历 · GPU/NPU中断处理+VRAM/模型内存分配器 · DVFS硬件+热管理 · NvScheduler/NvBalancer/NvPowerMgr+三方协同
 
 ## 核心功能
 
@@ -79,11 +79,11 @@ Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下
 |------|------|------|
 | 进程管理 | 进程创建、调度、销毁，完整的生命周期管理 | 已完成 |
 | 内存管理 | 页表、地址空间、缺页异常处理、mmap/munmap/mprotect/msync、OOM killer | 已完成 |
-| 文件系统 | VFS（open/close/read/write/lseek/mkdir/unlink）、Ext4、Ramfs、NuvaFS、NFS/SMB 客户端 | 已完成 |
-| 网络协议栈 | TCP/IP、UDP、Socket API | 已完成 |
+| 文件系统 | VFS（open/close/read/write/lseek/mkdir/unlink）、Ext4、Ramfs、NuvaFS、NFS/SMB 客户端、io_uring 异步 I/O | 已完成 |
+| 网络协议栈 | TCP/IP（RFC 793 完整状态机）、UDP、Socket API、防火墙（无状态规则、NAT、速率限制） | 已完成 |
 | IPC | NuvaIPC、L4 IPC、共享内存 | 已完成 |
 | 安全子系统 | 能力安全、沙箱隔离、ASLR、SHA-256 FIPS 180-4 | 已完成 |
-| 启动流程 | ARM64 FDT、x64 Multiboot2、LoongArch64 UEFI 启动 | 已完成 |
+| 启动流程 | ARM64 FDT、x64 Multiboot2、LoongArch64 UEFI 启动、RISC-V 64 SBI 启动 | 已完成 |
 | 平台检测 | PlatformInfo、BootInfoType、detect_platform_info() | 已完成 |
 | 插件系统 | ELF 加载器、沙箱隔离、生命周期管理、注册中心 | 已完成 |
 | SDK | 调试器（DAP）、性能分析器（/proc）、包管理器（HTTP）、CLI、构建系统 | 已完成 |
@@ -175,6 +175,7 @@ rustup override set nightly
 # 安装目标平台
 rustup target add --toolchain nightly aarch64-unknown-none
 rustup target add --toolchain nightly x86_64-unknown-none
+rustup target add --toolchain nightly riscv64-unknown-none
 
 # 安装必要组件
 rustup component add rust-src
@@ -184,6 +185,9 @@ cargo build --target aarch64-unknown-none --features arm64 --release
 
 # 构建 x86-64
 cargo build --target x86_64-unknown-none --features x64 --release
+
+# 构建 RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64 --release
 
 # 运行测试
 cargo test
@@ -198,6 +202,10 @@ qemu-system-aarch64 -machine virt -cpu cortex-a76 \
 
 # x86-64
 qemu-system-x86_64 -kernel target/x86_64-unknown-none/release/nuva_kernel
+
+# RISC-V 64
+qemu-system-riscv64 -machine virt -nographic -bios default \
+  -kernel target/riscv64-unknown-none/release/nuva_kernel
 ```
 
 ### 快速示例
@@ -223,6 +231,8 @@ int main() {
 | `arm64` | — | ARM64 架构支持 |
 | `x64` | — | x86-64 架构支持 |
 | `loongarch64` | — | LoongArch64 架构支持 |
+| `riscv64` | — | RISC-V 64 架构支持 |
+| `qemu_virt` | `riscv64` | QEMU virt 虚拟机（RISC-V 64） |
 | `kirin` | `arm64` | 海思麒麟 SoC 通用支持 |
 | `kirin9000` | `arm64` | 麒麟 9000 |
 | `kirin9010` | `arm64` | 麒麟 9010 |
@@ -234,6 +244,7 @@ int main() {
 | `amd_ryzen` | `x64` | AMD Ryzen 处理器 |
 | `debug` | — | 调试模式 |
 | `smp` | — | 对称多处理器支持 |
+| `skip_dep_check` | — | 跳过依赖检查 |
 
 ## 支持平台
 
@@ -242,6 +253,7 @@ int main() {
 | ARM64 | `aarch64-unknown-none` | 编译通过 | 麒麟 9020、骁龙 8 Gen 4 |
 | x86-64 | `x86_64-unknown-none` | 编译通过 | Intel Core、AMD Ryzen |
 | LoongArch64 | `loongarch64-unknown-none` | 编译通过 | 龙芯 3A6000 / 3C6000 |
+| RISC-V 64 | `riscv64-unknown-none` | 编译通过 | QEMU virt 虚拟机 |
 
 ## 性能指标
 
@@ -262,6 +274,7 @@ nuva/
 │   ├── arch/              # 架构相关代码
 │   │   ├── arm64/         # ARM64（启动、异常向量、GIC、MMU、FDT）
 │   │   ├── loongarch64/   # LoongArch64（启动、链接脚本、MMU、中断、SIMD）
+│   │   ├── riscv64/       # RISC-V 64（boot/SBI、trap、MMU、PLIC、定时器、上下文）
 │   │   └── x64/           # x86-64（启动、GDT、IDT、异常、APIC）
 │   ├── mm/                # 内存管理（buddy、SLAB、mmap、OOM）
 │   ├── process/           # 进程管理
@@ -277,8 +290,14 @@ nuva/
 │   ├── bsd/               # BSD 兼容层
 │   ├── debug/             # 调试与诊断
 │   ├── device/            # 设备管理
-│   ├── virt/              # 虚拟化支持
-│   └── platform.rs        # 平台检测
+│   ├── init/              # 内核初始化
+│   ├── diag/              # 诊断子系统
+│   ├── irq_mgmt/          # IRQ 管理
+│   ├── net_stack/         # 网络协议栈
+│   ├── storage/           # 存储子系统
+│   ├── power_mgmt/        # 电源管理
+│   ├── core/              # 核心内核服务
+│   └── virt/              # 虚拟化支持
 ├── hal/                   # 硬件抽象层 (L0)
 │   ├── cpu/               # CPU 抽象（Kirin PSCI SMC）
 │   ├── gpu/               # GPU 抽象
@@ -290,6 +309,7 @@ nuva/
 │   ├── arm64/             # ARM64 平台
 │   ├── x64/               # x86-64 平台（APIC、Timer、PageTable、Power）
 │   ├── loongarch64/       # LoongArch64 平台（MMU、页表、中断、SIMD）
+│   ├── riscv64/           # RISC-V 64 平台（CPU、MMU、中断控制器）
 │   ├── acpi.rs            # ACPI 电源驱动（Fadt、睡眠状态）
 │   ├── dt.rs              # 设备树解析器
 │   ├── input.rs           # 输入子系统
@@ -388,8 +408,26 @@ nuva/
 - [x] 达芬奇 NPU HAL 实现
 - [x] AI 调度器（智能任务调度）
 - [x] LoongArch64 页表、中断、SIMD 支持
+- [x] RISC-V 64 SBI 启动、页表、PLIC、trap 处理
 - [x] 插件沙箱隔离
 - [x] SDK 调试器（DAP 协议）、性能分析器（/proc）、包管理器（HTTP）
+
+### 第六阶段：AI原生核心 (P5) — 已完成
+- [x] NvScheduler AI智能调度器（NPU推理、四级调度类别、三级降级）
+- [x] NvBalancer异构硬件均衡器（拓扑、震荡检测、热插拔）
+- [x] NvPowerMgr AI驱动功耗优化（预算、DVFS、温度、绿色指标）
+- [x] 三方协同：NvScheduler↔NvBalancer↔NvPowerMgr运行时不变量
+- [x] NuvaFS WAL/COW/Snapshot、IPv6邻居发现、安全启动、PQC合规
+
+### 第七阶段：硬件集成 (P6) — 进行中
+- [x] RISC-V Sv39 三级页表遍历(map/unmap/translate/protect)
+- [x] Maleoon GPU ops桥接+中断处理+VRAM分配器
+- [x] Da Vinci NPU中断处理+可回收模型内存管理器
+- [x] CPU DVFS硬件调用+热管理(85°C节流/105°C关机)
+- [x] 系统power_off/reboot平台调用+域注册
+- [x] PMIC ops桥接到实际驱动方法
+- [ ] USB主控制器驱动
+- [ ] LoongArch64 QEMU/LBT支持
 
 ## 文档
 
@@ -461,8 +499,7 @@ nuva/
 ## 联系方式
 
 - **GitHub**：[https://github.com/nuva-os/nuva](https://github.com/nuva-os/nuva)
-- **Gitee**：[https://gitee.com/nuva-os/nuva](https://gitee.com/nuva-os/nuva)
-- **邮箱**：[zhangyujie_china@163.com](mailto:zhangyujie_china@163.com)
+- **邮箱**：[kellen9903@gmail.com](mailto:kellen9903@gmail.com)
 
 ---
 

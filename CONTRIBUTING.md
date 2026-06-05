@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to Nuva OS! This document provides guidelines and instructions for contributing.
 
-> Last updated: 2026-05-17
+> Last updated: 2026-05-30
 
 ## Code of Conduct
 
@@ -64,6 +64,9 @@ cargo build --target x86_64-unknown-none
 
 # Build for ARM64
 cargo build --target aarch64-unknown-none
+
+# Build for RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64
 
 # Build with features
 cargo build --features kirin9020
@@ -144,7 +147,7 @@ cargo clippy -- -W clippy::all
 ```
 nuva/
 ├── kernel/           # Kernel implementation
-│   ├── arch/        # Architecture-specific (arm64, loongarch64, x64)
+│   ├── arch/        # Architecture-specific (arm64, loongarch64, riscv64, x64)
 │   ├── mm/          # Memory management
 │   ├── process/     # Process management
 │   ├── sched/       # Scheduler
@@ -157,7 +160,7 @@ nuva/
 │   ├── gpu/         # GPU abstraction
 │   ├── npu/         # NPU abstraction
 │   └── quantum/     # Quantum cryptography
-├── lib/              # Core libraries
+├── syslib/           # System libraries
 │   ├── brain/       # AI engine
 │   ├── lang/        # Nuva language compiler & runtime
 │   ├── net/         # Network library
@@ -297,7 +300,7 @@ Reviewers check for:
 - **Documentation**: [docs/](docs/)
 - **Issues**: [GitHub Issues](https://github.com/nuva-os/nuva/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/nuva-os/nuva/discussions)
-- **Email**: zhangyujie_china@163.com
+- **Email**: kellen9903@gmail.com
 
 ## Acknowledgments
 

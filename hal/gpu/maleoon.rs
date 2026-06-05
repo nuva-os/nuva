@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Nuva OS - HAL - Gpu
  *
  * Copyright (C) 2026 Nuva OS Team
@@ -526,28 +526,29 @@ impl MaleoonGpuHal {
     }
 }
 
+fn gpu_ops_init() -> i32 { get_maleoon_hal().init() }
+fn gpu_ops_get_info() -> GpuInfo { get_maleoon_hal().get_gpu_info() }
+fn gpu_ops_submit(cmd: &GpuCommand) -> i32 { get_maleoon_hal().submit_command(cmd) }
+fn gpu_ops_wait(sync_obj: u64, timeout: u64) -> i32 { get_maleoon_hal().wait_command(sync_obj, timeout) }
+fn gpu_ops_set_freq(freq: u64) -> i32 { get_maleoon_hal().set_frequency(freq) }
+fn gpu_ops_get_freq() -> u64 { get_maleoon_hal().current_freq }
+fn gpu_ops_enter_idle() -> i32 { get_maleoon_hal().enter_idle() }
+fn gpu_ops_exit_idle() -> i32 { get_maleoon_hal().exit_idle() }
+fn gpu_ops_suspend() -> i32 { get_maleoon_hal().suspend() }
+fn gpu_ops_resume() -> i32 { get_maleoon_hal().resume() }
+
 /// Maleoon GPU HAL operations
 pub static MALEOON_GPU_OPS: GpuHalOps = GpuHalOps {
-    init: || 0,
-    get_gpu_info: || GpuInfo {
-        gpu_id: 0,
-        name: "Maleoon 910",
-        state: GpuState::Idle,
-        current_freq: 0,
-        min_freq: 0,
-        max_freq: 0,
-        vram_size: 0,
-        utilization: 0,
-        temperature: 0,
-    },
-    submit_command: |_cmd| 0,
-    wait_command: |_sync_obj, _timeout| 0,
-    set_frequency: |_freq| 0,
-    get_frequency: || 0,
-    enter_idle: || 0,
-    exit_idle: || 0,
-    suspend: || 0,
-    resume: || 0,
+    init: gpu_ops_init,
+    get_gpu_info: gpu_ops_get_info,
+    submit_command: gpu_ops_submit,
+    wait_command: gpu_ops_wait,
+    set_frequency: gpu_ops_set_freq,
+    get_frequency: gpu_ops_get_freq,
+    enter_idle: gpu_ops_enter_idle,
+    exit_idle: gpu_ops_exit_idle,
+    suspend: gpu_ops_suspend,
+    resume: gpu_ops_resume,
 };
 
 static mut MALEOON_GPU_HAL: MaleoonGpuHal = MaleoonGpuHal::new();
@@ -627,6 +628,178 @@ impl GpuDevice for MaleoonGpuHal {
     }
 }
 
+// ============================================================================
+// GPU Interrupt Handler
+// ============================================================================
+
+const GPU_IRQ_FENCE: u32 = 0;
+const GPU_IRQ_GART_FAULT: u32 = 1;
+const GPU_IRQ_HANG: u32 = 2;
+const GPU_IRQ_CMD_COMPLETE: u32 = 3;
+
+pub fn maleoon_irq_handler(irq: u32) {
+    let hal = get_maleoon_hal();
+    match irq {
+        _ if irq == GPU_IRQ_FENCE => {
+            unsafe {
+                let fence_val = MaleoonGpuHal::read_reg(GPU_CTRL_BASE + GPU_CTRL_FENCE_VALUE);
+                hal.sync_counter.store(fence_val as u64, Ordering::Release);
+            }
+        }
+        _ if irq == GPU_IRQ_GART_FAULT => {
+            let fault = unsafe { MaleoonGpuHal::read_reg(GPU_CTRL_BASE + GPU_CTRL_GART_FAULT) };
+            log_warn!("Maleoon GPU: GART fault at 0x{:X}", fault);
+            unsafe { MaleoonGpuHal::write_reg(GPU_CTRL_BASE + GPU_CTRL_GART_TLB_INV, 1); }
+        }
+        _ if irq == GPU_IRQ_HANG => {
+            log_error!("Maleoon GPU: Hang detected, attempting soft reset");
+            unsafe {
+                MaleoonGpuHal::write_reg(GPU_CTRL_BASE + GPU_CTRL_RESET_SOFT, RESET_SOFT_TRIGGER);
+                let mut timeout = 100_000u32;
+                while timeout > 0 {
+                    let status = MaleoonGpuHal::read_reg(GPU_CTRL_BASE + GPU_CTRL_RESET_STATUS);
+                    if status == RESET_STATUS_DONE { break; }
+                    timeout -= 1;
+                }
+            }
+            hal.state = GpuState::Error;
+        }
+        _ if irq == GPU_IRQ_CMD_COMPLETE => {
+            let state = unsafe { MaleoonGpuHal::read_reg(GPU_CTRL_BASE + GPU_CTRL_STATE) };
+            if (state & GPU_STATE_BUSY) == 0 {
+                hal.state = GpuState::Idle;
+            }
+        }
+        _ => {
+            log_warn!("Maleoon GPU: Unknown IRQ {}", irq);
+        }
+    }
+}
+
+// ============================================================================
+// VRAM Allocator
+// ============================================================================
+
+const VRAM_BLOCK_SIZE: u64 = 4096;
+
+#[derive(Debug, Clone, Copy)]
+pub struct VramRegion {
+    pub offset: u64,
+    pub size: u64,
+    pub allocated: bool,
+}
+
+pub struct VramAllocator {
+    regions: [VramRegion; 64],
+    num_regions: u32,
+    total_size: u64,
+    used_size: u64,
+}
+
+impl VramAllocator {
+    pub const fn new() -> Self {
+        VramAllocator {
+            regions: [VramRegion { offset: 0, size: 0, allocated: false }; 64],
+            num_regions: 0,
+            total_size: 0,
+            used_size: 0,
+        }
+    }
+
+    pub fn init(&mut self, vram_size: u64) {
+        self.total_size = vram_size;
+        self.used_size = 0;
+        self.num_regions = 1;
+        self.regions[0] = VramRegion {
+            offset: 0,
+            size: vram_size,
+            allocated: false,
+        };
+    }
+
+    pub fn alloc(&mut self, size: u64) -> Option<u64> {
+        let aligned_size = ((size + VRAM_BLOCK_SIZE - 1) / VRAM_BLOCK_SIZE) * VRAM_BLOCK_SIZE;
+        let mut best_idx: Option<usize> = None;
+        let mut best_size: u64 = u64::MAX;
+
+        for i in 0..self.num_regions as usize {
+            let r = &self.regions[i];
+            if !r.allocated && r.size >= aligned_size && r.size < best_size {
+                best_idx = Some(i);
+                best_size = r.size;
+            }
+        }
+
+        let idx = best_idx?;
+        let offset = self.regions[idx].offset;
+        let remaining = self.regions[idx].size - aligned_size;
+
+        self.regions[idx].size = aligned_size;
+        self.regions[idx].allocated = true;
+
+        if remaining > 0 && (self.num_regions as usize) < 64 {
+            let nr = self.num_regions as usize;
+            self.regions[nr] = VramRegion {
+                offset: offset + aligned_size,
+                size: remaining,
+                allocated: false,
+            };
+            self.num_regions += 1;
+        }
+
+        self.used_size += aligned_size;
+        Some(GPU_VRAM_BASE + offset)
+    }
+
+    pub fn free(&mut self, addr: u64) -> bool {
+        if addr < GPU_VRAM_BASE { return false; }
+        let offset = addr - GPU_VRAM_BASE;
+
+        for i in 0..self.num_regions as usize {
+            if self.regions[i].offset == offset && self.regions[i].allocated {
+                self.used_size -= self.regions[i].size;
+                self.regions[i].allocated = false;
+                self.coalesce();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn coalesce(&mut self) {
+        if self.num_regions < 2 { return; }
+        let n = self.num_regions as usize;
+        let mut i = 0;
+        while i < n - 1 {
+            if !self.regions[i].allocated && !self.regions[i + 1].allocated {
+                let end_i = self.regions[i].offset + self.regions[i].size;
+                if end_i == self.regions[i + 1].offset {
+                    self.regions[i].size += self.regions[i + 1].size;
+                    for j in (i + 1)..n - 1 {
+                        self.regions[j] = self.regions[j + 1];
+                    }
+                    self.num_regions -= 1;
+                    continue;
+                }
+            }
+            i += 1;
+        }
+    }
+
+    pub fn used(&self) -> u64 { self.used_size }
+    pub fn total(&self) -> u64 { self.total_size }
+}
+
+static mut VRAM_ALLOCATOR: VramAllocator = VramAllocator::new();
+
+pub fn get_vram_allocator() -> &'static mut VramAllocator {
+    unsafe { &mut VRAM_ALLOCATOR }
+}
+
+pub fn init_vram(vram_size: u64) {
+    get_vram_allocator().init(vram_size);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -636,5 +809,177 @@ mod tests {
         let hal = get_maleoon_hal();
         assert_eq!(hal.config.model, "Maleoon 910");
         assert_eq!(hal.config.num_cores, 10);
+    }
+}
+
+
+
+
+
+
+
+// ============================================================================
+// Additional Register Definitions (Reset, GART, Fence, Capability)
+// ============================================================================
+
+// Reset register offsets
+const GPU_CTRL_RESET_SOFT: u64 = 0x0040;
+const GPU_CTRL_RESET_HARD: u64 = 0x0044;
+const GPU_CTRL_RESET_STATUS: u64 = 0x0048;
+const GPU_CTRL_HANG_DETECT: u64 = 0x004C;
+const GPU_CTRL_ENGINE_STATUS: u64 = 0x0050;
+
+// GART register offsets
+const GPU_CTRL_GART_CTRL: u64 = 0x0058;
+const GPU_CTRL_GART_TLB_INV: u64 = 0x005C;
+const GPU_CTRL_GART_FAULT: u64 = 0x0060;
+
+// Fence register offsets
+const GPU_CTRL_FENCE_CTRL: u64 = 0x0068;
+const GPU_CTRL_FENCE_VALUE: u64 = 0x006C;
+const GPU_CTRL_FENCE_IRQ: u64 = 0x0070;
+
+// Capability register offsets
+const GPU_CTRL_CAP_ADMIN: u64 = 0x0080;
+const GPU_CTRL_CAP_RENDER: u64 = 0x0084;
+const GPU_CTRL_CAP_COMPUTE: u64 = 0x0088;
+const GPU_CTRL_CAP_COPY: u64 = 0x008C;
+
+// Capability bit definitions
+const CAP_GPU_ADMIN: u32 = 0x0000_0001;
+const CAP_GPU_RENDER: u32 = 0x0000_0002;
+const CAP_GPU_COMPUTE: u32 = 0x0000_0004;
+const CAP_GPU_COPY: u32 = 0x0000_0008;
+const CAP_GPU_IOMMU: u32 = 0x0000_0010;
+
+// Reset register values
+const RESET_SOFT_TRIGGER: u32 = 0x0000_0001;
+const RESET_HARD_TRIGGER: u32 = 0x0000_0001;
+const RESET_STATUS_DONE: u32 = 0x0000_0001;
+const RESET_STATUS_IN_PROGRESS: u32 = 0x0000_0002;
+const RESET_STATUS_FAILED: u32 = 0x0000_0003;
+
+// Engine status values
+const ENGINE_STATUS_IDLE: u32 = 0x0000_0000;
+const ENGINE_STATUS_BUSY: u32 = 0x0000_0001;
+const ENGINE_STATUS_HUNG: u32 = 0x0000_0002;
+
+// GART control bits
+const GART_CTRL_ENABLE: u32 = 0x0000_0001;
+const GART_CTRL_IOMMU: u32 = 0x0000_0002;
+const GART_CTRL_FAULT_IRQ: u32 = 0x0000_0004;
+
+// Fence control bits
+const FENCE_CTRL_ENABLE: u32 = 0x0000_0001;
+const FENCE_CTRL_IRQ_EN: u32 = 0x0000_0002;
+
+// ============================================================================
+// Capability-Based GPU Access
+// ============================================================================
+
+/// GPU capability set - replaces DRM master/UID with capability-based access
+///
+/// In Nuva OS, GPU access is controlled by capabilities rather than
+/// the traditional Linux DRM master/UID model. This provides finer-grained
+/// access control and better security isolation between GPU contexts.
+#[derive(Debug, Clone, Copy)]
+pub struct GpuCapabilities {
+    /// Raw capability bitmask
+    caps: u32,
+}
+
+impl GpuCapabilities {
+    /// Create a new capability set from a bitmask
+    pub const fn from_bits(bits: u32) -> Self {
+        GpuCapabilities { caps: bits }
+    }
+
+    /// No capabilities (unprivileged)
+    pub const fn none() -> Self {
+        GpuCapabilities { caps: 0 }
+    }
+
+    /// Admin capabilities (full access)
+    pub const fn admin() -> Self {
+        GpuCapabilities { caps: CAP_GPU_ADMIN | CAP_GPU_RENDER | CAP_GPU_COMPUTE | CAP_GPU_COPY | CAP_GPU_IOMMU }
+    }
+
+    /// Render capabilities (typical application)
+    pub const fn render() -> Self {
+        GpuCapabilities { caps: CAP_GPU_RENDER | CAP_GPU_COPY }
+    }
+
+    /// Compute capabilities (ML/compute workloads)
+    pub const fn compute() -> Self {
+        GpuCapabilities { caps: CAP_GPU_COMPUTE | CAP_GPU_COPY }
+    }
+
+    /// Check if a specific capability is present
+    pub const fn has(&self, cap: u32) -> bool {
+        (self.caps & cap) != 0
+    }
+
+    /// Check if admin capability is present
+    pub const fn is_admin(&self) -> bool {
+        (self.caps & CAP_GPU_ADMIN) != 0
+    }
+
+    /// Check if render capability is present
+    pub const fn can_render(&self) -> bool {
+        (self.caps & CAP_GPU_RENDER) != 0
+    }
+
+    /// Check if compute capability is present
+    pub const fn can_compute(&self) -> bool {
+        (self.caps & CAP_GPU_COMPUTE) != 0
+    }
+
+    /// Check if copy capability is present
+    pub const fn can_copy(&self) -> bool {
+        (self.caps & CAP_GPU_COPY) != 0
+    }
+
+    /// Check if IOMMU management capability is present
+    pub const fn can_iommu(&self) -> bool {
+        (self.caps & CAP_GPU_IOMMU) != 0
+    }
+
+    /// Merge with another capability set
+    pub const fn union(&self, other: &GpuCapabilities) -> GpuCapabilities {
+        GpuCapabilities { caps: self.caps | other.caps }
+    }
+
+    /// Get raw capability bitmask
+    pub const fn bits(&self) -> u32 {
+        self.caps
+    }
+}
+
+/// Check GPU capabilities against hardware
+///
+/// Reads the capability registers from the GPU hardware and returns
+/// the set of capabilities that are actually available.
+pub fn read_gpu_capabilities() -> GpuCapabilities {
+    // SAFETY: reading GPU capability registers
+    unsafe {
+        let admin = read_volatile((GPU_CTRL_BASE + GPU_CTRL_CAP_ADMIN) as *const u32);
+        let render = read_volatile((GPU_CTRL_BASE + GPU_CTRL_CAP_RENDER) as *const u32);
+        let compute = read_volatile((GPU_CTRL_BASE + GPU_CTRL_CAP_COMPUTE) as *const u32);
+        let copy_cap = read_volatile((GPU_CTRL_BASE + GPU_CTRL_CAP_COPY) as *const u32);
+        let caps = admin | render | compute | copy_cap;
+        GpuCapabilities::from_bits(caps)
+    }
+}
+
+/// Verify that the caller has the required capability
+///
+/// Returns Ok(()) if the capability is present, Err(GpuError) otherwise.
+/// This replaces the traditional DRM master/UID check.
+pub fn check_gpu_capability(caps: &GpuCapabilities, required: u32) -> Result<(), GpuError> {
+    if caps.has(required) {
+        Ok(())
+    } else {
+        log_warn!("GPU: Capability check failed (has=0x{:X}, need=0x{:X})", caps.bits(), required);
+        Err(GpuError::NotSupported)
     }
 }

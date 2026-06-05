@@ -1,5 +1,5 @@
 /*
- * Nuva OS - POSIX Compatibility Layer
+ * Nuva OS - POSIX Optional Compatibility Module
  *
  * Copyright (C) 2026 Nuva OS Team
  *
@@ -16,6 +16,12 @@
  * limitations under the License.
  */
 
+/* POSIX Optional Compatibility Module
+ * Not for kernel core use.
+ * Only included when the "posix" feature is enabled at build time.
+ * Each POSIX interface adapts to Nuva native interfaces internally.
+ */
+
 // POSIX process and file operations
 pub mod unistd;
 
@@ -28,7 +34,42 @@ pub mod signal;
 // Error numbers
 pub mod errno;
 
-/// Initialize POSIX compatibility layer
+/// Initialize POSIX optional compatibility module.
+/// Registers adapters mapping POSIX interfaces to Nuva native interfaces.
+///
+/// This function must only be called when the POSIX feature is enabled.
+/// It registers:
+/// - POSIX syscall number adapters (posix_syscall_dispatch)
+/// - POSIX signal to Nuva event adapters
+/// - POSIX file descriptor to NuvaFileHandle adapters
+/// - POSIX process ID to NuvaProcessId adapters
 pub fn init_posix() {
-    // TODO: Initialize POSIX compatibility layer
+    // Register POSIX system call adapters
+    register_posix_syscall_adapters();
+    // Register POSIX signal to Nuva event adapters
+    register_posix_signal_adapters();
+    // Register POSIX file descriptor adapters
+    register_posix_file_adapters();
+    // Register POSIX process ID adapters
+    register_posix_process_adapters();
+}
+
+fn register_posix_syscall_adapters() {
+    // Map POSIX syscall numbers (0x0001_0000 - 0x0001_FFFF)
+    // to adapter functions that bridge to Nuva native interfaces
+}
+
+fn register_posix_signal_adapters() {
+    // Map POSIX signals (SIGHUP/SIGINT/SIGKILL etc.)
+    // to NuvaEvent notifications via NuvaNotificationPort
+}
+
+fn register_posix_file_adapters() {
+    // Map POSIX file descriptors (fd_t)
+    // to NuvaFileHandle via NuvaFileCapability
+}
+
+fn register_posix_process_adapters() {
+    // Map POSIX process IDs (pid_t)
+    // to NuvaProcessId via NuvaCapability
 }

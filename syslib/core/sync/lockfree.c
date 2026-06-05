@@ -17,12 +17,15 @@
  */
 
 /**
- * Lock-Free Data Structures
+ * FFI Compatibility Layer - Not for kernel core use
  *
- * This module implements high-performance lock-free data structures
- * with explicit memory ordering for concurrent access without mutex overhead.
- * 
- * Implemented structures:
+ * Lock-Free Data Structures (FFI wrapper)
+ *
+ * The kernel core path uses the Rust-native MpscQueue/SpscQueue/
+ * TreiberStack/MpmcQueue implementations in lockfree.rs.
+ * This C file is retained for external C/C++ code only.
+ *
+ * Original implemented structures:
  * - MPSC Queue (Multi-Producer Single-Consumer)
  * - SPSC Queue (Single-Producer Single-Consumer)
  * - Concurrent Stack (Treiber Stack)

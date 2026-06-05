@@ -102,3 +102,7 @@ Same-PID crashes within a 5-second window are deduplicated: only the first and l
 - Query requires `CAP_SYS_PTRACE` or `CAP_SYS_ADMIN`
 - Clear requires `CAP_SYS_ADMIN`
 - No panic/unwrap/expect in production paths; all errors via `Result<T, TombstoneError>`
+
+---
+
+**Last Updated**: May 30, 2026

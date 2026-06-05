@@ -20,6 +20,7 @@
 | ARM64 | GIC（通用中断控制器） |
 | x86-64 | LAPIC + I/O APIC |
 | LoongArch64 | EIOINTC（扩展 I/O 中断控制器） |
+| RISC-V 64 | PLIC | 平台级中断控制器 |
 
 ## 初始化顺序
 

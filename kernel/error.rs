@@ -182,6 +182,24 @@ pub enum KernelError {
     SignatureError,
     /** Encryption/decryption failed */
     CryptoError,
+    /** Capability token denied (nuva native) */
+    CapabilityDenied,
+    /** Capability token expired or revoked */
+    CapabilityExpired,
+    /** Capability derivation failed (child rights not subset of parent) */
+    CapabilityDerivationFailed,
+    /** Capability transfer failed */
+    CapabilityTransferFailed,
+    /** Cross-level direct memory access denied (three-level architecture) */
+    CrossLevelAccessDenied,
+    /** NvSupervisorCall capability gate check failed */
+    SupervisorCallDenied,
+    /** Equipment mode service exceeded restart threshold, unrecoverable */
+    ServiceUnrecoverable,
+    /** Equipment mode service heartbeat timeout */
+    HeartbeatTimeout,
+    /** Port is in fault recovery transitioning state */
+    PortTransitioning,
 
     // Generic errors (0x08xx)
     /** Invalid argument */
@@ -296,6 +314,15 @@ impl KernelError {
             KernelError::SandboxViolation => 13,     // EACCES
             KernelError::SignatureError => 13,       // EACCES
             KernelError::CryptoError => 5,           // EIO
+            KernelError::CapabilityDenied => 13,     // EACCES
+            KernelError::CapabilityExpired => 13,    // EACCES
+            KernelError::CapabilityDerivationFailed => 22, // EINVAL
+            KernelError::CapabilityTransferFailed => 13,   // EACCES
+            KernelError::CrossLevelAccessDenied => 13,     // EACCES
+            KernelError::SupervisorCallDenied => 13,       // EACCES
+            KernelError::ServiceUnrecoverable => 5,        // EIO
+            KernelError::HeartbeatTimeout => 110,          // ETIMEDOUT
+            KernelError::PortTransitioning => 11,          // EAGAIN
 
             // Generic
             KernelError::InvalidArgument => 22,    // EINVAL
@@ -440,6 +467,15 @@ impl fmt::Display for KernelError {
             KernelError::SandboxViolation => write!(f, "sandbox violation"),
             KernelError::SignatureError => write!(f, "signature verification failed"),
             KernelError::CryptoError => write!(f, "cryptographic operation failed"),
+            KernelError::CapabilityDenied => write!(f, "capability token denied"),
+            KernelError::CapabilityExpired => write!(f, "capability token expired or revoked"),
+            KernelError::CapabilityDerivationFailed => write!(f, "capability derivation failed"),
+            KernelError::CapabilityTransferFailed => write!(f, "capability transfer failed"),
+            KernelError::CrossLevelAccessDenied => write!(f, "cross-level direct memory access denied"),
+            KernelError::SupervisorCallDenied => write!(f, "supervisor call capability gate denied"),
+            KernelError::ServiceUnrecoverable => write!(f, "equipment service unrecoverable"),
+            KernelError::HeartbeatTimeout => write!(f, "equipment service heartbeat timeout"),
+            KernelError::PortTransitioning => write!(f, "port in fault recovery transitioning state"),
 
             // Generic
             KernelError::InvalidArgument => write!(f, "invalid argument"),

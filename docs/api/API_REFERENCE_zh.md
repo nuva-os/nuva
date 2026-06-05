@@ -839,4 +839,4 @@ const char* nuva_hal_get_version_string(void);
 ---
 
 **文档版本**：1.2.0  
-**最后更新**：2026-05-15
+**最后更新**：2026-05-30

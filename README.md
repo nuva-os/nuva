@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-nightly-orange.svg)](https://www.rust-lang.org/)
-[![Platform](https://img.shields.io/badge/platform-ARM64%20%7C%20x86--64%20%7C%20LoongArch64-green.svg)]()
+[![Platform](https://img.shields.io/badge/platform-ARM64%20%7C%20x86--64%20%7C%20LoongArch64%20%7C%20RISC--V%2064-green.svg)]()
 
 English | [简体中文](README_ZH.md)
 
@@ -14,15 +14,17 @@ English | [简体中文](README_ZH.md)
 
 ## Overview
 
-Nuva OS is a next-generation operating system built from scratch in Rust (`#![no_std]` bare-metal), designed for modern mobile and embedded devices. It delivers high performance, quantum-safe security, and AI-native intelligence across ARM64, x86-64, and LoongArch64 architectures.
+Nuva OS is a next-generation operating system built from scratch in Rust (`#![no_std]` bare-metal), designed for modern mobile and embedded devices. It delivers high performance, quantum-safe security, and AI-native intelligence across ARM64, x86-64, LoongArch64, and RISC-V 64 (RV64G) architectures.
 
 ### Core Pillars
 
-- **Quantum-Safe Security**: NIST PQC standards (CRYSTALS-Kyber, CRYSTALS-Dilithium), SHA-256 FIPS 180-4, QRNG/QKD interfaces
+- **Quantum-Safe Security**: NIST PQC standards (CRYSTALS-Kyber, CRYSTALS-Dilithium), SHA-256 FIPS 180-4, hardware QRNG integration (MMIO/DT/ACPI entropy), QKD BB84 protocol implementation
 - **AI-Native Design**: Unified NPU abstraction (Da Vinci NPU HAL), AI-driven scheduler with EAS
-- **High Performance**: Zero-copy IPC (<100ns small message), lock-free data structures, buddy+SLAB allocators
+- **Three-Level Microkernel**: EL2 (min kernel) / EL1 (equipment mode) / EL0 (user mode), capability-gated NvSupervisorCall, equipment fault isolation
+- **High Performance**: Zero-copy IPC (<50ns small message, <5μs large), O(1) port lookup, lock-free data structures, buddy+SLAB allocators
+- **Capability Security**: NvCapability tokens replace uid/gid, permission monotonicity, cascading revocation
 - **Plugin Architecture**: ELF dynamic loader, sandbox isolation, hot-plug, lifecycle management (100% implemented)
-- **Multi-Architecture**: ARM64, x86-64, LoongArch64 (page tables, interrupts, SIMD)
+- **Multi-Architecture**: ARM64, x86-64, LoongArch64, RISC-V 64 (page tables, interrupts, SIMD)
 - **Full SDK**: Debugger (DAP protocol), profiler (/proc), package manager (HTTP), CLI, build system (100% implemented)
 
 ## System Architecture
@@ -55,7 +57,7 @@ Nuva OS is a next-generation operating system built from scratch in Rust (`#![no
 ┌─────────────────────────────────────────────────────────┐
 │                Hardware Abstraction Layer (L0)           │
 │  CPU │ GPU │ NPU │ Power │ Quantum │ FFI │ Input │ DT    │
-│  ARM64 │ x64 │ LoongArch64 │ Snapdragon │ ACPI           │
+│  ARM64 │ x64 │ LoongArch64 │ RISC-V 64 │ Snapdragon │ ACPI │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -69,7 +71,7 @@ Nuva OS is a next-generation operating system built from scratch in Rust (`#![no
 | L3 — Services | L0, L1, L2 | System services layer |
 | L4 — Application | L0, L1, L2, L3 | Application framework |
 
-> **Recent implementations**: SHA-256 FIPS 180-4 · ELF Loader · NFS/SMB Clients · Da Vinci NPU HAL · AI Scheduler · LoongArch64 Page Tables / Interrupts / SIMD · Plugin Sandbox · SDK Debugger (DAP) / Profiler (/proc) / Package Manager (HTTP)
+> **Recent implementations**: SHA-256 FIPS 180-4 · ELF Loader · NFS/SMB Clients · io_uring · TCP State Machine · Firewall · NvCapability-LSM Bridge · Hardware QRNG · QKD BB84 · Da Vinci NPU HAL · AI Scheduler · LoongArch64 Page Tables / Interrupts / SIMD · Plugin Sandbox · SDK Debugger (DAP) / Profiler (/proc) / Package Manager (HTTP) · RISC-V Sv39 3-Level Page Table Walk · GPU/NPU Interrupt Handlers + VRAM/Model Memory Allocators · DVFS Hardware + Thermal Management · NvScheduler/NvBalancer/NvPowerMgr + Three-Party Cooperation
 
 ## Core Functionality
 
@@ -79,11 +81,11 @@ Nuva OS is a next-generation operating system built from scratch in Rust (`#![no
 |--------|-------------|--------|
 | Process Management | Process creation, scheduling, destruction, full lifecycle | Done |
 | Memory Management | Page tables, address spaces, page fault handling, mmap/munmap/mprotect/msync, OOM killer | Done |
-| File System | VFS (open/close/read/write/lseek/mkdir/unlink), Ext4, Ramfs, NuvaFS, NFS/SMB clients | Done |
-| Network Stack | TCP/IP, UDP, Socket API | Done |
+| File System | VFS (open/close/read/write/lseek/mkdir/unlink), Ext4, Ramfs, NuvaFS, NFS/SMB clients, io_uring async I/O | Done |
+| Network Stack | TCP/IP (full state machine RFC 793), UDP, Socket API, Firewall (stateless rules, NAT, rate limiting) | Done |
 | IPC | NuvaIPC, L4 IPC, Shared Memory | Done |
 | Security Subsystem | Capability security, sandbox isolation, ASLR, SHA-256 FIPS 180-4 | Done |
-| Boot Flow | ARM64 FDT, x64 Multiboot2, LoongArch64 UEFI boot | Done |
+| Boot Flow | ARM64 FDT, x64 Multiboot2, LoongArch64 UEFI boot, RISC-V 64 SBI boot | Done |
 | Platform Detection | PlatformInfo, BootInfoType, detect_platform_info() | Done |
 | Plugin System | ELF loader, sandbox isolation, lifecycle management, registry | Done |
 | SDK | Debugger (DAP), profiler (/proc), package manager (HTTP), CLI, build system | Done |
@@ -175,6 +177,7 @@ rustup override set nightly
 # Install target platforms
 rustup target add --toolchain nightly aarch64-unknown-none
 rustup target add --toolchain nightly x86_64-unknown-none
+rustup target add --toolchain nightly riscv64-unknown-none
 
 # Install required components
 rustup component add rust-src
@@ -184,6 +187,9 @@ cargo build --target aarch64-unknown-none --features arm64 --release
 
 # Build for x86-64
 cargo build --target x86_64-unknown-none --features x64 --release
+
+# Build for RISC-V 64
+cargo build --target riscv64-unknown-none --features riscv64 --release
 
 # Run tests
 cargo test
@@ -198,6 +204,10 @@ qemu-system-aarch64 -machine virt -cpu cortex-a76 \
 
 # x86-64
 qemu-system-x86_64 -kernel target/x86_64-unknown-none/release/nuva_kernel
+
+# RISC-V 64
+qemu-system-riscv64 -machine virt -nographic -bios default \
+  -kernel target/riscv64-unknown-none/release/nuva_kernel
 ```
 
 ### Quick Example
@@ -223,6 +233,8 @@ int main() {
 | `arm64` | — | ARM64 architecture support |
 | `x64` | — | x86-64 architecture support |
 | `loongarch64` | — | LoongArch64 architecture support |
+| `riscv64` | — | RISC-V 64 architecture support |
+| `qemu_virt` | `riscv64` | QEMU virt machine for RISC-V 64 |
 | `kirin` | `arm64` | HiSilicon Kirin SoC family |
 | `kirin9000` | `arm64` | Kirin 9000 |
 | `kirin9010` | `arm64` | Kirin 9010 |
@@ -234,6 +246,7 @@ int main() {
 | `amd_ryzen` | `x64` | AMD Ryzen processors |
 | `debug` | — | Debug mode |
 | `smp` | — | Symmetric Multi-Processor support |
+| `skip_dep_check` | — | Skip dependency checking |
 
 ## Supported Platforms
 
@@ -242,6 +255,7 @@ int main() {
 | ARM64 | `aarch64-unknown-none` | Builds | Kirin 9020, Snapdragon 8 Gen 4 |
 | x86-64 | `x86_64-unknown-none` | Builds | Intel Core, AMD Ryzen |
 | LoongArch64 | `loongarch64-unknown-none` | Builds | Loongson 3A6000 / 3C6000 |
+| RISC-V 64 | `riscv64-unknown-none` | Builds | QEMU virt machine |
 
 ## Performance
 
@@ -262,6 +276,7 @@ nuva/
 │   ├── arch/              # Architecture-specific code
 │   │   ├── arm64/         # ARM64 (boot, exception vectors, GIC, MMU, FDT)
 │   │   ├── loongarch64/   # LoongArch64 (boot, linker, MMU, interrupts, SIMD)
+│   │   ├── riscv64/       # RISC-V 64 (boot/SBI, trap, MMU, PLIC, timer, context)
 │   │   └── x64/           # x86-64 (boot, GDT, IDT, exceptions, APIC)
 │   ├── mm/                # Memory management (buddy, SLAB, mmap, OOM)
 │   ├── process/           # Process management
@@ -277,8 +292,14 @@ nuva/
 │   ├── bsd/               # BSD compatibility layer
 │   ├── debug/             # Debug & diagnostics
 │   ├── device/            # Device management
-│   ├── virt/              # Virtualization support
-│   └── platform.rs        # Platform detection
+│   ├── init/              # Kernel initialization
+│   ├── diag/              # Diagnostics subsystem
+│   ├── irq_mgmt/          # IRQ management
+│   ├── net_stack/         # Network stack
+│   ├── storage/           # Storage subsystem
+│   ├── power_mgmt/        # Power management
+│   ├── core/              # Core kernel services
+│   └── virt/              # Virtualization support
 ├── hal/                   # Hardware Abstraction Layer (L0)
 │   ├── cpu/               # CPU abstraction (PSCI SMC for Kirin)
 │   ├── gpu/               # GPU abstraction
@@ -290,6 +311,7 @@ nuva/
 │   ├── arm64/             # ARM64 platform
 │   ├── x64/               # x86-64 platform (APIC, Timer, PageTable, Power)
 │   ├── loongarch64/       # LoongArch64 platform (MMU, page tables, interrupts, SIMD)
+│   ├── riscv64/           # RISC-V 64 platform (CPU, MMU, interrupt controller)
 │   ├── acpi.rs            # ACPI power driver (Fadt, sleep states)
 │   ├── dt.rs              # Device tree parser
 │   ├── input.rs           # Input subsystem
@@ -388,8 +410,26 @@ nuva/
 - [x] Da Vinci NPU HAL implementation
 - [x] AI scheduler for intelligent task scheduling
 - [x] LoongArch64 page tables, interrupts, SIMD support
+- [x] RISC-V 64 SBI boot, page tables, PLIC, trap handling
 - [x] Plugin sandbox isolation
 - [x] SDK debugger (DAP protocol), profiler (/proc), package manager (HTTP)
+
+### Phase 6: AI-Native Core (P5) — Done
+- [x] NvScheduler AI intelligent scheduler (NPU inference, 4-level classes, 3-tier fallback)
+- [x] NvBalancer heterogeneous hardware load balancer (topology, oscillation detection, hot-plug)
+- [x] NvPowerMgr AI-driven power optimization (budget, DVFS, thermal, green metrics)
+- [x] Three-party cooperation: NvScheduler↔NvBalancer↔NvPowerMgr with runtime invariants
+- [x] NuvaFS WAL/COW/Snapshot, IPv6 neighbor discovery, secure boot, PQC compliance
+
+### Phase 7: Hardware Integration (P6) — In Progress
+- [x] RISC-V Sv39 3-level page table walk (map/unmap/translate/protect)
+- [x] Maleoon GPU ops bridging + interrupt handler + VRAM allocator
+- [x] Da Vinci NPU interrupt handler + recyclable model memory manager
+- [x] CPU DVFS hardware calls + thermal management (85°C throttle / 105°C shutdown)
+- [x] System power_off/reboot platform calls + domain registration
+- [x] PMIC ops bridging to actual driver methods
+- [ ] USB host controller driver
+- [ ] LoongArch64 QEMU/LBT support
 
 ## Documentation
 
@@ -461,8 +501,7 @@ Special thanks to:
 ## Contact
 
 - **GitHub**: [https://github.com/nuva-os/nuva](https://github.com/nuva-os/nuva)
-- **Gitee**: [https://gitee.com/nuva-os/nuva](https://gitee.com/nuva-os/nuva)
-- **Email**: [zhangyujie_china@163.com](mailto:zhangyujie_china@163.com)
+- **Email**: [kellen9903@gmail.com](mailto:kellen9903@gmail.com)
 
 ---
 

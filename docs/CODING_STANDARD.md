@@ -39,10 +39,29 @@ This document defines the coding standards and conventions for Nuva OS developme
 
 ### 1.2 Design Philosophy
 
-- **Unix Philosophy**: Small, focused modules that do one thing well
+- **nuva is not unix, nuva is not linux**: Nuva OS has its own design paradigm, not derived from Unix or Linux
+- **Capability-Based Security**: Access control through capability tokens, not Unix uid/gid/mode_t
+- **IPC as Primitive**: Mach-style port message passing is the fundamental communication mechanism
 - **Separation of Policy and Mechanism**: The kernel provides mechanism; user space decides policy
-- **Everything is a File**: Use unified interfaces whenever possible
+- **Native First**: Use Nuva native interfaces (NuvaProcessId, NuvaFileHandle, NuvaError) instead of POSIX types
 - **Fail Fast**: Detect and report errors as early as possible
+- **POSIX is Optional**: POSIX compatibility is an optional module (`feature = "posix"`), not part of the kernel core
+
+### 1.2.1 Kernel Core Path Prohibitions
+
+The following patterns are **prohibited** in kernel core modules (ipc, mm, security, process, core, sched, fs):
+
+| Prohibited Pattern | Nuva-Native Replacement |
+|-------------------|------------------------|
+| `pid_t`, `uid_t`, `gid_t`, `mode_t` | `NuvaProcessId`, `NuvaCapabilityId`, `NuvaAccessRight` |
+| `fd_t`, `off_t`, `ino_t` | `NuvaFileHandle`, `NuvaFileOffset`, `NuvaInodeId` |
+| `fork()`/`exec()` | `NuvaProcess::create()`/`execute()` |
+| `SIGHUP`/`SIGKILL`/`SIGTERM` | `NuvaEvent` via `NuvaNotificationPort` |
+| `mmap()`/`munmap()`/`mprotect()` | `NuvaMemoryRegion` with `NuvaAccessRight` |
+| `errno` (i32) | `NuvaError` enum |
+| `/proc`/`/sys` filesystem reads | `NuvaDiagnostic::query()` |
+| `use crate::posix::*` | Use `crate::types::*` native interfaces |
+| `use crate::bsd::*` | Use Nuva native subsystems directly |
 
 ### 1.3 Prohibited Patterns — Android Compatibility Code
 
@@ -1138,4 +1157,4 @@ Remember: these are guidelines, not absolute rules. Use judgment and common sens
 
 <!-- Translation Status: Source (English) | Last Updated: 2026-05-20 -->
 
-**Last Updated**: 2026-05-20
+**Last Updated**: 2026-05-30

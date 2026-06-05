@@ -3,7 +3,7 @@
 **Document ID**: ARCH-LAYER-RULES-001
 **Version**: 1.3.0
 **Created**: 2026-04-03
-**Last Updated**: 2026-05-20
+**Last Updated**: 2026-05-30
 
 ---
 

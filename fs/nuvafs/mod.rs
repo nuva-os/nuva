@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Nuva OS - Nuva OS
  * 
  * Copyright (C) 2026 Nuva OS Team
@@ -27,6 +27,27 @@ pub mod file;
 pub mod snapshot;
 pub mod posix;
 pub mod tests;
+
+// WAL (Write-Ahead Log) modules
+pub mod wal_types;
+pub mod wal;
+pub mod wal_appender;
+pub mod checkpoint;
+pub mod recovery;
+pub mod wal_stats;
+
+// COW enhancement modules
+pub mod cow_map;
+pub mod snapshot_chain;
+
+// Capability-based access control
+pub mod capability;
+
+// Plugin integration
+pub mod plugin;
+
+// Audit logging
+pub mod audit;
 
 pub use superblock::*;
 pub use inode::*;
