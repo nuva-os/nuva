@@ -14,7 +14,7 @@
 
 ## 概述
 
-Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下一代操作系统，专为现代移动和嵌入式设备设计。它在 ARM64、x86-64、LoongArch64 和 RISC-V 64 (RV64G) 架构上提供高性能、抗量子安全和 AI 原生智能。
+Nuva OS 是一款从零开始用 Rust（`#![no_std]` 裸机环境）构建的下一代操作系统，专为AI智能与量子安全设计。它在 ARM64、x86-64、LoongArch64 和 RISC-V 64 (RV64G) 架构上提供高性能、抗量子安全和 AI 原生智能。
 
 ### 核心支柱
 
@@ -466,6 +466,23 @@ nuva/
 ## 贡献
 
 我们欢迎各种形式的贡献！详见 [CONTRIBUTING_ZH.md](CONTRIBUTING_ZH.md)。
+
+## 联系
+
+- Bug 和功能建议：[GitHub Issues](https://github.com/nuva-os/nuva/issues)
+- 安全问题：[GitHub private advisory](https://github.com/nuva-os/nuva/discussions) 或 `kellen9903@gmail.com`
+- 合作、商业支持、赞助：微信 `HiKellen` 或 `kellen9903@gmail.com`
+
+## 赞助
+
+Nuva OS 接受个人赞助、AI Credits / Token 厂商赞助、企业支持和商业授权咨询。
+
+- 赞助页面：[docs/sponsor.md](docs/sponsor.md)
+- 微信 / 支付宝二维码：[docs/sponsor.md#personal-donations](docs/sponsor.md#personal-donations)
+- AI Credits / Token 厂商赞助：[docs/sponsor.md#ai-credits-token-sponsorship](docs/sponsor.md#ai-credits-token-sponsorship)
+- 企业支持和商业授权：
+微信 `HiKellen`,
+Google Mail:`kellen9903@gmail.com`
 
 ### 参与方式
 

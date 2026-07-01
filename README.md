@@ -465,6 +465,17 @@ nuva/
 | [tools](tools/README.md) | Aux | Toolchain Collection |
 | [sysroot](sysroot/README.md) | Aux | System Root |
 
+## Sponsor
+
+Nuva OS accepts personal donations, AI Credits / Token vendor sponsorship, enterprise support, and commercial licensing inquiries.
+
+- Sponsor page: [docs/SPONSOR.md](docs/SPONSOR.md)
+- WeChat / Alipay QR codes: [docs/SPONSOR.md#personal-donations](docs/SPONSOR.md#personal-donations)
+- AI Credits / Token vendor sponsorship: [docs/SPONSOR.md#ai-credits-token-sponsorship](docs/SPONSOR.md#ai-credits-token-sponsorship)
+- Enterprise support and commercial licensing:
+  WeChat `HiKellen`,
+  Google Mail: `kellen9903@gmail.com`
+
 ## Contributing
 
 We welcome all forms of contribution! See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
@@ -499,6 +510,12 @@ Special thanks to:
 - NIST PQC Standardization Process
 
 ## Contact
+
+- Bugs and feature requests: [GitHub Issues](https://github.com/nuva-os/nuva/issues)
+- Security issues: [GitHub private advisory](https://github.com/nuva-os/nuva/discussions) or `kellen9903@gmail.com`
+- Collaboration, commercial support, sponsorship: WeChat `HiKellen` or `kellen9903@gmail.com`
+
+## Contact Info
 
 - **GitHub**: [https://github.com/nuva-os/nuva](https://github.com/nuva-os/nuva)
 - **Email**: [kellen9903@gmail.com](mailto:kellen9903@gmail.com)
