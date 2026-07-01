@@ -477,9 +477,9 @@ nuva/
 
 Nuva OS 接受个人赞助、AI Credits / Token 厂商赞助、企业支持和商业授权咨询。
 
-- 赞助页面：[docs/sponsor.md](docs/sponsor.md)
-- 微信 / 支付宝二维码：[docs/sponsor.md#personal-donations](docs/sponsor.md#personal-donations)
-- AI Credits / Token 厂商赞助：[docs/sponsor.md#ai-credits-token-sponsorship](docs/sponsor.md#ai-credits-token-sponsorship)
+- 赞助页面：[docs/sponsor_zh.md](docs/sponsor.md)
+- 微信 / 支付宝二维码：[docs/sponsor_zh.md#personal-donations](docs/sponsor.md#personal-donations)
+- AI Credits / Token 厂商赞助：[docs/sponsor_zh.md#ai-credits-token-sponsorship](docs/sponsor.md#ai-credits-token-sponsorship)
 - 企业支持和商业授权：
 微信 `HiKellen`,
 Google Mail:`kellen9903@gmail.com`
