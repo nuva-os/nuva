@@ -497,6 +497,8 @@ pub type KernelResult<T> = Result<T, KernelError>;
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::format;
+use crate::kernel::error::KernelError;
 
     #[test]
     fn test_errno_mapping() {

@@ -27,7 +27,8 @@ use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicPtr, Ordering};
 use alloc::alloc::{alloc, dealloc, Layout};
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Perf Event Type
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -618,7 +619,7 @@ impl PerfManager {
 }
 
 /// Global perf manager
-static PERF_MANAGER: core::sync::OnceLock<PerfManager> = core::sync::OnceLock::new();
+static PERF_MANAGER: crate::sync_oncelock::OnceLock<PerfManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get perf manager
 pub fn perf_manager() -> &'static PerfManager {
@@ -717,8 +718,8 @@ impl Tracepoint {
 #[macro_export]
 macro_rules! DEFINE_TRACEPOINT {
     ($name:ident, $probe:expr) => {
-        static $name: $crate::perf::Tracepoint = {
-            let mut tp = $crate::perf::Tracepoint::new(
+        static $name: $crate::kernel::perf::Tracepoint = {
+            let mut tp = $crate::kernel::perf::Tracepoint::new(
                 stringify!($name).as_bytes(),
                 0,
             );

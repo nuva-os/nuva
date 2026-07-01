@@ -234,6 +234,8 @@ mod pattern_matching_tests {
 
 mod memory_layout_tests {
     use super::*;
+use alloc::vec;
+use alloc::vec::Vec;
 
     #[test]
     fn test_memory_alignment() {

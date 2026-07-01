@@ -40,6 +40,7 @@ pub mod balancer_coop;
 use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
 
 use crate::kernel::error::KernelResult;
+use crate::kernel::error::KernelError;
 
 /// Default sampling period in milliseconds
 pub const DEFAULT_SAMPLING_PERIOD_MS: u32 = 10;
@@ -145,7 +146,7 @@ impl NvPowerMgr {
 }
 
 /// Global NvPowerMgr instance
-static NV_POWERMGR: core::sync::OnceLock<NvPowerMgr> = core::sync::OnceLock::new();
+static NV_POWERMGR: crate::sync_oncelock::OnceLock<NvPowerMgr> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global NvPowerMgr instance
 pub fn get_nv_powermgr() -> &'static NvPowerMgr {

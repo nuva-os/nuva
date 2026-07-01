@@ -19,6 +19,8 @@
 // ! Codeconduct
 
 use super::{TextDocument, Position, SemanticAnalyzer, Location, Range};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// jumpbranchtofixedmeaning
 pub fn goto_definition(doc: &TextDocument, position: Position, analyzer: &SemanticAnalyzer) -> Option<Location> {

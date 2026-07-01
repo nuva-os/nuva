@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use super::codec::VideoCodec;
 use super::error::{VideoError, VideoFormat, VideoPacket};
 use super::frame_buffer::{DecodeResult, FrameBuffer, FrameRef};
+use alloc::vec;
 
 /// H.264 NAL unit type constants
 pub const NAL_NON_IDR_SLICE: u8 = 1;

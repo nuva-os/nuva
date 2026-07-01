@@ -21,7 +21,8 @@ use alloc::alloc::{alloc, dealloc, Layout};
 use alloc::vec::Vec;
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Maximum objects per pool
 const MEMPOOL_MAX_OBJECTS: u32 = 65536;
 

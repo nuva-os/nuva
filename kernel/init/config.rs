@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Maximum number of config entries
 const MAX_CONFIG_ENTRIES: usize = 128;
 
@@ -454,7 +455,7 @@ impl ConfigManager {
 }
 
 /// Global config manager
-static CONFIG_MANAGER: core::sync::OnceLock<ConfigManager> = core::sync::OnceLock::new();
+static CONFIG_MANAGER: crate::sync_oncelock::OnceLock<ConfigManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get config manager
 pub fn config_manager() -> &'static ConfigManager {

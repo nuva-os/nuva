@@ -22,7 +22,8 @@ use alloc::vec::Vec;
 use core::ptr;
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 pub mod dcache;
 pub mod file;
 pub mod inode;
@@ -393,7 +394,7 @@ impl VfsCore {
 }
 
 /// Global VFS kernel
-static VFS_CORE: core::sync::OnceLock<VfsCore> = core::sync::OnceLock::new();
+static VFS_CORE: crate::sync_oncelock::OnceLock<VfsCore> = crate::sync_oncelock::OnceLock::new();
 
 pub fn vfs_core() -> &'static VfsCore {
     VFS_CORE.get_or_init(VfsCore::new)
@@ -696,7 +697,7 @@ impl VfsCore {
             name_hash = name_hash.wrapping_mul(33).wrapping_add(b as u32);
         }
         let key = crate::kernel::fs::dcache::DentryKey::new(dir_inode, name_hash, 0);
-        let dcache = crate::kernel::fs::dcache::get_dcache();
+        let dcache = crate::kernel::fs::dcache::dcache();
         let result = dcache.lookup(&key, name.as_bytes());
         if !result.is_null() {
             // SAFETY: dcache lookup returned valid pointer

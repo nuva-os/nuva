@@ -285,14 +285,14 @@ impl L4IpcSystem {
 }
 
 /// Global L4 IPC System
-static L4_IPC_SYSTEM: core::sync::OnceLock<L4IpcSystem> = core::sync::OnceLock::new();
+static L4_IPC_SYSTEM: crate::sync_oncelock::OnceLock<L4IpcSystem> = crate::sync_oncelock::OnceLock::new();
 
 pub fn l4_ipc() -> &'static L4IpcSystem {
     L4_IPC_SYSTEM.get_or_init(L4IpcSystem::new)
 }
 
 pub fn init_l4_ipc() {
- let ipc = get_l4_ipc();
+ let ipc = l4_ipc();
  ipc.init();
 }
 

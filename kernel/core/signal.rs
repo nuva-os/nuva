@@ -26,7 +26,8 @@ use crate::{pr_debug, pr_info};
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Signal Number
 pub mod signal {
     /// Hangup
@@ -445,7 +446,7 @@ pub struct SigAltStack {
 }
 
 /// Global signal manager
-static SIG_MANAGER: core::sync::OnceLock<SigManager> = core::sync::OnceLock::new();
+static SIG_MANAGER: crate::sync_oncelock::OnceLock<SigManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get signal manager
 pub fn sig_manager() -> &'static SigManager {

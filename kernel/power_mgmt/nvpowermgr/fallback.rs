@@ -28,7 +28,8 @@
  */
 
 use super::ai_optimizer::{PowerOptResult, PowerFeatureVector, DvfsPlanEntry, ThrottlePlanEntry};
-use super::device_controller::{SleepPlanEntry, SleepLevel, WakeCondition};
+use super::device_controller::{SleepLevel, WakeCondition};
+use super::ai_optimizer::SleepPlanEntry;
 
 /// PowerFallbackPolicy: fallback power management
 pub struct PowerFallbackPolicy;

@@ -400,7 +400,7 @@ extern "C" {
 }
 
 /// Global NPU memory pool
-static NPU_MEM_POOL: core::sync::OnceLock<NpuMemPool> = core::sync::OnceLock::new();
+static NPU_MEM_POOL: crate::sync_oncelock::OnceLock<NpuMemPool> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global NPU memory pool
 pub fn npu_mem_pool() -> &'static NpuMemPool {

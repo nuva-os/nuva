@@ -28,7 +28,8 @@ use alloc::string::String;
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_debug, pr_info, pr_warn};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// IP Address
 #[repr(C)]
 pub union IpAddr {
@@ -367,15 +368,15 @@ impl IpManager {
         match protocol {
             1 => { // ICMP
                 log_debug!("Routing to ICMP");
-                // crate::net::icmp::receive(&data[header_len..]);
+                // crate::kernel::net::icmp::receive(&data[header_len..]);
             }
             6 => { // TCP
                 log_debug!("Routing to TCP");
-                // crate::net::tcp::receive(&data[header_len..]);
+                // crate::kernel::net::tcp::receive(&data[header_len..]);
             }
             17 => { // UDP
                 log_debug!("Routing to UDP");
-                // crate::net::udp::receive(&data[header_len..]);
+                // crate::kernel::net::udp::receive(&data[header_len..]);
             }
             _ => {
                 log_debug!("Unknown protocol: {}", protocol);
@@ -409,7 +410,7 @@ impl IpManager {
         header[10..12].copy_from_slice(&checksum.to_be_bytes());
         
         // Send to lower layer (e.g., Ethernet)
-        // crate::net::ethernet::send(&header, data, dst);
+        // crate::kernel::net::ethernet::send(&header, data, dst);
         
         self.id = self.id.wrapping_add(1);
         
@@ -446,7 +447,7 @@ impl IpManager {
 }
 
 /// Global IP manager
-static IP_MANAGER: core::sync::OnceLock<IpManager> = core::sync::OnceLock::new();
+static IP_MANAGER: crate::sync_oncelock::OnceLock<IpManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IP manager
 pub fn ip_manager() -> &'static IpManager {

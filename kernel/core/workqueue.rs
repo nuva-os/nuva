@@ -483,7 +483,7 @@ impl WorkqueueManager {
 }
 
 /// Global workqueue manager
-static WQ_MANAGER: core::sync::OnceLock<WorkqueueManager> = core::sync::OnceLock::new();
+static WQ_MANAGER: crate::sync_oncelock::OnceLock<WorkqueueManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get workqueue manager
 pub fn wq_manager() -> &'static WorkqueueManager {

@@ -20,7 +20,8 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Socket descriptor type
 pub type SockFd = i32;
 
@@ -535,7 +536,7 @@ impl Socket {
  self.send_buf.fetch_add(to_send as u64, Ordering::AcqRel);
 
  // TCP segment transmission happens via kernel TCP stack:
- // crate::net::tcp::tcp_manager().send(conn, &buf[..to_send]);
+ // crate::kernel::net::tcp::tcp_manager().send(conn, &buf[..to_send]);
 
  Ok(to_send)
  }
@@ -569,7 +570,7 @@ impl Socket {
  let remote_port = remote_addr.get_port();
 
  // Build and send UDP datagram via UDP manager:
- // crate::net::udp::udp_manager().send(tcb_idx, buf, remote_addr.addr, remote_port);
+ // crate::kernel::net::udp::udp_manager().send(tcb_idx, buf, remote_addr.addr, remote_port);
 
  Ok(buf.len())
  }
@@ -788,7 +789,7 @@ impl SocketManager {
 }
 
 /// Global socket manager
-static SOCKET_MANAGER: core::sync::OnceLock<SocketManager> = core::sync::OnceLock::new();
+static SOCKET_MANAGER: crate::sync_oncelock::OnceLock<SocketManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get socket manager
 pub fn socket_manager() -> &'static SocketManager {

@@ -19,6 +19,8 @@
 
 #![no_std]
 #![allow(unused_features)]
+#![feature(abi_x86_interrupt)]
+#![feature(stmt_expr_attributes)]
 #![feature(asm_experimental_arch)]
 #![allow(deref_into_dyn_supertrait)]
 #![allow(invalid_reference_casting)]
@@ -26,6 +28,79 @@
 #![allow(dangerous_implicit_autorefs)]
 
 extern crate alloc;
+
+// Print macros - defined at crate root before modules for maximum availability
+#[macro_export]
+macro_rules! log_emerg {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_emerg(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_alert {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_alert(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_crit {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_crit(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_error {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_err(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_warn {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_warn(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_notice {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_notice(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_info {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_info(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_debug {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_debug(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_emerg {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_emerg(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_alert {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_alert(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_crit {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_crit(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_err {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_err(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_warn {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_warn(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_notice {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_notice(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_info {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_info(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! pr_debug {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_debug(format_args!($($arg)*)) };
+}
+#[macro_export]
+macro_rules! log_err {
+    ($($arg:tt)*) => { $crate::kernel::debug::printk::printk_err(format_args!($($arg)*)) };
+}
+
+// Synchronization primitives
+pub mod sync_oncelock;
 
 // Kernel module
 pub mod kernel;
@@ -123,10 +198,10 @@ fn kernel_init(info: &kernel::platform::PlatformInfo) {
 /// Start scheduler
 fn start_scheduler() -> ! {
     use kernel::arch::{current_arch, CpuContext};
-    use kernel::sched::{get_scheduler, get_current_task};
+    use kernel::sched::{init_scheduler, get_current_task};
 
     loop {
-        let sched = get_scheduler();
+        let sched = init_scheduler();
         sched.schedule();
 
         let task = get_current_task();

@@ -509,10 +509,10 @@ impl ThpManager {
 }
 
 /// Global huge page pool
-static HUGE_PAGE_POOL: core::sync::OnceLock<HugePagePool> = core::sync::OnceLock::new();
+static HUGE_PAGE_POOL: crate::sync_oncelock::OnceLock<HugePagePool> = crate::sync_oncelock::OnceLock::new();
 
 /// Global THP manager
-static THP_MANAGER: core::sync::OnceLock<ThpManager> = core::sync::OnceLock::new();
+static THP_MANAGER: crate::sync_oncelock::OnceLock<ThpManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the huge page pool
 pub fn huge_page_pool() -> &'static HugePagePool {
@@ -530,17 +530,17 @@ pub fn init_thp_manager() -> &'static ThpManager {
 
 /// Initialize huge page support
 pub fn init_huge_pages(nr_2mb: u32, nr_1gb: u32) {
-    get_huge_page_pool().init(nr_2mb, nr_1gb);
+    huge_page_pool().init(nr_2mb, nr_1gb);
 }
 
 /// Allocate a huge page
 pub fn alloc_huge_page(size: HugePageSize) -> *mut HugePage {
-    get_huge_page_pool().alloc_huge_page(size)
+    huge_page_pool().alloc_huge_page(size)
 }
 
 /// Free a huge page
 pub fn free_huge_page(page: *mut HugePage) {
-    get_huge_page_pool().free_huge_page(page);
+    huge_page_pool().free_huge_page(page);
 }
 
 /// Check if address is huge page aligned

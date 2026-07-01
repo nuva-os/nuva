@@ -19,6 +19,7 @@
 // ! SDK errorclasstypefixedmeaning
 
 use std::fmt;
+use alloc::vec::Vec;
 
 /// SDK errortype
 #[derive(Debug)]

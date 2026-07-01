@@ -289,14 +289,10 @@ impl ClkManager {
 }
 
 /// Global clock manager
-static CLK_MANAGER: core::sync::OnceLock<ClkManager> = core::sync::OnceLock::new();
+static CLK_MANAGER: crate::sync_oncelock::OnceLock<ClkManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get clock manager
 pub fn clk_manager() -> &'static ClkManager {
-    CLK_MANAGER.get_or_init(ClkManager::new)
-}
-
-pub fn init_clk_manager() -> &'static ClkManager {
     CLK_MANAGER.get_or_init(ClkManager::new)
 }
 

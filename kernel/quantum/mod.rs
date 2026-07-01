@@ -952,7 +952,7 @@ impl QuantumManager {
 }
 
 /// Global quantum manager
-static QUANTUM_MANAGER: core::sync::OnceLock<QuantumManager> = core::sync::OnceLock::new();
+static QUANTUM_MANAGER: crate::sync_oncelock::OnceLock<QuantumManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get quantum manager
 pub fn quantum_manager() -> &'static QuantumManager {

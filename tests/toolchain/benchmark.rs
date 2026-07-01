@@ -20,6 +20,9 @@
 
 use super::{Test, TestConfig, TestKind, TestMetadata, TestOutcome};
 use std::time::{Duration, Instant};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// receivecollectionbasecriterionTesting
 pub fn collect_benchmarks(config: &TestConfig) -> Vec<Test> {

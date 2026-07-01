@@ -23,7 +23,8 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
 use alloc::vec::Vec;
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// io_uring configuration
 pub mod io_uring_config {
     /// Default ring size
@@ -697,7 +698,7 @@ impl IoUring {
                 }
                 // SAFETY: caller guarantees buf_ptr points to writable memory of count bytes
                 let buf = unsafe { core::slice::from_raw_parts_mut(buf_ptr, count) };
-                let ret = super::file::read(fd, buf);
+                let ret = super::vfs::file::read(fd, buf);
                 if ret >= 0 {
                     self.stats.bytes_read.fetch_add(ret as u64, Ordering::Relaxed);
                     IoOpResult::ok(ret as i32)
@@ -714,7 +715,7 @@ impl IoUring {
                 }
                 // SAFETY: caller guarantees buf_ptr points to readable memory of count bytes
                 let buf = unsafe { core::slice::from_raw_parts(buf_ptr, count) };
-                let ret = super::file::write(fd, buf);
+                let ret = super::vfs::file::write(fd, buf);
                 if ret >= 0 {
                     self.stats.bytes_written.fetch_add(ret as u64, Ordering::Relaxed);
                     IoOpResult::ok(ret as i32)
@@ -730,7 +731,7 @@ impl IoUring {
                     return IoOpResult::error(-22);
                 }
                 let buf = unsafe { core::slice::from_raw_parts_mut(buf_ptr, count) };
-                let ret = super::file::read(fd, buf);
+                let ret = super::vfs::file::read(fd, buf);
                 if ret >= 0 {
                     self.stats.bytes_read.fetch_add(ret as u64, Ordering::Relaxed);
                     IoOpResult::ok(ret as i32)
@@ -746,7 +747,7 @@ impl IoUring {
                     return IoOpResult::error(-22);
                 }
                 let buf = unsafe { core::slice::from_raw_parts(buf_ptr, count) };
-                let ret = super::file::write(fd, buf);
+                let ret = super::vfs::file::write(fd, buf);
                 if ret >= 0 {
                     self.stats.bytes_written.fetch_add(ret as u64, Ordering::Relaxed);
                     IoOpResult::ok(ret as i32)
@@ -766,7 +767,7 @@ impl IoUring {
                     Ok(path) => {
                         let flags = sqe.off as i32;
                         let mode = sqe.op_flags;
-                        let fd = super::file::open(path, flags, mode);
+                        let fd = super::vfs::file::open(path, flags, mode);
                         if fd >= 0 { IoOpResult::ok(fd) } else { IoOpResult::error(fd) }
                     }
                     Err(_) => IoOpResult::error(-22),
@@ -774,7 +775,7 @@ impl IoUring {
             }
             IoOpCode::Close => {
                 let fd = sqe.fd as u32;
-                let ret = super::file::close(fd);
+                let ret = super::vfs::file::close(fd);
                 IoOpResult::ok(ret)
             }
             IoOpCode::Stat => {
@@ -792,7 +793,7 @@ impl IoUring {
                             block_size: 0, block_count: 0,
                             access_time: 0, modification_time: 0, change_time: 0,
                         };
-                        let ret = super::file::stat(path, &mut stat);
+                        let ret = super::vfs::file::stat(path, &mut stat);
                         IoOpResult::ok(ret)
                     }
                     Err(_) => IoOpResult::error(-22),
@@ -800,7 +801,7 @@ impl IoUring {
             }
             IoOpCode::Fsync => {
                 let fd = sqe.fd as u32;
-                let ret = super::file::fsync(fd);
+                let ret = super::vfs::file::fsync(fd);
                 IoOpResult::ok(ret)
             }
             IoOpCode::Poll => {
@@ -926,7 +927,7 @@ impl IoUring {
 }
 
 /// Global io_uring instance
-static IO_URING: core::sync::OnceLock<IoUring> = core::sync::OnceLock::new();
+static IO_URING: crate::sync_oncelock::OnceLock<IoUring> = crate::sync_oncelock::OnceLock::new();
 
 /// Get io_uring instance
 pub fn io_uring() -> &'static IoUring {
@@ -935,29 +936,29 @@ pub fn io_uring() -> &'static IoUring {
 
 /// Initialize io_uring
 pub fn init_io_uring(ring_size: u32) {
-    get_io_uring().init(ring_size);
+    io_uring().init(ring_size);
 }
 
 /// Submit an IO operation
 pub fn io_uring_submit(sqe: &IoSqe) -> i32 {
-    get_io_uring().submit(sqe)
+    io_uring().submit(sqe)
 }
 
 /// Get a completion
 pub fn io_uring_get_completion() -> Option<IoCqe> {
-    get_io_uring().get_completion()
+    io_uring().get_completion()
 }
 
 /// Process all pending submissions
 pub fn io_uring_process_submissions() -> u32 {
-    get_io_uring().process_submissions()
+    io_uring().process_submissions()
 }
 
 /// Submit and wait for completions
 /// @param sqes: slice of SQEs to submit
 /// @return: number of completions processed
 pub fn io_uring_submit_and_wait(sqes: &[IoSqe]) -> u32 {
-    let ring = get_io_uring();
+    let ring = io_uring();
 
     for sqe in sqes {
         ring.submit(sqe);

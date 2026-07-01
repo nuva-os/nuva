@@ -20,6 +20,8 @@
 
 use std::collections::HashMap;
 use crate::error::SdkError;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// memoryanalyzedevice
 pub struct MemProfiler {

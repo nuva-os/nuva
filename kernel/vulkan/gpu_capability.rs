@@ -29,7 +29,7 @@
  */
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use crate::types::{NuvaCapabilityId, NuvaProcessId, NuvaError};
+use crate::kernel::types::{NuvaCapabilityId, NuvaProcessId, NuvaError};
 
 bitflags::bitflags! {
     /// GPU capability permission flags.

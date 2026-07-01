@@ -460,6 +460,7 @@ fn parse_signature_value(data: &[u8]) -> Result<Vec<u8>, X509Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_validity_period_contains() {

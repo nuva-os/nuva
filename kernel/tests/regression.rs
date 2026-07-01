@@ -302,9 +302,9 @@ fn reg_mempool_creation_constraints() -> RegTestResult {
 
 /// Regression: Verify PGO profile dump format
 fn reg_pgo_profile_dump_format() -> RegTestResult {
-    use crate::kernel::perf::pgo::get_pgo_profile;
+    use crate::kernel::perf::pgo::pgo_profile;
 
-    let profile = get_pgo_profile();
+    let profile = pgo_profile();
     profile.reset();
     profile.enable();
 

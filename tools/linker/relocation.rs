@@ -117,6 +117,9 @@ impl Relocator {
  /// Parse Rela entry (with addend)
  fn parse_rela_entry(&self, data: &[u8]) -> Result<Relocation, LinkError> {
  use std::mem::transmute;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
  
  if data.len() < 24 {
  return Err(LinkError::InvalidFormat("Rela entry too short".to_string()));

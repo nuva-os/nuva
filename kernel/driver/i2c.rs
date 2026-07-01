@@ -336,14 +336,10 @@ impl I2cManager {
 }
 
 /// Global I2C manager
-static I2C_MANAGER: core::sync::OnceLock<I2cManager> = core::sync::OnceLock::new();
+static I2C_MANAGER: crate::sync_oncelock::OnceLock<I2cManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get I2C manager
 pub fn i2c_manager() -> &'static I2cManager {
-    I2C_MANAGER.get_or_init(I2cManager::new)
-}
-
-pub fn init_i2c_manager() -> &'static I2cManager {
     I2C_MANAGER.get_or_init(I2cManager::new)
 }
 

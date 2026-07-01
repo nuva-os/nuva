@@ -298,14 +298,10 @@ impl GpioManager {
 }
 
 /// Global GPIO manager
-static GPIO_MANAGER: core::sync::OnceLock<GpioManager> = core::sync::OnceLock::new();
+static GPIO_MANAGER: crate::sync_oncelock::OnceLock<GpioManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get GPIO manager
 pub fn gpio_manager() -> &'static GpioManager {
-    GPIO_MANAGER.get_or_init(GpioManager::new)
-}
-
-pub fn init_gpio_manager() -> &'static GpioManager {
     GPIO_MANAGER.get_or_init(GpioManager::new)
 }
 

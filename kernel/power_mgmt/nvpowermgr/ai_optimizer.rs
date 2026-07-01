@@ -28,6 +28,7 @@ use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
 
 use super::dvfs_controller::DvfsLevel;
 use super::device_controller::{SleepLevel, WakeCondition};
+use alloc::vec::Vec;
 
 /// Default power optimization model ID
 pub const DEFAULT_POWER_MODEL_ID: u32 = 2;

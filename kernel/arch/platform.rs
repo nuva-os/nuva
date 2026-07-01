@@ -353,7 +353,7 @@ impl PlatformManager {
 }
 
 /// Global PlatformManager
-static PLATFORM_MANAGER: core::sync::OnceLock<PlatformManager> = core::sync::OnceLock::new();
+static PLATFORM_MANAGER: crate::sync_oncelock::OnceLock<PlatformManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn platform_manager() -> &'static PlatformManager {
     PLATFORM_MANAGER.get_or_init(PlatformManager::new)

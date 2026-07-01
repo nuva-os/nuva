@@ -609,7 +609,7 @@ impl ElfSymbolTable {
 }
 
 /// Global ELF Loader
-static ELF_LOADER: core::sync::OnceLock<ElfLoader> = core::sync::OnceLock::new();
+static ELF_LOADER: crate::sync_oncelock::OnceLock<ElfLoader> = crate::sync_oncelock::OnceLock::new();
 
 /// Get ELF loader
 pub fn elf_loader() -> &'static ElfLoader {
@@ -625,7 +625,7 @@ pub fn init_elf() {
 
 /// Load ELF from memory
 pub fn load_elf(data: &[u8]) -> Result<u64, i32> {
-    get_elf_loader().load(data)
+    elf_loader().load(data)
 }
 
 /// Check if data is valid ELF

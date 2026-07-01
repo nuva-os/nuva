@@ -29,7 +29,8 @@ use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::{pr_debug, pr_info, pr_warn, pr_err};
-use crate::net::socket::{Socket, SockAddrInet, AddressFamily, SocketType, Protocol};
+use crate::kernel::net::socket::{Socket, SockAddrInet, AddressFamily, SocketType, Protocol};
+use alloc::vec;
 
 /// RPC reply message type
 const RPC_MSG_REPLY: u32 = 1;

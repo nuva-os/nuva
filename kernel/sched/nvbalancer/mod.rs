@@ -41,6 +41,7 @@ pub mod power_aware;
 use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
 
 use crate::kernel::error::KernelResult;
+use crate::kernel::error::KernelError;
 
 /// Default imbalance trigger threshold (30%)
 pub const DEFAULT_IMBALANCE_TRIGGER_PCT: u32 = 30;
@@ -163,7 +164,7 @@ impl NvBalancer {
 }
 
 /// Global NvBalancer instance
-static NV_BALANCER: core::sync::OnceLock<NvBalancer> = core::sync::OnceLock::new();
+static NV_BALANCER: crate::sync_oncelock::OnceLock<NvBalancer> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global NvBalancer instance
 pub fn get_nv_balancer() -> &'static NvBalancer {

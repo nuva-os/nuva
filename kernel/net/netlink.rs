@@ -289,7 +289,7 @@ impl NlManager {
 }
 
 /// Global netlink manager
-static NL_MANAGER: core::sync::OnceLock<NlManager> = core::sync::OnceLock::new();
+static NL_MANAGER: crate::sync_oncelock::OnceLock<NlManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get netlink manager
 pub fn nl_manager() -> &'static NlManager {

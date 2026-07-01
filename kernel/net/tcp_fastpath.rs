@@ -347,7 +347,7 @@ impl ZeroCopyContext {
 }
 
 /// Global TCP fast path processor
-static TCP_FAST_PATH: core::sync::OnceLock<TcpFastPathProcessor> = core::sync::OnceLock::new();
+static TCP_FAST_PATH: crate::sync_oncelock::OnceLock<TcpFastPathProcessor> = crate::sync_oncelock::OnceLock::new();
 
 /// Get TCP fast path processor
 pub fn tcp_fast_path() -> &'static TcpFastPathProcessor {
@@ -356,11 +356,11 @@ pub fn tcp_fast_path() -> &'static TcpFastPathProcessor {
 
 /// Initialize TCP fast path
 pub fn init_tcp_fast_path() {
-    get_tcp_fast_path().enabled.store(true, Ordering::Release);
+    tcp_fast_path().enabled.store(true, Ordering::Release);
 }
 
 /// Process TCP segment (fast path entry point)
 #[inline(always)]
 pub fn tcp_process_segment(conn: &mut TcpConnection, seq: u32, ack: u32, flags: u8, win: u16, data_len: u32) -> bool {
-    get_tcp_fast_path().process_segment(conn, seq, ack, flags, win, data_len)
+    tcp_fast_path().process_segment(conn, seq, ack, flags, win, data_len)
 }

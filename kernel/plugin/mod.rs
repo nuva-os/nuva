@@ -49,7 +49,7 @@ pub use sandbox::SandboxExecutor;
 pub use legacy::{
     PluginDependency, PluginInfo, PluginOps, PluginConfig, PluginStats,
     PluginFlags, PluginId, PluginCategory, PluginMgrStats,
-    get_plugin_manager, init_plugin, plugin_register, plugin_find,
+    init_plugin_manager, init_plugin, plugin_register, plugin_find,
     plugin_activate, plugin_deactivate, plugin_probe,
 };
 

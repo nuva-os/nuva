@@ -19,6 +19,7 @@
 //! x86_64 CPU exception handlers
 
 use crate::{pr_emerg, pr_info, pr_warn};
+use core::arch::asm;
 
 /// Page fault error code bits
 #[repr(transparent)]

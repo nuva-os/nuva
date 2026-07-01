@@ -504,7 +504,7 @@ impl DentryCache {
 }
 
 /// Global dentry cache
-static DCACHE: core::sync::OnceLock<DentryCache> = core::sync::OnceLock::new();
+static DCACHE: crate::sync_oncelock::OnceLock<DentryCache> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the dentry cache
 pub fn dcache() -> &'static DentryCache {
@@ -513,12 +513,12 @@ pub fn dcache() -> &'static DentryCache {
 
 /// Initialize dentry cache
 pub fn init_dcache() {
-    get_dcache().init();
+    dcache().init();
 }
 
 /// Look up a dentry
 pub fn dcache_lookup(parent_ino: u64, name: &[u8], sb: u64) -> *mut Dentry {
     let name_hash = Qstr::hash_name(name);
     let key = DentryKey::new(parent_ino, name_hash, sb);
-    get_dcache().lookup(&key, name)
+    dcache().lookup(&key, name)
 }

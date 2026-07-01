@@ -21,7 +21,8 @@ use super::{file_mode, DevT, FileType, InoT, Stat};
 use core::ptr;
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Inode Operation
 pub struct InodeOperations {
     /// CreateFile

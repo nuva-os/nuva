@@ -19,7 +19,8 @@
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use alloc::vec::Vec;
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// ftrace trace record
 /// Captures function entry/exit events with metadata.
 #[repr(C)]
@@ -282,7 +283,7 @@ fn read_timestamp() -> u64 {
 }
 
 /// Global ftrace context
-static FTRACE_CTX: core::sync::OnceLock<FtraceCtx> = core::sync::OnceLock::new();
+static FTRACE_CTX: crate::sync_oncelock::OnceLock<FtraceCtx> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global ftrace context
 pub fn ftrace_ctx() -> &'static FtraceCtx {
@@ -291,21 +292,21 @@ pub fn ftrace_ctx() -> &'static FtraceCtx {
 
 /// Enable ftrace globally
 pub fn ftrace_enable() {
-    get_ftrace_ctx().enable();
+    ftrace_ctx().enable();
 }
 
 /// Disable ftrace globally
 pub fn ftrace_disable() {
-    get_ftrace_ctx().disable();
+    ftrace_ctx().disable();
 }
 
 /// Set ftrace filter from address list
 pub fn ftrace_set_filter(addrs: &[u64]) -> i32 {
-    get_ftrace_ctx().set_filter(addrs)
+    ftrace_ctx().set_filter(addrs)
 }
 
 /// Initialize ftrace subsystem
 pub fn init_ftrace() {
-    let ctx = get_ftrace_ctx();
+    let ctx = ftrace_ctx();
     ctx.reset();
 }

@@ -469,14 +469,14 @@ pub fn this_cpu_rq(cpu_id: CpuId) -> Option<&'static PerCpuRunQueue> {
 }
 
 /// Global scheduler instance
-static SCHEDULER: core::sync::OnceLock<Scheduler> = core::sync::OnceLock::new();
+static SCHEDULER: crate::sync_oncelock::OnceLock<Scheduler> = crate::sync_oncelock::OnceLock::new();
 
 pub fn scheduler() -> &'static Scheduler {
     SCHEDULER.get_or_init(Scheduler::new)
 }
 
 pub fn init_scheduler() {
-    let sched = get_scheduler();
+    let sched = scheduler();
     sched.init(1);
 }
 

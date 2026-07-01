@@ -276,14 +276,14 @@ impl CpuAffinity {
 }
 
 /// GlobalLoad Balancer
-static LOAD_BALANCER: core::sync::OnceLock<LoadBalancer> = core::sync::OnceLock::new();
+static LOAD_BALANCER: crate::sync_oncelock::OnceLock<LoadBalancer> = crate::sync_oncelock::OnceLock::new();
 
 pub fn load_balancer() -> &'static LoadBalancer {
     LOAD_BALANCER.get_or_init(LoadBalancer::new)
 }
 
 pub fn init_load_balancer() {
- let lb = get_load_balancer();
+ let lb = load_balancer();
  lb.init();
 }
 

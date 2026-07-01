@@ -433,8 +433,11 @@ fn generate_random_bytes(buf: &mut [u8]) {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: rdtsc reads the time-stamp counter, a read-only operation.
     // It cannot cause memory safety violations.
+    let lo: u32;
+    let hi: u32;
     unsafe {
-        core::arch::asm!("rdtsc", out(reg) s0, options(nostack, preserves_flags));
+        core::arch::asm!("rdtsc", out("eax") lo, out("edx") hi, options(nostack, preserves_flags));
+        s0 = ((hi as u64) << 32) | (lo as u64);
     }
     #[cfg(target_arch = "aarch64")]
     // SAFETY: mrs cntvct_el0 reads the virtual counter, a read-only
@@ -513,8 +516,8 @@ fn decrypt_page_hw(
 }
 
 /// Global memory encryption manager
-static MEM_ENCRYPT_MANAGER: core::sync::OnceLock<MemoryEncryptionManager> =
-    core::sync::OnceLock::new();
+static MEM_ENCRYPT_MANAGER: crate::sync_oncelock::OnceLock<MemoryEncryptionManager> =
+    crate::sync_oncelock::OnceLock::new();
 
 /// Get memory encryption manager
 pub fn mem_encrypt_manager() -> &'static MemoryEncryptionManager {
@@ -533,6 +536,7 @@ pub fn init_mem_encrypt() -> Result<(), i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_encryption_algorithm_key_sizes() {

@@ -216,14 +216,10 @@ impl BacklightManager {
 }
 
 /// Global backlight manager
-static BACKLIGHT_MANAGER: core::sync::OnceLock<BacklightManager> = core::sync::OnceLock::new();
+static BACKLIGHT_MANAGER: crate::sync_oncelock::OnceLock<BacklightManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get backlight manager
 pub fn backlight_manager() -> &'static BacklightManager {
-    BACKLIGHT_MANAGER.get_or_init(BacklightManager::new)
-}
-
-pub fn init_backlight_manager() -> &'static BacklightManager {
     BACKLIGHT_MANAGER.get_or_init(BacklightManager::new)
 }
 

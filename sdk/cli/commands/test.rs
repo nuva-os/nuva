@@ -22,6 +22,8 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::TestCommand;
 use crate::cli::output;
+use alloc::vec;
+use alloc::format;
 
 /// Execute test command
 pub fn execute(sdk: &mut NuvaSdk, cmd: TestCommand) -> Result<(), SdkError> {

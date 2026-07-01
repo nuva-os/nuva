@@ -20,6 +20,7 @@
 
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use alloc::vec::Vec;
 
 /// X64 MSR registers
 pub mod msr {

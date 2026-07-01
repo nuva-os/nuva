@@ -25,6 +25,7 @@ use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use super::error::SqliteError;
+use alloc::vec;
 
 /// Page identifier (1-based, page 1 is the database header)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

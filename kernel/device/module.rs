@@ -512,7 +512,7 @@ impl ModuleManager {
 }
 
 /// Global module manager
-static MODULE_MANAGER: core::sync::OnceLock<ModuleManager> = core::sync::OnceLock::new();
+static MODULE_MANAGER: crate::sync_oncelock::OnceLock<ModuleManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get module manager
 pub fn module_manager() -> &'static ModuleManager {

@@ -24,7 +24,7 @@
  * point-in-time consistency guarantees.
  */
 
-use core::sync::atomic::{AtomicU64, AtomicU32, AtomicBool, Ordering};
+use core::sync::atomic::{AtomicU64, AtomicU32, AtomicU8, AtomicBool, Ordering};
 
 use crate::kernel::error::{KernelError, KernelResult};
 
@@ -228,7 +228,7 @@ impl SnapshotManager {
 }
 
 /// Global snapshot manager
-static SNAPSHOT_MANAGER: core::sync::OnceLock<SnapshotManager> = core::sync::OnceLock::new();
+static SNAPSHOT_MANAGER: crate::sync_oncelock::OnceLock<SnapshotManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global snapshot manager
 pub fn get_snapshot_manager() -> &'static SnapshotManager {
@@ -238,6 +238,7 @@ pub fn get_snapshot_manager() -> &'static SnapshotManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_create_snapshot() {

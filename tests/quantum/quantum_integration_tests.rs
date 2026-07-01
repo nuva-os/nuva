@@ -419,6 +419,7 @@ mod key_security_tests {
 #[cfg(test)]
 mod algorithm_support_tests {
     use super::*;
+use alloc::vec;
     
     /// Test PQC algorithm equality
     #[test]

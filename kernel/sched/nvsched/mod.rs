@@ -38,6 +38,8 @@ use core::sync::atomic::{AtomicU8, AtomicBool, AtomicU32, Ordering};
 
 use crate::kernel::error::KernelResult;
 
+use crate::kernel::error::KernelError;
+
 /// NvScheduler operating mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -192,7 +194,7 @@ impl NvScheduler {
 }
 
 /// Global NvScheduler instance
-static NV_SCHEDULER: core::sync::OnceLock<NvScheduler> = core::sync::OnceLock::new();
+static NV_SCHEDULER: crate::sync_oncelock::OnceLock<NvScheduler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global NvScheduler instance
 pub fn get_nv_scheduler() -> &'static NvScheduler {

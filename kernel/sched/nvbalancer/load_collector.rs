@@ -24,7 +24,7 @@
  * devices. Handles collection timeout with degraded fallback.
  */
 
-use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
+use core::sync::atomic::{AtomicU32, AtomicU8, AtomicBool, Ordering};
 
 use super::load_metrics::DeviceLoadMetrics;
 use super::MAX_HETERO_DEVICES;
@@ -156,6 +156,7 @@ impl LoadCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_update_and_get() {

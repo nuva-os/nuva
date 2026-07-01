@@ -145,6 +145,7 @@ pub fn helper() {
     let main_file = project.join("src/main.nuva");
     let new_content = r#"
 use lib::helper;
+use alloc::format;
 
 fn main() {
     helper();

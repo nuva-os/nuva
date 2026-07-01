@@ -20,6 +20,9 @@
 
 use super::{TextDocument, Range, SemanticAnalyzer, WorkspaceEdit, TextEdit};
 use std::collections::HashMap;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// shoulduserepeat
 pub fn apply_refactor(doc: &TextDocument, range: Range, action: &str, analyzer: &SemanticAnalyzer) -> Option<WorkspaceEdit> {

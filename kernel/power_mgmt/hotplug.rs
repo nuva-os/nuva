@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Hotplug Event Type
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -552,7 +553,7 @@ impl HotplugManager {
 }
 
 /// Global hotplug manager
-static HOTPLUG_MANAGER: core::sync::OnceLock<HotplugManager> = core::sync::OnceLock::new();
+static HOTPLUG_MANAGER: crate::sync_oncelock::OnceLock<HotplugManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get hotplug manager
 pub fn hotplug_manager() -> &'static HotplugManager {

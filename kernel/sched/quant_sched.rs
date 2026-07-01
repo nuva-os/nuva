@@ -347,7 +347,7 @@ impl QuantSchedPolicy {
 }
 
 /// Global quantization scheduling policy
-static QUANT_SCHED_POLICY: core::sync::OnceLock<QuantSchedPolicy> = core::sync::OnceLock::new();
+static QUANT_SCHED_POLICY: crate::sync_oncelock::OnceLock<QuantSchedPolicy> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global quantization scheduling policy
 pub fn get_quant_sched_policy() -> &'static QuantSchedPolicy {

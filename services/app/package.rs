@@ -144,7 +144,7 @@ impl PackageManager {
     }
 }
 
-static PACKAGE_MANAGER: core::sync::OnceLock<PackageManager> = core::sync::OnceLock::new();
+static PACKAGE_MANAGER: crate::sync_oncelock::OnceLock<PackageManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_package_manager() -> &'static mut PackageManager {
     // SAFETY: unsafe block required for low-level memory or hardware access

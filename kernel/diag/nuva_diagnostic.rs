@@ -25,7 +25,7 @@
  * system diagnostics. Now uses NuvaDiagnostic trait for native queries.
  */
 
-use crate::types::{NuvaError, NuvaDiagTopic};
+use crate::kernel::types::{NuvaError, NuvaDiagTopic};
 
 /// Diagnostic information container
 #[derive(Debug, Clone)]
@@ -66,11 +66,18 @@ pub enum NuvaDiagParam {
 }
 
 /// Diagnostic value (parameter value union)
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub union NuvaDiagValue {
     pub u32_val: u32,
     pub u64_val: u64,
     pub bool_val: bool,
+}
+
+impl core::fmt::Debug for NuvaDiagValue {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // SAFETY: union access - display u64_val as default
+        write!(f, "NuvaDiagValue({})", unsafe {{ self.u64_val }})
+    }
 }
 
 /// Nuva native diagnostic trait.

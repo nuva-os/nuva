@@ -285,14 +285,10 @@ impl ThermalManager {
 }
 
 /// Global thermal manager
-static THERMAL_MANAGER: core::sync::OnceLock<ThermalManager> = core::sync::OnceLock::new();
+static THERMAL_MANAGER: crate::sync_oncelock::OnceLock<ThermalManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get thermal manager
 pub fn thermal_manager() -> &'static ThermalManager {
-    THERMAL_MANAGER.get_or_init(ThermalManager::new)
-}
-
-pub fn init_thermal_manager() -> &'static ThermalManager {
     THERMAL_MANAGER.get_or_init(ThermalManager::new)
 }
 

@@ -19,7 +19,8 @@
 
 
 // Re-export print macros from crate root
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
 pub mod generic;
@@ -32,7 +33,7 @@ pub mod gic;
 pub use generic::{
     IrqReturn, ExceptionType, ExceptionContext, ExceptionHandler,
     SoftIrqHandler, IrqNumber, IrqFlags, IrqAction, InterruptManager,
-    get_interrupt_manager, init_interrupt,
+    interrupt_manager, init_interrupt,
 };
 
 /// InterruptsignalDefinition
@@ -112,7 +113,7 @@ impl IrqStats {
 }
 
 /// GlobalInterruptStatistics
-static IRQ_STATS: core::sync::OnceLock<IrqStats> = core::sync::OnceLock::new();
+static IRQ_STATS: crate::sync_oncelock::OnceLock<IrqStats> = crate::sync_oncelock::OnceLock::new();
 
 /// InitializeInterruptSystem
 pub fn init_interrupts() {
@@ -268,7 +269,7 @@ impl Drop for IrqSave {
 #[macro_export]
 macro_rules! irq_save {
  () => {
- $crate::interrupt::IrqSave::new()
+ $crate::kernel::interrupt::IrqSave::new()
  };
 }
 

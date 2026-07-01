@@ -185,7 +185,7 @@ impl Idt {
 }
 
 /// Global IDT
-static IDT: core::sync::OnceLock<Idt> = core::sync::OnceLock::new();
+static IDT: crate::sync_oncelock::OnceLock<Idt> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IDT
 pub fn idt() -> &'static Idt {
@@ -194,7 +194,7 @@ pub fn idt() -> &'static Idt {
 
 /// Initialize IDT
 pub fn init_idt() {
-    let idt = get_idt();
+    let idt = idt();
     let sel = gdt::KERNEL_CODE;
 
     macro_rules! set_handler {

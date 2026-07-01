@@ -29,7 +29,7 @@
  * capability tokens with Result<(), NuvaError> return types.
  */
 
-use crate::types::{NuvaCapabilityId, NuvaAccessRight, NuvaResourceHandle, NuvaError};
+use crate::kernel::types::{NuvaCapabilityId, NuvaAccessRight, NuvaResourceHandle, NuvaError};
 
 /// Nuva native security hook trait for composable security modules.
 /// Each method provides a default no-op implementation returning Ok(()).

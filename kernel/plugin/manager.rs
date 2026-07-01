@@ -97,7 +97,7 @@ impl PluginManager {
     /// @param path: Path to plugin file
     /// @return: Plugin ID
     pub fn load_plugin(&self, path: &str) -> Result<PluginId, PluginError> {
-        let start_ts = crate::hal::cpu::timer::read_cycle_counter() / 1000;
+        let start_ts = crate::hal::cpu::read_cycle_counter() / 1000;
 
         let mut loader = self.loader.write();
         let mut plugin = match loader.load(path) {
@@ -142,7 +142,7 @@ impl PluginManager {
         contexts.insert(id, context);
 
         // Accumulate load time
-        let end_ts = crate::hal::cpu::timer::read_cycle_counter() / 1000;
+        let end_ts = crate::hal::cpu::read_cycle_counter() / 1000;
         if end_ts >= start_ts {
             *self.total_load_time_ms.write() += end_ts - start_ts;
         }

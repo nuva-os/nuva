@@ -271,13 +271,9 @@ impl SessionManager {
 }
 
 /// GlobalSessionManager
-static SESSION_MANAGER: core::sync::OnceLock<SessionManager> = core::sync::OnceLock::new();
+static SESSION_MANAGER: crate::sync_oncelock::OnceLock<SessionManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn session_manager() -> &'static SessionManager {
-    SESSION_MANAGER.get_or_init(SessionManager::new)
-}
-
-pub fn init_session_manager() -> &'static SessionManager {
     SESSION_MANAGER.get_or_init(SessionManager::new)
 }
 

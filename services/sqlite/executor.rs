@@ -31,6 +31,7 @@ use super::parser::{self, Expr, SqlNode};
 use super::planner::{self, PlanNode, QueryPlanner};
 use super::result_set::{ResultSet, ResultSetBuilder};
 use super::transaction::{TransactionManager, TransactionState};
+use alloc::vec;
 
 /// Prepared statement
 #[derive(Debug, Clone)]

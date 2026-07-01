@@ -330,14 +330,10 @@ impl DmaManager {
 }
 
 /// Global DMA manager
-static DMA_MANAGER: core::sync::OnceLock<DmaManager> = core::sync::OnceLock::new();
+static DMA_MANAGER: crate::sync_oncelock::OnceLock<DmaManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get DMA manager
 pub fn dma_manager() -> &'static DmaManager {
-    DMA_MANAGER.get_or_init(DmaManager::new)
-}
-
-pub fn init_dma_manager() -> &'static DmaManager {
     DMA_MANAGER.get_or_init(DmaManager::new)
 }
 

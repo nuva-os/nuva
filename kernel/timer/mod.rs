@@ -648,7 +648,7 @@ impl TimerManager {
 }
 
 /// Global timer manager
-static TIMER_MANAGER: core::sync::OnceLock<TimerManager> = core::sync::OnceLock::new();
+static TIMER_MANAGER: crate::sync_oncelock::OnceLock<TimerManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get timer manager
 pub fn timer_manager() -> &'static TimerManager {

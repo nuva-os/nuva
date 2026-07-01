@@ -162,7 +162,7 @@ impl NpuMemoryManager {
 }
 
 /// Global NPU MemoryManager
-static NPU_MEMORY_MANAGER: core::sync::OnceLock<NpuMemoryManager> = core::sync::OnceLock::new();
+static NPU_MEMORY_MANAGER: crate::sync_oncelock::OnceLock<NpuMemoryManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_npu_memory_manager() -> &'static mut NpuMemoryManager {
     // SAFETY: unsafe block required for low-level memory or hardware access

@@ -19,6 +19,8 @@
 // ! ELF FilegridstyleProcess
 
 use std::path::PathBuf;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// ELF File
 #[derive(Debug, Clone)]

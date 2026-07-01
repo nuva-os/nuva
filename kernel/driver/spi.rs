@@ -374,7 +374,7 @@ impl SpiManager {
 }
 
 /// Global SPI manager
-static SPI_MANAGER: core::sync::OnceLock<SpiManager> = core::sync::OnceLock::new();
+static SPI_MANAGER: crate::sync_oncelock::OnceLock<SpiManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get SPI manager
 pub fn get_spi_manager() -> &'static mut SpiManager {

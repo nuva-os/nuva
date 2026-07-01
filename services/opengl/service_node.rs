@@ -36,6 +36,7 @@ use super::pipeline::PipelineStateCache;
 use super::power::GpuPowerManager;
 use super::resource::{ResourceId, ResourceType, ResourceRegistry};
 use super::software::SoftwareRenderer;
+use alloc::vec::Vec;
 
 /// Convert GlError to ServiceError
 impl From<GlError> for ServiceError {

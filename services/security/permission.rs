@@ -247,7 +247,7 @@ impl NuvaCapabilityManager {
 }
 
 /** Global Nuva capability manager instance. */
-static NUVA_CAPABILITY_MANAGER: core::sync::OnceLock<NuvaCapabilityManager> = core::sync::OnceLock::new();
+static NUVA_CAPABILITY_MANAGER: crate::sync_oncelock::OnceLock<NuvaCapabilityManager> = crate::sync_oncelock::OnceLock::new();
 
 /** Get a reference to the global capability manager. */
 pub fn get_nuva_capability_manager() -> &'static NuvaCapabilityManager {

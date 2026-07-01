@@ -387,7 +387,7 @@ impl PowerManager {
 }
 
 /// GlobalpowerManager
-static POWER_MANAGER: core::sync::OnceLock<PowerManager> = core::sync::OnceLock::new();
+static POWER_MANAGER: crate::sync_oncelock::OnceLock<PowerManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_power_manager() -> &'static mut PowerManager {
  // SAFETY: unsafe block required for low-level memory or hardware access

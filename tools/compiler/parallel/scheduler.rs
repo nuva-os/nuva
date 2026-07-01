@@ -25,6 +25,8 @@ use std::collections::VecDeque;
 use std::time::Instant;
 
 use super::{CompileTask, CompileOutput, ParallelError};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// taskserviceschedulingdevice
 pub struct TaskScheduler {

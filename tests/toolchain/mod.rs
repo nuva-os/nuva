@@ -26,6 +26,8 @@ pub mod integration;
 
 use std::path::PathBuf;
 use std::time::Duration;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// TestingFramework
 pub struct TestFramework {

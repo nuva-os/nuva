@@ -19,6 +19,9 @@
 // ! stopinformation
 
 use super::{TextDocument, Position, SemanticAnalyzer, Hover, HoverContents, MarkupContent, MarkupKind, Range};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// stopinformation
 pub fn provide_hover(doc: &TextDocument, position: Position, analyzer: &SemanticAnalyzer) -> Option<Hover> {

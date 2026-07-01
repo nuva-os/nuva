@@ -640,11 +640,11 @@ impl QuantumResourceManager {
 }
 
 /// Global quantum scheduler
-static QUANTUM_SCHEDULER: core::sync::OnceLock<QuantumScheduler> = core::sync::OnceLock::new();
+static QUANTUM_SCHEDULER: crate::sync_oncelock::OnceLock<QuantumScheduler> = crate::sync_oncelock::OnceLock::new();
 
 /// Global quantum resource manager
-static QUANTUM_RESOURCE_MANAGER: core::sync::OnceLock<QuantumResourceManager> =
-    core::sync::OnceLock::new();
+static QUANTUM_RESOURCE_MANAGER: crate::sync_oncelock::OnceLock<QuantumResourceManager> =
+    crate::sync_oncelock::OnceLock::new();
 
 /// Get quantum scheduler
 pub fn quantum_scheduler() -> &'static QuantumScheduler {
@@ -662,7 +662,7 @@ pub fn init_quantum_resource_manager() -> &'static QuantumResourceManager {
 
 /// Initialize quantum scheduler
 pub fn init_quantum_scheduler() {
-    get_quantum_scheduler().init();
+    quantum_scheduler().init();
 }
 
 // Import quantum_config from parent module

@@ -20,6 +20,8 @@ use super::symbols::{SymbolTable, SymbolKind};
 use super::types::{Type, TypeKind};
 use crate::nuva_lang::parser::ast::*;
 use crate::pr_err;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Type Checker
 /// Performs semantic analysis for the declarative Nuva language:

@@ -22,6 +22,7 @@
 //! Implements send, receive, sequencing, and flow control.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use alloc::vec::Vec;
 
 /// TCP segment
 #[derive(Debug, Clone)]

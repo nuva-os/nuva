@@ -409,7 +409,7 @@ impl NetDevManager {
 }
 
 /// Global device manager
-static NETDEV_MANAGER: core::sync::OnceLock<NetDevManager> = core::sync::OnceLock::new();
+static NETDEV_MANAGER: crate::sync_oncelock::OnceLock<NetDevManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get device manager
 pub fn netdev_manager() -> &'static NetDevManager {

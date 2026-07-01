@@ -200,6 +200,7 @@ mod parser_tests {
     use super::*;
     use nuva_lang::parser::parser::Parser;
     use nuva_lang::parser::ast::{ExprKind, PipelineStage};
+use alloc::vec;
 
     #[test]
     fn test_parse_simple_pipeline() {

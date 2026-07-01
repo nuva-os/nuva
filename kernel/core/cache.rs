@@ -339,7 +339,7 @@ impl CacheManager {
     /// the memory manager is not yet initialized.
     fn estimate_available_memory(&self) -> u64 {
         // In a real implementation, this would call:
-        // crate::mm::get_total_memory() or similar
+        // crate::kernel::mm::get_total_memory() or similar
         // For now, use a conservative default of 512MB
         // which will be overridden once the memory subsystem is up
         const DEFAULT_MEMORY: u64 = 512 * 1024 * 1024;
@@ -420,7 +420,7 @@ impl Default for CacheManager {
 }
 
 /// Global cache manager
-static CACHE_MANAGER: core::sync::OnceLock<CacheManager> = core::sync::OnceLock::new();
+static CACHE_MANAGER: crate::sync_oncelock::OnceLock<CacheManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get cache manager
 pub fn cache_manager() -> &'static CacheManager {

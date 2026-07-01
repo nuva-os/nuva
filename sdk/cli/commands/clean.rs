@@ -22,6 +22,7 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::CleanCommand;
 use crate::cli::output;
+use alloc::format;
 
 /// Execute clean command
 pub fn execute(sdk: &mut NuvaSdk, cmd: CleanCommand) -> Result<(), SdkError> {

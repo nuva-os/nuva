@@ -19,6 +19,8 @@
 // ! collectionsuccessTesting
 
 use super::{Test, TestConfig, TestKind, TestMetadata, TestOutcome};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// receivecollectioncollectionsuccessTesting
 pub fn collect_integration_tests(config: &TestConfig) -> Vec<Test> {

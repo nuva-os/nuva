@@ -23,6 +23,7 @@
 
 use super::record::{CrashReason, TombstoneError, TombstoneRecord};
 use super::store::{TombstoneIndexEntry, TombstoneStore};
+use alloc::vec::Vec;
 
 // ---------------------------------------------------------------------------
 // TombstoneQueryType

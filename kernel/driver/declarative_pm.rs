@@ -17,6 +17,7 @@
  */
 
 use crate::kernel::error::{KernelError, KernelResult};
+use core::sync::atomic::AtomicU8;
 
 /**
  * Device power state in the declarative power state machine.

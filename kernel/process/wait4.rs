@@ -19,7 +19,8 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_debug, pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Process ID type
 pub type Pid = u32;
 
@@ -612,7 +613,7 @@ impl Wait4Handler {
 }
 
 /// Global wait4 handler
-static WAIT4_HANDLER: core::sync::OnceLock<Wait4Handler> = core::sync::OnceLock::new();
+static WAIT4_HANDLER: crate::sync_oncelock::OnceLock<Wait4Handler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get wait4 handler
 pub fn wait4_handler() -> &'static Wait4Handler {

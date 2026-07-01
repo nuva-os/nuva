@@ -20,7 +20,8 @@ use crate::{pr_info};
 
 
 use core::sync::atomic::{AtomicU64, Ordering};
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 
 /// FileDescriptorType
 pub type Fd = i32;

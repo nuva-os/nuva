@@ -626,7 +626,7 @@ impl AdaptiveLayoutEngine {
 }
 
 /** Global adaptive layout engine instance. */
-static LAYOUT_ENGINE: core::sync::OnceLock<AdaptiveLayoutEngine> = core::sync::OnceLock::new();
+static LAYOUT_ENGINE: crate::sync_oncelock::OnceLock<AdaptiveLayoutEngine> = crate::sync_oncelock::OnceLock::new();
 
 /** Get a reference to the global layout engine. */
 pub fn get_layout_engine() -> &'static AdaptiveLayoutEngine {

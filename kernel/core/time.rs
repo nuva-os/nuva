@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Get current time in milliseconds
 pub fn get_time_ms() -> u64 {
     // TODO: implement proper time retrieval from hardware timer
@@ -440,7 +441,7 @@ impl TimeManager {
 }
 
 /// Global time manager
-static TIME_MANAGER: core::sync::OnceLock<TimeManager> = core::sync::OnceLock::new();
+static TIME_MANAGER: crate::sync_oncelock::OnceLock<TimeManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get time manager
 pub fn time_manager() -> &'static TimeManager {

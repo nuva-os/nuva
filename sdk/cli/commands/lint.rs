@@ -22,6 +22,8 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::LintCommand;
 use crate::cli::output;
+use alloc::vec;
+use alloc::format;
 
 /// Execute lint command
 pub fn execute(sdk: &mut NuvaSdk, cmd: LintCommand) -> Result<(), SdkError> {

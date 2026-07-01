@@ -23,6 +23,7 @@
 
 use crate::lib::core::*;
 use crate::kernel::perf::*;
+use alloc::vec;
 
 #[test]
 fn test_mpsc_queue() {

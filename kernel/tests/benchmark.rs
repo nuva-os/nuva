@@ -190,11 +190,11 @@ pub fn bench_memory_alloc_throughput(runner: &mut BenchmarkRunner) {
             .unwrap_or(alloc::alloc::Layout::new::<u64>());
         let start = read_cycles();
         // SAFETY: allocating and immediately freeing
-        let ptr = unsafe { alloc::alloc::alloc(layout) };
+        let ptr = unsafe { alloc::alloc::alloc_layout(layout) };
         if !ptr.is_null() {
             // SAFETY: ptr was allocated with the same layout above
             unsafe {
-                alloc::alloc::dealloc(ptr, layout);
+                alloc::alloc::dealloc_layout(ptr, layout);
             }
         }
         let end = read_cycles();

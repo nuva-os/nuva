@@ -100,7 +100,7 @@ impl SystemTests {
 
     fn test_scheduler_subsystem(&mut self) -> SystemTestResult {
         use core::sync::atomic::Ordering;
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::scheduler();
         let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
         let nr_running = scheduler.nr_running.load(Ordering::Relaxed);
         if nr_running <= nr_tasks + 1 {

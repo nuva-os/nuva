@@ -24,6 +24,8 @@ pub mod syscall_number;
 
 use crate::compat::config::TargetArch;
 use crate::compat::{TestCategory, TestResult, TestStatus};
+use alloc::format;
+use alloc::vec::Vec;
 
 /// ABI compatibilityTestingsuitecase
 pub struct AbiCompatSuite {

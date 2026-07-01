@@ -28,7 +28,7 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use core::ptr;
 use alloc::boxed::Box;
-use crate::mm::page_alloc::{alloc_page, free_page, inc_page_ref, dec_page_ref, get_page_ref, copy_page};
+use crate::kernel::mm::page_alloc::{alloc_page, free_page, inc_page_ref, dec_page_ref, get_page_ref, copy_page};
 
 /// pageSize(4KB)
 pub const PAGE_SIZE: u64 = 4096;
@@ -421,7 +421,7 @@ pub fn create_address_space(pid: Pid) -> Result<AddressSpace, i64> {
  let mut mm = AddressSpace::new(pid);
 
  // Allocate page table
- let pgd = crate::mm::page_table::alloc_page_table();
+ let pgd = crate::kernel::mm::page_table::alloc_page_table();
  if pgd == 0 {
  return Err(-12); // ENOMEM
  }
@@ -456,7 +456,7 @@ pub fn destroy_address_space(mm: &mut AddressSpace) -> Result<(), i64> {
  }
 
  // Free page table
- crate::mm::page_table::free_page_table(mm.pgd);
+ crate::kernel::mm::page_table::free_page_table(mm.pgd);
 
  ASM.dec_as_count();
 
@@ -544,7 +544,7 @@ pub fn copy_address_space(
  // copy_page_table_cow maps all present pages as read-only + COW in the
  // child and write-protects them in the parent, so the first write by
  // either process triggers a page fault that copies the page.
- crate::mm::page_table::copy_page_table_cow(parent_mm.pgd, child_mm.pgd);
+ crate::kernel::mm::page_table::copy_page_table_cow(parent_mm.pgd, child_mm.pgd);
 
  // Updatestatistics
  child_mm.stats.total_vm.store(
@@ -571,7 +571,7 @@ pub fn mm_create() -> Result<AddressSpace, i64> {
  let mut mm = AddressSpace::new(pid);
  
  // CreatePage Table
- mm.pgd = crate::arch::current_arch().page_table().create().as_u64();
+ mm.pgd = crate::kernel::arch::current_arch().page_table().create().as_u64();
  
  // increasePlusAddress SpaceCount
  ASM.inc_as_count();
@@ -603,7 +603,7 @@ pub fn mm_destroy(mut mm: AddressSpace) {
  
  // FreePage Table
  if mm.pgd != 0 {
- crate::arch::current_arch().page_table().destroy(crate::arch::PhysAddr::new(mm.pgd));
+ crate::kernel::arch::current_arch().page_table().destroy(crate::kernel::arch::PhysAddr::new(mm.pgd));
  }
  
  // MinusfewAddress SpaceCount
@@ -805,28 +805,29 @@ pub fn handle_page_fault(
  }
 
  // Get page table entry
- let pte = crate::mm::page_table::get_pte(mm.pgd, addr);
+ let pte = crate::kernel::mm::page_table::get_pte(mm.pgd, addr);
 
- // Check if it's a COW page
- if pte.is_present() && pte.is_cow() && is_write {
- return handle_cow_page_fault(mm, addr);
+ if let Some(pte_val) = pte {
+     if pte_val.is_cow() && is_write {
+         return handle_cow_page_fault(mm, addr);
+     }
  }
 
  // Handle other page fault cases
  match vma.vm_anon {
  // Anonymous mapping: allocate new page
  1 => {
- let phys = crate::mm::page_alloc::alloc_page();
+ let phys = crate::kernel::mm::page_alloc::alloc_page();
  if phys == 0 {
  log_warn!("Failed to allocate page for anonymous mapping");
  return Err(-12); // ENOMEM
  }
  
  // Zero the page
- crate::mm::page_alloc::zero_page(phys);
+ crate::kernel::mm::page_alloc::zero_page(phys);
  
  // Map the page
- crate::mm::page_table::map_page(mm.pgd, addr, phys, prot);
+ crate::kernel::mm::page_table::map_user_page(mm.pgd, addr, phys, vma.vm_flags);
  }
  // File mapping: read from file
  _ => {

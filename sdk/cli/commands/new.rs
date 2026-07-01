@@ -23,6 +23,7 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::NewCommand;
 use crate::cli::output;
+use alloc::format;
 
 /// Execute new project command
 pub fn execute(sdk: &mut NuvaSdk, cmd: NewCommand) -> Result<(), SdkError> {

@@ -269,7 +269,7 @@ impl StackCanaryManager {
 }
 
 /// Global stack canary manager
-static CANARY_MANAGER: core::sync::OnceLock<StackCanaryManager> = core::sync::OnceLock::new();
+static CANARY_MANAGER: crate::sync_oncelock::OnceLock<StackCanaryManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the canary manager
 pub fn canary_manager() -> &'static StackCanaryManager {

@@ -66,12 +66,12 @@ pub use credential::Credentials;
 pub use nsm_manager::{SecurityManager as NsmSecurityManager, SecStats, SecId, capable, has_capability};
 
 // Re-export LSM compatibility types (deprecated)
-pub use lsm::{SecurityOps as LsmSecurityOps, LegacySecurityModule};
+pub use lsm::{NuvaSecurityHook as LsmSecurityOps, SecurityModule as LegacySecurityModule};
 
 pub use signature::{
     CodeSignature, SignatureAlgorithm, SignatureResult, SignatureChain,
     SignatureChainEntry, SignatureContext,
-    init_signature, get_signature_context,
+    init_signature, signature_context,
     MAX_SIGNATURE_SIZE, MAX_PUBKEY_HASH_SIZE, MAX_SIGNER_NAME,
     SIG_FLAG_TRUSTED, SIG_FLAG_REVOKED, SIG_FLAG_EXPERIMENTAL, SIG_FLAG_SYSTEM,
 };
@@ -123,7 +123,7 @@ pub use capability_guard::{
 pub use memcrypt::{
     MemoryEncryptionConfig, MemoryEncryptionManager, EncryptionAlgorithm,
     EncryptionKey, KeyState, PageEncryptStatus,
-    init_mem_encrypt, get_mem_encrypt_manager,
+    init_mem_encrypt, init_mem_encrypt_manager,
     MAX_KEY_SIZE, MAX_ENCRYPTION_KEYS,
 };
 
@@ -497,7 +497,7 @@ impl SecurityManager {
 }
 
 /// GlobalSecurityManager
-static SECURITY_MANAGER: core::sync::OnceLock<SecurityManager> = core::sync::OnceLock::new();
+static SECURITY_MANAGER: crate::sync_oncelock::OnceLock<SecurityManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn security_manager() -> &'static SecurityManager {
     SECURITY_MANAGER.get_or_init(SecurityManager::new)

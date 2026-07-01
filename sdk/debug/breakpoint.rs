@@ -21,6 +21,8 @@
 use std::collections::HashMap;
 use crate::error::SdkError;
 use super::target::DebugTarget;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Breakpoint manager
 pub struct BreakpointManager {

@@ -25,10 +25,17 @@
 
 use core::fmt;
 use core::sync::atomic::{AtomicU64, AtomicU32, AtomicBool, Ordering};
+use alloc::vec;
 use alloc::vec::Vec;
 use alloc::string::String;
 use crate::hal::quantum::qrng::{QrngProvider, QrngError, RandomnessQuality, QrngStats};
 use crate::hal::quantum::qrng::health_test::{RepetitionCountTest, AdaptiveProportionTest};
+
+fn erfc_stub(x: f64) -> f64 {
+    let t = 1.0 / (1.0 + 0.5 * x.abs());
+    let tau = t * (-x * x - 1.26551223 + 1.00002368 * t + 0.37409196 * t * t + 0.09678418 * t * t * t - 0.18628806 * t * t * t * t + 0.27886807 * t * t * t * t * t - 1.13520398 * t * t * t * t * t * t + 1.48851587 * t * t * t * t * t * t * t - 0.82215223 * t * t * t * t * t * t * t * t + 0.17087277 * t * t * t * t * t * t * t * t * t).exp();
+    if x < 0.0 { 2.0 - tau } else { tau }
+}
 
 /// Hardware QRNG device descriptor (memory-mapped I/O)
 #[derive(Debug, Clone)]
@@ -523,7 +530,7 @@ impl QrngProvider for HardwareQrngProvider {
 
         // Monobit test
         let s_obs = (ones as f64 - (total_bits / 2.0)).abs() / total_bits.sqrt();
-        let monobit_p = libm::erfc(s_obs / 1.4142135623730951);
+        let monobit_p = erfc_stub(s_obs / 1.4142135623730951);
 
         // Runs test
         let mut runs = 1u64;
@@ -543,7 +550,7 @@ impl QrngProvider for HardwareQrngProvider {
         let runs_expected = 2.0 * total_bits * pi * (1.0 - pi);
         let runs_variance = 2.0 * total_bits * pi * (1.0 - pi) * (1.0 - 3.0 * pi * (1.0 - pi));
         let runs_z = (runs as f64 - runs_expected).abs() / runs_variance.sqrt();
-        let runs_p = libm::erfc(runs_z / 1.4142135623730951);
+        let runs_p = erfc_stub(runs_z / 1.4142135623730951);
 
         // Use simplified p-values
         let frequency_block_p = monobit_p; // simplified

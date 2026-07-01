@@ -22,6 +22,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Read, Write};
+use alloc::format;
 
 /// encodingtranslateCache
 pub struct CompilationCache {

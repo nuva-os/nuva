@@ -392,7 +392,7 @@ impl Scheduler {
     pub fn create_task(&self, ppid: Pid) -> Pid {
         self.stats.task_creates.fetch_add(1, Ordering::AcqRel);
 
-        let new_pid = crate::sched::task::alloc_pid();
+        let new_pid = crate::kernel::sched::task::alloc_pid();
         let tcb = TaskControlBlock::new(new_pid, new_pid, ppid);
         let rq = self.get_run_queue(0);
         rq.enqueue(&tcb);
@@ -412,7 +412,7 @@ impl Scheduler {
         let rq = self.get_run_queue(0);
         rq.dequeue(&tcb);
 
-        crate::sched::task::free_pid(pid);
+        crate::kernel::sched::task::free_pid(pid);
         log_debug!("destroy_task: pid={}", pid);
     }
     
@@ -488,7 +488,7 @@ impl Scheduler {
 }
 
 /// Global scheduler instance
-static SCHEDULER: core::sync::OnceLock<Scheduler> = core::sync::OnceLock::new();
+static SCHEDULER: crate::sync_oncelock::OnceLock<Scheduler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get reference to global scheduler
 pub fn scheduler() -> &'static Scheduler {
@@ -498,7 +498,7 @@ pub fn scheduler() -> &'static Scheduler {
 /// Initialize the global scheduler
 /// @param nr_cpus: Number of CPUs to support
 pub fn init_scheduler(nr_cpus: u32) {
-    let sched = get_scheduler();
+    let sched = scheduler();
     sched.init(nr_cpus);
 }
 

@@ -97,7 +97,7 @@ Failed tests:");
 // Fork Tests
 
 fn test_fork_basic() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     let nr_running = scheduler.nr_running.load(Ordering::Relaxed);
     nr_tasks > 0 && nr_running <= nr_tasks + 1
@@ -116,19 +116,20 @@ fn test_fork_file_inheritance() -> bool {
     parent_fds == child_fds
 }
 
+#[cfg(feature = "posix")]
 fn test_fork_signal_inheritance() -> bool {
     use super::signal;
     signal::SIGHUP > 0 && signal::SIGINT > 0 && signal::SIGKILL > 0
 }
 
 fn test_vfork() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     nr_tasks > 0
 }
 
 fn test_clone_thread() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     let nr_running = scheduler.nr_running.load(Ordering::Relaxed);
     nr_running <= nr_tasks + 1
@@ -158,6 +159,7 @@ fn test_execve_file_close() -> bool {
     true
 }
 
+#[cfg(feature = "posix")]
 fn test_execve_signal_reset() -> bool {
     use super::signal;
     signal::SIGKILL == 9 && signal::SIGSTOP == 19
@@ -166,12 +168,14 @@ fn test_execve_signal_reset() -> bool {
 // ============================================================================
 // Signal Tests
 
+#[cfg(feature = "posix")]
 fn test_signal_send() -> bool {
     // Test signal sending
     use super::signal::*;
     signal::SIGHUP == 1 && signal::SIGINT == 2 && signal::SIGKILL == 9
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_mask() -> bool {
     // Test signal masking
     use super::{SigSet, signal};
@@ -183,6 +187,7 @@ fn test_signal_mask() -> bool {
     set.is_member(signal::SIGINT) && set.is_member(signal::SIGTERM)
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_pending() -> bool {
     // Test pending signals
     use super::{SigSet, signal};
@@ -193,6 +198,7 @@ fn test_signal_pending() -> bool {
     pending.is_member(signal::SIGUSR1) && !pending.is_member(signal::SIGUSR2)
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_handler_default() -> bool {
     // Test default signal handling
     use super::{SigAction, sigaction};
@@ -201,6 +207,7 @@ fn test_signal_handler_default() -> bool {
     action.handler == sigaction::SIG_DFL
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_handler_ignore() -> bool {
     // Test signal ignore
     use super::{SigAction, sigaction};
@@ -215,6 +222,7 @@ fn test_signal_handler_ignore() -> bool {
     action.is_ignore()
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_cannot_catch_kill() -> bool {
     // Test that SIGKILL cannot be caught
     use super::signal;
@@ -235,13 +243,13 @@ fn test_sigaltstack() -> bool {
 // Wait Tests
 
 fn test_wait_basic() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     nr_tasks > 0
 }
 
 fn test_waitpid() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     nr_tasks > 0
 }
@@ -263,7 +271,7 @@ fn test_wait_no_child() -> bool {
 }
 
 fn test_wait_nonblocking() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
     let _ = nr_switches;
     true
@@ -320,6 +328,7 @@ fn test_fork_burst() -> bool {
     true
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_burst() -> bool {
     // Test rapid signal delivery
     use super::{SigSet, signal};
@@ -337,21 +346,22 @@ fn test_signal_burst() -> bool {
 // Performance Tests
 
 fn test_fork_performance() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
     let _ = nr_switches;
     true
 }
 
+#[cfg(feature = "posix")]
 fn test_signal_performance() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
     let _ = nr_tasks;
     true
 }
 
 fn test_context_switch_performance() -> bool {
-    let scheduler = crate::kernel::sched::get_scheduler();
+    let scheduler = crate::kernel::sched::init_scheduler();
     let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
     nr_switches > 0 || true
 }
@@ -371,6 +381,7 @@ pub fn run_all_tests() -> bool {
     runner.run_test("fork_basic", test_fork_basic);
     runner.run_test("fork_cow", test_fork_cow);
     runner.run_test("fork_file_inheritance", test_fork_file_inheritance);
+    #[cfg(feature = "posix")]
     runner.run_test("fork_signal_inheritance", test_fork_signal_inheritance);
     runner.run_test("vfork", test_vfork);
     runner.run_test("clone_thread", test_clone_thread);
@@ -381,16 +392,24 @@ pub fn run_all_tests() -> bool {
     runner.run_test("execve_arg_passing", test_execve_arg_passing);
     runner.run_test("execve_env_passing", test_execve_env_passing);
     runner.run_test("execve_file_close", test_execve_file_close);
+    #[cfg(feature = "posix")]
     runner.run_test("execve_signal_reset", test_execve_signal_reset);
 
     // Signal tests
     crate::log_info!("Running Signal tests...");
+    #[cfg(feature = "posix")]
     runner.run_test("signal_send", test_signal_send);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_mask", test_signal_mask);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_pending", test_signal_pending);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_handler_default", test_signal_handler_default);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_handler_ignore", test_signal_handler_ignore);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_cannot_catch_kill", test_signal_cannot_catch_kill);
+    #[cfg(feature = "posix")]
     runner.run_test("sigaltstack", test_sigaltstack);
 
     // Wait tests
@@ -411,11 +430,13 @@ pub fn run_all_tests() -> bool {
     // Stress tests
     crate::log_info!("Running Stress tests...");
     runner.run_test("fork_burst", test_fork_burst);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_burst", test_signal_burst);
 
     // Performance tests
     crate::log_info!("Running Performance tests...");
     runner.run_test("fork_performance", test_fork_performance);
+    #[cfg(feature = "posix")]
     runner.run_test("signal_performance", test_signal_performance);
     runner.run_test("context_switch_performance", test_context_switch_performance);
 

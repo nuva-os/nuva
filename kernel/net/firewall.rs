@@ -428,7 +428,7 @@ unsafe fn free_firewall_rule(rule: *mut FirewallRule) {
 }
 
 /// Global firewall manager
-static FIREWALL_MANAGER: core::sync::OnceLock<FirewallManager> = core::sync::OnceLock::new();
+static FIREWALL_MANAGER: crate::sync_oncelock::OnceLock<FirewallManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get firewall manager
 pub fn firewall_manager() -> &'static FirewallManager {

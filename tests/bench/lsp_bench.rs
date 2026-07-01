@@ -20,6 +20,7 @@
 
 use super::{BenchmarkContext, BenchmarkRunner, create_benchmark_project, measure_command};
 use std::time::Duration;
+use alloc::format;
 
 /// Benchmark LSP initialization
 #[test]

@@ -24,6 +24,7 @@
 use super::record::TombstoneError;
 use super::stats::TombstoneStats;
 use super::store::TombstoneStore;
+use alloc::vec::Vec;
 
 // ---------------------------------------------------------------------------
 // TombstoneClearType

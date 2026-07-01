@@ -148,10 +148,10 @@ pub fn bench_percpu_cache_alloc(iterations: u64) -> BenchmarkResult {
     for _ in 0..iterations {
         // SAFETY: allocating and immediately freeing memory
         unsafe {
-            let ptr = alloc::alloc::alloc(layout);
+            let ptr = alloc::alloc::alloc_layout(layout);
             if !ptr.is_null() {
                 core::ptr::write_bytes(ptr, 0xAB, 64);
-                alloc::alloc::dealloc(ptr, layout);
+                alloc::alloc::dealloc_layout(ptr, layout);
             }
         }
         core::hint::black_box(0u64);
@@ -220,7 +220,7 @@ pub fn bench_aslr_randomize(iterations: u64) -> BenchmarkResult {
     let start = read_cycles();
     
     for i in 0..iterations {
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::init_scheduler();
         let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
         core::hint::black_box((i, nr_switches));
     }
@@ -297,7 +297,7 @@ impl PerformanceComparison {
 }
 
 /// Global benchmark suite
-static BENCHMARK_SUITE: core::sync::OnceLock<BenchmarkSuite> = core::sync::OnceLock::new();
+static BENCHMARK_SUITE: crate::sync_oncelock::OnceLock<BenchmarkSuite> = crate::sync_oncelock::OnceLock::new();
 
 /// Get benchmark suite
 pub fn benchmark_suite() -> &'static BenchmarkSuite {
@@ -309,4 +309,8 @@ pub fn init_benchmarks() {
     log_info!("Running performance benchmarks...");
     let suite = run_all_benchmarks();
     suite.print_all();
+}
+
+pub fn run_benchmarks() {
+    init_benchmarks();
 }

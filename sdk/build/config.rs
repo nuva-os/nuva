@@ -22,6 +22,8 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use crate::error::SdkError;
 use super::target::{Target, TargetKind};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// buildconfigure
 #[derive(Debug, Clone)]

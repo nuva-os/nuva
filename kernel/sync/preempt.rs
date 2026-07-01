@@ -18,8 +18,7 @@
 
 use core::sync::atomic::{AtomicU32, Ordering};
 
-use super::KernelError;
-use super::KernelResult;
+use crate::kernel::error::{KernelError, KernelResult};
 
 /**
  * Per-CPU preemption count.

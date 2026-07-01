@@ -21,6 +21,8 @@
 use super::ast::*;
 use crate::nuva_lang::lexer::token::{Token, TokenType, Keyword, TokenValue};
 use super::precedence::{get_binary_precedence, get_unary_precedence, precedence};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Syntax Analyzer
 pub struct Parser {

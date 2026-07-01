@@ -26,6 +26,7 @@ use alloc::vec::Vec;
 use super::super::{ArchOps, ArchPlugin, ArchPluginMeta, ArchType, DeviceInfo, PluginError};
 use super::super::super::{PageTableOps, IrqControllerOps, TimerOps, PowerOps, ContextOps};
 use super::super::super::{PhysAddr, VirtAddr, ProtFlags, CpuContext};
+use alloc::vec;
 
 // ============================================================================
 // ARM64 casedata

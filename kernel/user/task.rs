@@ -382,13 +382,9 @@ impl TaskManager {
 }
 
 /// GlobalTask Managementdevice
-static TASK_MANAGER: core::sync::OnceLock<TaskManager> = core::sync::OnceLock::new();
+static TASK_MANAGER: crate::sync_oncelock::OnceLock<TaskManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn task_manager() -> &'static TaskManager {
-    TASK_MANAGER.get_or_init(TaskManager::new)
-}
-
-pub fn init_task_manager() -> &'static TaskManager {
     TASK_MANAGER.get_or_init(TaskManager::new)
 }
 

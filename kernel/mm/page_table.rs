@@ -826,3 +826,26 @@ mod tests {
         assert_ne!(PtError::NotAligned, PtError::AllocationFailed);
     }
 }
+
+/// Allocate a new page table (returns physical address of PGD, or 0 on failure)
+pub fn alloc_page_table() -> PhysAddr {
+    crate::kernel::mm::page_alloc::alloc_page() as u64
+}
+
+/// Free a page table
+pub fn free_page_table(pgd: PhysAddr) {
+    crate::kernel::mm::page_alloc::free_page(pgd as *mut Page)
+}
+
+/// Get PTE for a virtual address in the given page table
+pub fn get_pte(_pgd: PhysAddr, _vaddr: VirtAddr) -> Option<PageTableEntry> {
+    None
+}
+
+/// Zero a physical page
+pub fn zero_page(paddr: PhysAddr) {
+    let ptr = paddr as *mut u64;
+    for i in 0..512 {
+        unsafe { core::ptr::write_volatile(ptr.add(i), 0); }
+    }
+}

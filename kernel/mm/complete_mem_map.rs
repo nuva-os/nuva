@@ -27,10 +27,12 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
-use crate::mm::mem_map::{Zone, ZoneType, get_mem_map};
-use crate::mm::allocator::{kmalloc, kfree};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys};
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages};
+use crate::kernel::mm::page_flags;
+use crate::kernel::mm::Page;
+use crate::kernel::mm::allocator::{kmalloc, kfree};
 
 /// Error code
 pub mod errno {
@@ -743,13 +745,13 @@ pub struct PageReclaimStats {
 // ============================================================================
 
 /// Global mem_map Manager
-static MEM_MAP_MANAGER: core::sync::OnceLock<MemMapManager> = core::sync::OnceLock::new();
+static MEM_MAP_MANAGER: crate::sync_oncelock::OnceLock<MemMapManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalpageFaceCachingManager
-static PAGE_CACHE_MANAGER: core::sync::OnceLock<PageCacheManager> = core::sync::OnceLock::new();
+static PAGE_CACHE_MANAGER: crate::sync_oncelock::OnceLock<PageCacheManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalpageFaceroundreceiveManager
-static PAGE_RECLAIM_MANAGER: core::sync::OnceLock<PageReclaimManager> = core::sync::OnceLock::new();
+static PAGE_RECLAIM_MANAGER: crate::sync_oncelock::OnceLock<PageReclaimManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get mem_map Manager
 pub fn mem_map_manager() -> &'static MemMapManager {

@@ -505,7 +505,7 @@ impl PageCache {
 }
 
 /// Global page cache
-static PAGE_CACHE: core::sync::OnceLock<PageCache> = core::sync::OnceLock::new();
+static PAGE_CACHE: crate::sync_oncelock::OnceLock<PageCache> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the page cache
 pub fn page_cache() -> &'static PageCache {
@@ -514,11 +514,11 @@ pub fn page_cache() -> &'static PageCache {
 
 /// Initialize page cache
 pub fn init_page_cache() {
-    get_page_cache().init();
+    page_cache().init();
 }
 
 /// Look up a page in cache
 pub fn page_cache_lookup(ino: u64, index: u64) -> *mut PageCacheEntry {
     let key = PageCacheKey::new(ino, index);
-    get_page_cache().lookup(&key)
+    page_cache().lookup(&key)
 }

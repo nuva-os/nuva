@@ -20,7 +20,7 @@
 //! Provides zero-overhead read-side critical sections with deferred reclamation.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicPtr, Ordering};
-use alloc::boxed::FnBox;
+// FnBox removed - was deprecated in alloc
 
 use super::percpu::{PerCpu, MAX_CPUS};
 

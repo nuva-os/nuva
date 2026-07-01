@@ -25,6 +25,7 @@ use crate::{pr_debug, pr_info};
  */
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
+use alloc::vec::Vec;
 
 /// Breakpoint type
 #[repr(u8)]

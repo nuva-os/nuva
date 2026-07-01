@@ -27,7 +27,7 @@
  * This module is only compiled when the "vulkan" feature is enabled.
  */
 
-use crate::types::{NuvaError, NuvaCapabilityId, NuvaProcessId};
+use crate::kernel::types::{NuvaError, NuvaCapabilityId, NuvaProcessId};
 use crate::vulkan::gpu_capability::{NvGpuPermission, NvGpuCapability};
 
 // ============================================================================

@@ -22,6 +22,7 @@ use alloc::collections::BTreeMap;
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use super::error::GlError;
+use alloc::vec::Vec;
 
 /// GPU resource type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -346,7 +346,7 @@ impl RandomManager {
 }
 
 /// Global random manager
-static RANDOM_MANAGER: core::sync::OnceLock<RandomManager> = core::sync::OnceLock::new();
+static RANDOM_MANAGER: crate::sync_oncelock::OnceLock<RandomManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get random manager
 pub fn random_manager() -> &'static RandomManager {

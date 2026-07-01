@@ -22,7 +22,8 @@ use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use super::vfs::*;
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// IndexNodesignalType
 pub type Ino = u64;
 

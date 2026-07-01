@@ -30,6 +30,7 @@
 use crate::kernel::types::{NuvaProcessId, NuvaCapabilityId, NvFaultDomainId, NvTimestamp};
 use crate::kernel::capability::nv_capability::NvRightsSet;
 use crate::kernel::error::{KernelError, KernelResult};
+use alloc::vec::Vec;
 
 /// Nuva process configuration (declarative, replaces fork+exec combo)
 #[derive(Debug, Clone)]

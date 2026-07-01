@@ -423,7 +423,7 @@ impl MemoryCompactor {
 }
 
 /// Global memory compactor
-static MEMORY_COMPACTOR: core::sync::OnceLock<MemoryCompactor> = core::sync::OnceLock::new();
+static MEMORY_COMPACTOR: crate::sync_oncelock::OnceLock<MemoryCompactor> = crate::sync_oncelock::OnceLock::new();
 
 /// Get memory compactor
 pub fn compactor() -> &'static MemoryCompactor {
@@ -432,12 +432,12 @@ pub fn compactor() -> &'static MemoryCompactor {
 
 /// Initialize memory compaction
 pub fn init_memory_compaction() {
-    get_compactor().init();
+    compactor().init();
 }
 
 /// Compact memory for a specific order
 pub fn compact_memory(order: u32) -> CompactResult {
-    get_compactor().compact_order(order)
+    compactor().compact_order(order)
 }
 
 /// Check if compaction is needed

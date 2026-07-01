@@ -31,6 +31,7 @@ pub mod runner;
 use config::TestConfig;
 use reporter::TestReporter;
 use runner::TestRunner;
+use alloc::vec::Vec;
 
 /// compatibilityTestingFrameworkmainstruct
 pub struct CompatTestFramework {

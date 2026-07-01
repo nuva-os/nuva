@@ -19,7 +19,7 @@
 
 
 // Re-export print macros from crate root
-pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
+// pr_* macros are automatically exported to crate root by #[macro_export]
 
 // Nuva native type system (foundation for all native interfaces)
 pub mod types;

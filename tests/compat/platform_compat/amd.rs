@@ -22,6 +22,8 @@ use super::make_result;
 use crate::compat::config::TargetPlatform;
 use crate::compat::{TestResult, TestStatus};
 use std::time::Instant;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// run AMD Ryzen PlatformTesting
 pub fn run_tests() -> Vec<TestResult> {

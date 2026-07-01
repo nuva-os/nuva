@@ -29,6 +29,9 @@ pub mod diagnostics;
 
 use std::path::PathBuf;
 use std::collections::HashMap;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// LSP serviceservicedevice
 pub struct LspServer {

@@ -304,7 +304,7 @@ impl OomKiller {
 
         // Nuva native: signal the process manager to terminate via native interface
         // NuvaProcess::terminate(NuvaTerminateReason::Oom) is the primary path
-        crate::types::NuvaProcessId::new(pid as u64);
+        crate::kernel::types::NuvaProcessId::new(pid as u64);
 
         self.kill_count.fetch_add(1, Ordering::Relaxed);
         self.last_killed_pid.store(pid, Ordering::Relaxed);

@@ -26,6 +26,7 @@
 use alloc::alloc::{alloc, dealloc, Layout};
 use alloc::boxed::Box;
 use core::hash::Hash;
+use alloc::vec::Vec;
 
 /// Dynamic array
 pub struct Vec<T> {

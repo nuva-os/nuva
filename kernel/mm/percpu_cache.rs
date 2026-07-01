@@ -418,7 +418,7 @@ impl PerCpuPageCacheManager {
 }
 
 /// Global per-CPU page cache manager
-static PCP_MANAGER: core::sync::OnceLock<PerCpuPageCacheManager> = core::sync::OnceLock::new();
+static PCP_MANAGER: crate::sync_oncelock::OnceLock<PerCpuPageCacheManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the per-CPU page cache manager
 pub fn pcp_manager() -> &'static PerCpuPageCacheManager {

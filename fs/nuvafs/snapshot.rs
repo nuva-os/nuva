@@ -22,6 +22,7 @@
 //! Implements copy-on-write snapshots for point-in-time filesystem state capture.
 
 use core::sync::atomic::{AtomicU64, AtomicU32, AtomicBool, Ordering};
+use alloc::vec::Vec;
 
 /// Snapshot magic number
 pub const SNAPSHOT_MAGIC: u32 = 0x4E56_534E; // "NVSN"

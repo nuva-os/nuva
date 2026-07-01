@@ -26,6 +26,8 @@
 
 use core::fmt;
 use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Architecture layer enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -233,7 +235,7 @@ impl LayerBoundaryChecker {
 }
 
 /// Global layer boundary checker
-static LAYER_CHECKER: core::sync::OnceLock<LayerBoundaryChecker> = core::sync::OnceLock::new();
+static LAYER_CHECKER: crate::sync_oncelock::OnceLock<LayerBoundaryChecker> = crate::sync_oncelock::OnceLock::new();
 
 /// Initialize layer boundary checker
 pub fn init_layer_checker() {

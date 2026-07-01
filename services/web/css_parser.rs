@@ -23,6 +23,7 @@
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use super::dom::{DomNode, DomTree, NodeId, NodeType};
 use super::error::WebError;

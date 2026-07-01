@@ -302,6 +302,8 @@ impl std::error::Error for ConfigError {}
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
+use alloc::vec::Vec;
 
     #[test]
     fn test_default_config() {

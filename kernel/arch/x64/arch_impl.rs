@@ -17,18 +17,18 @@
 
  */
 
-use crate::arch::*;
-use crate::arch::x64::*;
+use crate::kernel::arch::*;
+use crate::kernel::arch::x64::*;
 
 /// x86_64 Page Table Operation Implementation
 pub struct X64PageTable;
 
 impl PageTableOps for X64PageTable {
-    fn create() -> PhysAddr {
+    fn create(&self) -> PhysAddr {
         log_info!("x86_64: Creating page table");
 
         // Allocate a physical page as PML4
-        let page_phys = crate::mm::page_alloc::alloc_page();
+        let page_phys = crate::kernel::mm::page_alloc::alloc_page();
 
         // Clear page table
         mmu::clear_page_table(page_phys.as_u64());
@@ -71,26 +71,26 @@ impl PageTableOps for X64PageTable {
                     // Free PT page (leaf page table)
                     // SAFETY: pt_phys is a valid page table physical address obtained
                     // from the page walk; free_page returns it to the physical allocator.
-                    crate::mm::page_alloc::free_page(pt_phys as *mut u8);
+                    crate::kernel::mm::page_alloc::free_page(pt_phys as *mut u8);
                 }
 
                 // Free PD page
                 // SAFETY: pd_phys is a valid page directory physical address.
-                crate::mm::page_alloc::free_page(pd_phys as *mut u8);
+                crate::kernel::mm::page_alloc::free_page(pd_phys as *mut u8);
             }
 
             // Free PDPT page
             // SAFETY: pdpt_phys is a valid PDPT physical address.
-            crate::mm::page_alloc::free_page(pdpt_phys as *mut u8);
+            crate::kernel::mm::page_alloc::free_page(pdpt_phys as *mut u8);
         }
 
         // Free PML4 page
         // SAFETY: pgd is the PML4 root physical address; after freeing all children,
         // we free the PML4 page itself.
-        crate::mm::page_alloc::free_page(pgd.as_u64() as *mut u8);
+        crate::kernel::mm::page_alloc::free_page(pgd.as_u64() as *mut u8);
     }
 
-    fn map(pgd: PhysAddr, vaddr: VirtAddr, paddr: PhysAddr, prot: ProtFlags, page_size: u64) {
+    fn map(&self, pgd: PhysAddr, vaddr: VirtAddr, paddr: PhysAddr, prot: ProtFlags, page_size: u64) {
         log_info!("x86_64: Mapping {:?} -> {:?} with prot {:?}", vaddr, paddr, prot);
 
         // Convert permission flags to x86_64 PTE flags
@@ -112,7 +112,7 @@ impl PageTableOps for X64PageTable {
         mmu::page_table_map_impl(pgd.as_u64(), vaddr.as_u64(), paddr.as_u64(), pte_flags, page_size);
     }
 
-    fn unmap(pgd: PhysAddr, vaddr: VirtAddr) {
+    fn unmap(&self, pgd: PhysAddr, vaddr: VirtAddr) {
         log_info!("x86_64: Unmapping {:?}", vaddr);
 
         // Call actual unmap implementation
@@ -122,7 +122,7 @@ impl PageTableOps for X64PageTable {
         }
     }
 
-    fn translate(pgd: PhysAddr, vaddr: VirtAddr) -> Option<PhysAddr> {
+    fn translate(&self, pgd: PhysAddr, vaddr: VirtAddr) -> Option<PhysAddr> {
         // Call actual address translation implementation
         mmu::page_table_translate_impl(pgd.as_u64(), vaddr.as_u64()).map(PhysAddr::new)
     }
@@ -215,7 +215,7 @@ impl PageTableOps for X64PageTable {
         Self::tlb_flush_addr(vaddr);
     }
 
-    fn tlb_flush_addr(vaddr: VirtAddr) {
+    fn tlb_flush_addr(&self, vaddr: VirtAddr) {
         // SAFETY: inline assembly required for hardware instruction
         unsafe {
             core::arch::asm!(
@@ -225,16 +225,16 @@ impl PageTableOps for X64PageTable {
         }
     }
 
-    fn tlb_flush_all() {
+    fn tlb_flush_all(&self) {
         let cr3 = read_cr3();
         write_cr3(cr3);
     }
 
-    fn switch(pgd: PhysAddr) {
+    fn switch(&self, pgd: PhysAddr) {
         write_cr3(pgd.as_u64());
     }
 
-    fn current() -> PhysAddr {
+    fn current(&self) -> PhysAddr {
         PhysAddr::new(read_cr3())
     }
 }
@@ -382,7 +382,7 @@ impl ApicDriver {
 }
 
 /// Global APIC driver instance
-static APIC_DRIVER: core::sync::OnceLock<ApicDriver> = core::sync::OnceLock::new();
+static APIC_DRIVER: crate::sync_oncelock::OnceLock<ApicDriver> = crate::sync_oncelock::OnceLock::new();
 
 /// x86_64 Interrupt Controller Implementation (APIC)
 pub struct X64IrqController;
@@ -530,6 +530,7 @@ impl TimerOps for X64Timer {
         // Step 1: Detect HPET via ACPI table
         // SAFETY: Reading ACPI tables during early init; single-threaded access.
         let hpet_detected = unsafe {
+            #[cfg(feature = "x64")]
             let acpi = crate::hal::acpi::get_acpi_tables();
             acpi.find_table(&HPET_SIGNATURE).is_some()
         };
@@ -701,6 +702,7 @@ impl PowerOps for X64Power {
     fn init(&self) {
         log_info!("x86_64: Initializing ACPI power management");
         // SAFETY: init_acpi_power is called only during early single-threaded init.
+        #[cfg(feature = "x64")]
         if !crate::hal::acpi::init_acpi_power() {
             log_warn!("x86_64: ACPI power driver init failed, using fallback");
         }
@@ -746,18 +748,21 @@ impl PowerOps for X64Power {
     fn system_shutdown(&self) {
         log_info!("x86_64: System shutdown (ACPI S5)");
         // Write SLP_TYP S5 to PM1a/b_CNT to enter soft-off state
+        #[cfg(feature = "x64")]
         crate::hal::acpi::enter_sleep_state(crate::hal::acpi::sleep_type::S5);
     }
 
     fn system_reboot(&self) {
         log_info!("x86_64: System reboot via FADT reset register");
         // Use FADT reset register for system reset
+        #[cfg(feature = "x64")]
         crate::hal::acpi::get_acpi_power_driver().system_reset();
     }
 
     fn system_suspend(&self) {
         log_info!("x86_64: System suspend (ACPI S3)");
         // Write SLP_TYP S3 to PM1a/b_CNT to enter suspend-to-RAM
+        #[cfg(feature = "x64")]
         crate::hal::acpi::enter_sleep_state(crate::hal::acpi::sleep_type::S3);
     }
 }
@@ -766,7 +771,7 @@ impl PowerOps for X64Power {
 pub struct X64Context;
 
 impl ContextOps for X64Context {
-    fn save_context(ctx: &mut CpuContext) {
+    fn save_context(&self, ctx: &mut CpuContext) {
         // SAFETY: unsafe block required for low-level memory or hardware access
         unsafe {
             // Save general registers
@@ -800,7 +805,7 @@ impl ContextOps for X64Context {
         }
     }
 
-    fn restore_context(ctx: &CpuContext) {
+    fn restore_context(&self, ctx: &CpuContext) {
         // SAFETY: unsafe block required for low-level memory or hardware access
         unsafe {
             // Restore stack pointer and RFLAGS
@@ -834,7 +839,7 @@ impl ContextOps for X64Context {
         }
     }
 
-    fn switch_context(from: &mut CpuContext, to: &CpuContext) {
+    fn switch_context(&self, from: &mut CpuContext, to: &CpuContext) {
         Self::save_context(from);
         Self::restore_context(to);
     }
@@ -844,7 +849,7 @@ impl ContextOps for X64Context {
 pub struct X64Arch;
 
 impl ArchOps for X64Arch {
-    fn init() {
+    fn init(&self) {
         let vendor = get_cpu_vendor();
         let vendor_str = core::str::from_utf8(&vendor).unwrap_or("Unknown");
 
@@ -857,46 +862,46 @@ impl ArchOps for X64Arch {
         Self::power().init();
     }
 
-    fn page_table() -> &'static dyn PageTableOps {
+    fn page_table(&self) -> &'static dyn PageTableOps {
         &X64PageTable
     }
 
-    fn irq_controller() -> &'static dyn IrqControllerOps {
+    fn irq_controller(&self) -> &'static dyn IrqControllerOps {
         &X64IrqController
     }
 
-    fn timer() -> &'static dyn TimerOps {
+    fn timer(&self) -> &'static dyn TimerOps {
         &X64Timer
     }
 
-    fn power() -> &'static dyn PowerOps {
+    fn power(&self) -> &'static dyn PowerOps {
         &X64Power
     }
 
-    fn context() -> &'static dyn ContextOps {
+    fn context(&self) -> &'static dyn ContextOps {
         &X64Context
     }
 
-    fn enable_irq() {
+    fn enable_irq(&self) {
         // SAFETY: inline assembly required for hardware instruction
         unsafe {
             core::arch::asm!("sti");
         }
     }
 
-    fn disable_irq() {
+    fn disable_irq(&self) {
         // SAFETY: inline assembly required for hardware instruction
         unsafe {
             core::arch::asm!("cli");
         }
     }
 
-    fn cpu_id() -> u32 {
+    fn cpu_id(&self) -> u32 {
         // TODO: Read Local APIC ID
         0
     }
 
-    fn cpu_count() -> u32 {
+    fn cpu_count(&self) -> u32 {
         // TODO: Read CPU count from ACPI or MP table
         1
     }

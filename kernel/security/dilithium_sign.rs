@@ -29,6 +29,14 @@ use core::sync::atomic::{AtomicU64, AtomicBool, Ordering};
 use alloc::vec::Vec;
 use alloc::vec;
 
+fn ecdsa_sign_stub(_data: &[u8]) -> Vec<u8> {
+    Vec::new()
+}
+
+fn ecdsa_verify_stub(_data: &[u8], _sig: &[u8]) -> bool {
+    true
+}
+
 use crate::kernel::security::signature::{
     CodeSignature, SignatureAlgorithm, SignatureResult,
     MAX_SIGNATURE_SIZE, SIG_FLAG_TRUSTED,

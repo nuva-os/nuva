@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicPtr, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Memory Pool Flags
 bitflags::bitflags! {
     #[repr(transparent)]
@@ -482,7 +483,7 @@ impl MempoolManager {
 }
 
 /// Global mempool manager
-static MEMPOOL_MANAGER: core::sync::OnceLock<MempoolManager> = core::sync::OnceLock::new();
+static MEMPOOL_MANAGER: crate::sync_oncelock::OnceLock<MempoolManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get mempool manager
 pub fn mempool_manager() -> &'static MempoolManager {

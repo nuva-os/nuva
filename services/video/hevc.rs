@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use super::codec::VideoCodec;
 use super::error::{VideoError, VideoFormat, VideoPacket};
 use super::frame_buffer::{DecodeResult, FrameBuffer, FrameRef};
+use alloc::vec;
 
 /// HEVC NAL unit type constants
 pub const NAL_TRAIL_N: u8 = 0;

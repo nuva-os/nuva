@@ -28,7 +28,8 @@ use alloc::string::String;
 use core::sync::atomic::{AtomicU64, Ordering};
 use crate::{pr_debug, pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// ICMP Header
 #[repr(C, packed)]
 pub struct IcmpHeader {
@@ -394,7 +395,7 @@ impl IcmpManager {
         packet[2..4].copy_from_slice(&checksum.to_be_bytes());
         
         // Send via IP layer
-        // crate::net::ip::send(&packet, dst);
+        // crate::kernel::net::ip::send(&packet, dst);
         
         0
     }
@@ -418,7 +419,7 @@ impl IcmpManager {
         packet[2..4].copy_from_slice(&checksum.to_be_bytes());
         
         // Send via IP layer
-        // crate::net::ip::send(&packet, dst);
+        // crate::kernel::net::ip::send(&packet, dst);
         
         0
     }
@@ -453,7 +454,7 @@ impl IcmpManager {
 }
 
 /// Global ICMP manager
-static ICMP_MANAGER: core::sync::OnceLock<IcmpManager> = core::sync::OnceLock::new();
+static ICMP_MANAGER: crate::sync_oncelock::OnceLock<IcmpManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get ICMP manager
 pub fn icmp_manager() -> &'static IcmpManager {

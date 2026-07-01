@@ -26,7 +26,8 @@ use crate::{pr_debug, pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Debug Event
 #[repr(C)]
 #[derive(Clone)]
@@ -508,7 +509,7 @@ impl DebugManager {
 }
 
 /// Global debug manager
-static DEBUG_MANAGER: core::sync::OnceLock<DebugManager> = core::sync::OnceLock::new();
+static DEBUG_MANAGER: crate::sync_oncelock::OnceLock<DebugManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get debug manager
 pub fn debug_manager() -> &'static DebugManager {
@@ -531,19 +532,19 @@ pub fn init_debug() {
 #[macro_export]
 macro_rules! trace_func_entry {
  () => {
- if $crate::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_func_entry(
- $crate::arch::current_function_address!(),
- $crate::arch::return_address!(),
+ if $crate::kernel::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_func_entry(
+ $crate::kernel::arch::current_function_address!(),
+ $crate::kernel::arch::return_address!(),
  00
  );
  }
  };
  ($arg:expr) => {
- if $crate::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_func_entry(
- $crate::arch::current_function_address!(),
- $crate::arch::return_address!(),
+ if $crate::kernel::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_func_entry(
+ $crate::kernel::arch::current_function_address!(),
+ $crate::kernel::arch::return_address!(),
  $arg as u64,
  );
  }
@@ -554,17 +555,17 @@ macro_rules! trace_func_entry {
 #[macro_export]
 macro_rules! trace_func_exit {
  () => {
- if $crate::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_func_exit(
- $crate::arch::current_function_address!(),
+ if $crate::kernel::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_func_exit(
+ $crate::kernel::arch::current_function_address!(),
  0,
  );
  }
  };
  ($retval:expr) => {
- if $crate::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_func_exit(
- $crate::arch::current_function_address!(),
+ if $crate::kernel::debug::debug_manager().func_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_func_exit(
+ $crate::kernel::arch::current_function_address!(),
  $retval as u64,
  );
  }
@@ -575,8 +576,8 @@ macro_rules! trace_func_exit {
 #[macro_export]
 macro_rules! trace_mem_alloc {
  ($addr:expr, $size:expr, $flags:expr) => {
- if $crate::debug::debug_manager().mem_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_mem_alloc($addr as u64, $size as u64, $flags as u32);
+ if $crate::kernel::debug::debug_manager().mem_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_mem_alloc($addr as u64, $size as u64, $flags as u32);
  }
  };
 }
@@ -585,8 +586,8 @@ macro_rules! trace_mem_alloc {
 #[macro_export]
 macro_rules! trace_mem_free {
  ($addr:expr, $size:expr) => {
- if $crate::debug::debug_manager().mem_trace.load(core::sync::atomic::Ordering::Acquire) {
- $crate::debug::debug_manager().log_mem_free($addr as u64, $size as u64);
+ if $crate::kernel::debug::debug_manager().mem_trace.load(core::sync::atomic::Ordering::Acquire) {
+ $crate::kernel::debug::debug_manager().log_mem_free($addr as u64, $size as u64);
  }
  };
 }

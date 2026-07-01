@@ -101,7 +101,7 @@ impl AslrState {
 }
 
 /// Global ASLR state
-static ASLR_STATE: core::sync::OnceLock<AslrState> = core::sync::OnceLock::new();
+static ASLR_STATE: crate::sync_oncelock::OnceLock<AslrState> = crate::sync_oncelock::OnceLock::new();
 
 /// Get ASLR state
 pub fn get_aslr_state() -> &'static AslrState {

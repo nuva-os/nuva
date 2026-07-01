@@ -30,6 +30,7 @@ use super::sha256::sha256_digest;
 use super::event_log::{EventLogManager, MeasurementEvent};
 use crate::{pr_info, pr_debug, pr_warn};
 
+
 /// Boot component in the verification chain
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BootComponent {

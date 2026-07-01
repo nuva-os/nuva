@@ -302,7 +302,7 @@ impl Dcache {
 }
 
 // Global directory entry cache
-static DCACHE: core::sync::OnceLock<Dcache> = core::sync::OnceLock::new();
+static DCACHE: crate::sync_oncelock::OnceLock<Dcache> = crate::sync_oncelock::OnceLock::new();
 
 pub fn dcache() -> &'static Dcache {
     DCACHE.get_or_init(Dcache::new)

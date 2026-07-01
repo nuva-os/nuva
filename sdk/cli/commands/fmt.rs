@@ -22,6 +22,9 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::FmtCommand;
 use crate::cli::output;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Execute format command
 pub fn execute(sdk: &mut NuvaSdk, cmd: FmtCommand) -> Result<(), SdkError> {

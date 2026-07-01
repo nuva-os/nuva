@@ -287,14 +287,10 @@ impl FreqManager {
 }
 
 /// Global freq manager
-static FREQ_MANAGER: core::sync::OnceLock<FreqManager> = core::sync::OnceLock::new();
+static FREQ_MANAGER: crate::sync_oncelock::OnceLock<FreqManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get freq manager
 pub fn freq_manager() -> &'static FreqManager {
-    FREQ_MANAGER.get_or_init(FreqManager::new)
-}
-
-pub fn init_freq_manager() -> &'static FreqManager {
     FREQ_MANAGER.get_or_init(FreqManager::new)
 }
 

@@ -24,6 +24,7 @@
 use crate::kernel::process::Process;
 use crate::kernel::signal::SaFlags;
 use core::sync::atomic::{AtomicPtr, AtomicU32, AtomicU64, Ordering};
+use crate::kernel::error::KernelError;
 
 /// Signal numbers (POSIX)
 pub mod signal {

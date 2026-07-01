@@ -384,7 +384,7 @@ impl EasData {
 }
 
 /// Global EAS data
-static EAS_DATA: core::sync::OnceLock<EasData> = core::sync::OnceLock::new();
+static EAS_DATA: crate::sync_oncelock::OnceLock<EasData> = crate::sync_oncelock::OnceLock::new();
 
 /// Get EAS data
 pub fn eas_data() -> &'static EasData {

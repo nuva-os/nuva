@@ -347,7 +347,7 @@ pub enum MemoryPressure {
 }
 
 /// Global memory monitor
-static MEMORY_MONITOR: core::sync::OnceLock<MemoryMonitor> = core::sync::OnceLock::new();
+static MEMORY_MONITOR: crate::sync_oncelock::OnceLock<MemoryMonitor> = crate::sync_oncelock::OnceLock::new();
 
 /// Get memory monitor
 pub fn memory_monitor() -> &'static MemoryMonitor {
@@ -356,6 +356,6 @@ pub fn memory_monitor() -> &'static MemoryMonitor {
 
 /// Initialize memory monitoring
 pub fn init_memory_monitoring(total_memory: u64) {
-    let monitor = get_memory_monitor();
+    let monitor = memory_monitor();
     monitor.init(total_memory);
 }

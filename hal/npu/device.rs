@@ -486,7 +486,7 @@ impl NpuManager {
 }
 
 /// Global NPU manager
-static NPU_MANAGER: core::sync::OnceLock<NpuManager> = core::sync::OnceLock::new();
+static NPU_MANAGER: crate::sync_oncelock::OnceLock<NpuManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get NPU manager
 pub fn get_npu_manager() -> &'static mut NpuManager {

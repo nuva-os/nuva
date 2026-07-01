@@ -21,7 +21,9 @@
 //! transaction control (BEGIN, COMMIT, ROLLBACK), and index creation.
 
 use alloc::string::String;
+use alloc::vec;
 use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use super::error::{SqliteError, Value};
 

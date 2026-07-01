@@ -278,17 +278,17 @@ impl PerfTuner {
     fn start_auto_tune(&self) {
         log_info!("Starting auto-tune...");
         extern "C" fn perf_tune_thread_entry() {
-            let tuner = get_perf_tuner();
+            let tuner = perf_tuner();
             let mut cycle_count: u64 = 0;
             loop {
                 tuner.auto_tune_cycle();
                 cycle_count += 1;
                 tuner.stats.cpu_util.store(
-                    crate::kernel::sched::get_scheduler().nr_running.load(Ordering::Relaxed),
+                    crate::kernel::sched::scheduler().nr_running.load(Ordering::Relaxed),
                     Ordering::Relaxed,
                 );
                 if cycle_count % 100 == 0 {
-                    let pgo = crate::kernel::perf::pgo::get_pgo_profile();
+                    let pgo = crate::kernel::perf::pgo::pgo_profile();
                     let opt_count = pgo.apply_feedback();
                     if opt_count > 0 {
                         crate::log_debug!("perf_tune: PGO applied {} optimizations at cycle {}", opt_count, cycle_count);
@@ -425,7 +425,7 @@ impl Default for PerfTuner {
 }
 
 /// Global performance tuner
-static PERF_TUNER: core::sync::OnceLock<PerfTuner> = core::sync::OnceLock::new();
+static PERF_TUNER: crate::sync_oncelock::OnceLock<PerfTuner> = crate::sync_oncelock::OnceLock::new();
 
 /// Get performance tuner
 pub fn perf_tuner() -> &'static PerfTuner {
@@ -434,13 +434,13 @@ pub fn perf_tuner() -> &'static PerfTuner {
 
 /// Initialize performance tuning
 pub fn init_perf_tune() {
-    let tuner = get_perf_tuner();
+    let tuner = perf_tuner();
     tuner.init();
 }
 
 /// Quick performance check
 pub fn perf_check() -> u32 {
-    let tuner = get_perf_tuner();
+    let tuner = perf_tuner();
     let cpu = tuner.stats.cpu_util.load(Ordering::Acquire);
     let mem = tuner.stats.mem_util.load(Ordering::Acquire);
     let io = tuner.stats.io_util.load(Ordering::Acquire);

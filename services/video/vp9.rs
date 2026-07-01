@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use super::codec::VideoCodec;
 use super::error::{VideoError, VideoFormat, VideoPacket};
 use super::frame_buffer::{DecodeResult, FrameBuffer, FrameRef};
+use alloc::vec;
 
 /// VP9 frame marker and sync code
 pub const VP9_FRAME_MARKER: u8 = 0x49;

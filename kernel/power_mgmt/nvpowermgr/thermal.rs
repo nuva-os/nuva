@@ -25,7 +25,7 @@
  * on sensor failure.
  */
 
-use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
+use core::sync::atomic::{AtomicU32, AtomicU8, AtomicBool, Ordering};
 
 use crate::kernel::error::KernelResult;
 
@@ -184,6 +184,8 @@ impl ThermalMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
+use crate::kernel::error::KernelError;
 
     #[test]
     fn test_normal_temperature() {

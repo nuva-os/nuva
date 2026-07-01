@@ -523,7 +523,7 @@ impl StatsManager {
 }
 
 /// Global stats manager
-static STATS_MANAGER: core::sync::OnceLock<StatsManager> = core::sync::OnceLock::new();
+static STATS_MANAGER: crate::sync_oncelock::OnceLock<StatsManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get stats manager
 pub fn stats_manager() -> &'static StatsManager {

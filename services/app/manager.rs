@@ -287,7 +287,7 @@ impl AppManager {
 }
 
 /// GlobalApplicationManager
-static APP_MANAGER: core::sync::OnceLock<AppManager> = core::sync::OnceLock::new();
+static APP_MANAGER: crate::sync_oncelock::OnceLock<AppManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_app_manager() -> &'static mut AppManager {
  // SAFETY: unsafe block required for low-level memory or hardware access

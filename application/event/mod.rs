@@ -21,3 +21,32 @@
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
 /** Declarative event types and dispatcher. */
 pub mod declarative;
+
+/// Event type enumeration
+#[derive(Debug, Clone, Copy)]
+pub enum EventType {
+    FormFactorChanged,
+    PowerStateChanged,
+    ThermalEvent,
+    Custom(u32),
+}
+
+/// System event
+#[derive(Debug, Clone)]
+pub struct Event {
+    pub event_type: EventType,
+    pub timestamp: u64,
+}
+
+impl Event {
+    pub fn new(event_type: EventType) -> Self {
+        Event { event_type, timestamp: 0 }
+    }
+}
+
+/// Event dispatcher module
+pub mod dispatcher {
+    use super::{Event, EventType};
+
+    pub fn broadcast_system_event(_event: Event) {}
+}

@@ -52,6 +52,7 @@
 pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
 pub mod ipc;
 pub mod nvipc; // Nuva high-performance IPC (primary IPC mechanism)
+pub mod nuvaipc; // Legacy Nuva IPC compatibility
 pub mod l4_ipc; // L4 Lattice IPC
 pub mod l4; // L4 IPC Framework
 
@@ -79,7 +80,8 @@ pub use nvipc::{
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 #[cfg(feature = "posix")]
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// IPC key type
 pub type IpcKey = u32;
 
@@ -896,7 +898,7 @@ impl IpcManager {
 }
 
 /// Global IPC manager
-static IPC_MANAGER: core::sync::OnceLock<IpcManager> = core::sync::OnceLock::new();
+static IPC_MANAGER: crate::sync_oncelock::OnceLock<IpcManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IPC manager
 pub fn ipc_manager() -> &'static IpcManager {

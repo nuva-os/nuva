@@ -19,6 +19,9 @@
 // ! LSP break
 
 use super::{Range, Diagnostic, DiagnosticSeverity, Location, DiagnosticRelatedInformation};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// breakManager
 pub struct DiagnosticManager {

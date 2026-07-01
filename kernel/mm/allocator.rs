@@ -28,9 +28,10 @@
 use core::ptr;
 use core::sync::atomic::{AtomicU64, AtomicBool, Ordering};
 use core::alloc::Layout;
-use crate::mm::buddy::{get_buddy, MAX_ORDER};
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys};
-use crate::mm::page_alloc::{alloc_pages, free_pages};
+use crate::kernel::mm::buddy::MAX_ORDER;
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys};
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages};
 
 /// Error code
 pub mod errno {
@@ -145,7 +146,7 @@ pub struct HeapStats {
 }
 
 /// GlobalHeapAllocatedevice
-static HEAP_ALLOCATOR: core::sync::OnceLock<HeapAllocator> = core::sync::OnceLock::new();
+static HEAP_ALLOCATOR: crate::sync_oncelock::OnceLock<HeapAllocator> = crate::sync_oncelock::OnceLock::new();
 
 /// GetHeapAllocatedevice
 pub fn heap() -> &'static HeapAllocator {
@@ -154,7 +155,7 @@ pub fn heap() -> &'static HeapAllocator {
 
 /// InitializeHeap
 pub fn init_heap(start: VirtAddr, size: u64) {
- let heap = get_heap();
+ let heap = heap();
  heap.init(start, size);
 }
 
@@ -391,7 +392,7 @@ impl SlabAllocator {
 }
 
 /// Global Slab Allocatedevice
-static SLAB_ALLOCATOR: core::sync::OnceLock<SlabAllocator> = core::sync::OnceLock::new();
+static SLAB_ALLOCATOR: crate::sync_oncelock::OnceLock<SlabAllocator> = crate::sync_oncelock::OnceLock::new();
 
 /// Get Slab Allocatedevice
 pub fn slab() -> &'static SlabAllocator {
@@ -400,7 +401,7 @@ pub fn slab() -> &'static SlabAllocator {
 
 /// Initialize Slab Allocatedevice
 pub fn init_slab() {
- let slab = get_slab();
+ let slab = slab();
  slab.init();
 }
 
@@ -611,7 +612,7 @@ pub struct LargeAllocatorStats {
 }
 
 /// GloballargeBlockMemoryAllocatedevice
-static LARGE_ALLOCATOR: core::sync::OnceLock<LargeAllocator> = core::sync::OnceLock::new();
+static LARGE_ALLOCATOR: crate::sync_oncelock::OnceLock<LargeAllocator> = crate::sync_oncelock::OnceLock::new();
 
 /// GetlargeBlockMemoryAllocatedevice
 pub fn large() -> &'static LargeAllocator {
@@ -620,7 +621,7 @@ pub fn large() -> &'static LargeAllocator {
 
 /// InitializelargeBlockMemoryAllocatedevice
 pub fn init_large() {
- let large = get_large();
+ let large = large();
  large.init();
 }
 
@@ -650,20 +651,20 @@ pub fn kmalloc(size: usize) -> *mut u8 {
 
  // smallObjectmakeuse Slab Allocatedevice
  if size <= 262144 {
- let slab = get_slab();
+ let slab = slab();
  if slab.is_initialized() {
  return slab.alloc(size);
  }
  }
 
  // largeObjectmakeuselargeBlockMemoryAllocatedevice
- let large = get_large();
+ let large = large();
  if large.initialized.load(Ordering::Acquire) {
  return large.alloc(size);
  }
 
  // mostthenmakeuseHeapAllocatedevice
- let heap = get_heap();
+ let heap = heap();
  if heap.is_initialized() {
  return heap.alloc(size, 8);
  }
@@ -679,7 +680,7 @@ pub fn kfree(ptr: *mut u8, size: usize) {
 
  // smallObjectmakeuse Slab Allocatedevice
  if size <= 262144 {
- let slab = get_slab();
+ let slab = slab();
  if slab.is_initialized() {
  slab.free(ptr, size);
  return;
@@ -687,7 +688,7 @@ pub fn kfree(ptr: *mut u8, size: usize) {
  }
 
  // largeObjectmakeuselargeBlockMemoryAllocatedevice
- let large = get_large();
+ let large = large();
  if large.initialized.load(Ordering::Acquire) {
  large.free(ptr, size);
  return;
@@ -703,7 +704,7 @@ pub fn kmalloc_aligned(size: usize, align: usize) -> *mut u8 {
  return ptr::null_mut();
  }
 
- let heap = get_heap();
+ let heap = heap();
  if heap.is_initialized() {
  return heap.alloc(size, align);
  }
@@ -733,7 +734,7 @@ pub fn print_allocator_stats() {
  log_info!("Memory Allocator Statistics:");
 
  // HeapStatistics
- let heap = get_heap();
+ let heap = heap();
  if heap.is_initialized() {
  let stats = heap.get_stats();
  log_info!(" Heap:");
@@ -743,7 +744,7 @@ pub fn print_allocator_stats() {
  }
 
  // Slab statistics
- let slab = get_slab();
+ let slab = slab();
  if slab.is_initialized() {
  log_info!(" Slab:");
  for cache in slab.get_stats() {
@@ -756,7 +757,7 @@ pub fn print_allocator_stats() {
  }
 
  // largeBlockMemoryStatistics
- let large = get_large();
+ let large = large();
  if large.initialized.load(Ordering::Acquire) {
  let stats = large.get_stats();
  log_info!(" Large:");

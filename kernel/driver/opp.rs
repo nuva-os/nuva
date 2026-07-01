@@ -275,14 +275,10 @@ impl OppManager {
 }
 
 /// Global OPP manager
-static OPP_MANAGER: core::sync::OnceLock<OppManager> = core::sync::OnceLock::new();
+static OPP_MANAGER: crate::sync_oncelock::OnceLock<OppManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get OPP manager
 pub fn opp_manager() -> &'static OppManager {
-    OPP_MANAGER.get_or_init(OppManager::new)
-}
-
-pub fn init_opp_manager() -> &'static OppManager {
     OPP_MANAGER.get_or_init(OppManager::new)
 }
 

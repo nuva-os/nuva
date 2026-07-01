@@ -105,7 +105,7 @@ impl EarlyConsole {
 }
 
 /// Global early console instance
-static EARLY_CONSOLE: core::sync::OnceLock<EarlyConsole> = core::sync::OnceLock::new();
+static EARLY_CONSOLE: crate::sync_oncelock::OnceLock<EarlyConsole> = crate::sync_oncelock::OnceLock::new();
 
 /// Get early console instance
 pub fn get_early_console() -> &'static EarlyConsole {
@@ -123,7 +123,7 @@ pub fn init_early_console() {
 #[macro_export]
 macro_rules! early_print {
     ($($arg:tt)*) => {
-        $crate::debug::early_console::get_early_console().puts(
+        $crate::kernel::debug::early_console::get_early_console().puts(
             format_args!($($arg)*).as_str()
         );
     };

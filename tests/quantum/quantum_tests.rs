@@ -22,6 +22,7 @@
  */
 
 use crate::hal::quantum::*;
+use alloc::vec;
 
 #[test]
 fn test_kyber_key_sizes() {

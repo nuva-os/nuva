@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// CPU ID
 pub type CpuId = u32;
 
@@ -626,7 +627,7 @@ impl CpuManager {
 }
 
 /// Global CPU manager
-static CPU_MANAGER: core::sync::OnceLock<CpuManager> = core::sync::OnceLock::new();
+static CPU_MANAGER: crate::sync_oncelock::OnceLock<CpuManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get CPU manager
 pub fn cpu_manager() -> &'static CpuManager {

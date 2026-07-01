@@ -180,8 +180,11 @@ fn execute_project_debug(sdk: &mut NuvaSdk, cmd: &DebugCommand) -> Result<(), Sd
 }
 
 /// Run interactive debug session
-fn run_interactive_session(debugger: &mut crate::debug::Debugger) -> Result<(), SdkError> {
+fn run_interactive_session(debugger: &mut crate::kernel::debug::Debugger) -> Result<(), SdkError> {
     use std::io::{self, Write, BufRead};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
     
     output::info("Interactive debug session started");
     output::info("Available commands: continue, next, step, step-out, break, print, stack, quit");

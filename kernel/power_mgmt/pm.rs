@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Power State
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -630,7 +631,7 @@ impl PowerManager {
 }
 
 /// Global power manager
-static POWER_MANAGER: core::sync::OnceLock<PowerManager> = core::sync::OnceLock::new();
+static POWER_MANAGER: crate::sync_oncelock::OnceLock<PowerManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get power manager
 pub fn power_manager() -> &'static PowerManager {

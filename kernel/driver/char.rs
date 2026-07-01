@@ -355,7 +355,7 @@ impl CharDeviceManager {
 }
 
 /// Global character device manager
-static CHAR_DEVICE_MANAGER: core::sync::OnceLock<CharDeviceManager> = core::sync::OnceLock::new();
+static CHAR_DEVICE_MANAGER: crate::sync_oncelock::OnceLock<CharDeviceManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn char_device_manager() -> &'static CharDeviceManager {
     CHAR_DEVICE_MANAGER.get_or_init(CharDeviceManager::new)

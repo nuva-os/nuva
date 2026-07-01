@@ -19,6 +19,7 @@
 
 
 use core::sync::atomic::{AtomicU32, Ordering};
+use alloc::vec::Vec;
 
 /// AI service state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,7 +77,7 @@ impl AiServiceApi {
         log_debug!("API: load_model({})", model_path);
 
         // Call model manager to load the model
-        crate::nuva_brain::model::manager::get_model_manager().load(model_path)
+        crate::syslib::brain::model::manager::get_model_manager().load(model_path)
     }
 
     /// Unload a model
@@ -84,7 +85,7 @@ impl AiServiceApi {
         log_debug!("API: unload_model({})", model_id);
 
         // Call model manager to unload the model
-        crate::nuva_brain::model::manager::get_model_manager().unload(model_id)
+        crate::syslib::brain::model::manager::get_model_manager().unload(model_id)
     }
 
     /// Get model information
@@ -92,7 +93,7 @@ impl AiServiceApi {
         log_debug!("API: get_model_info({})", model_id);
 
         // Call model manager to get model info
-        crate::nuva_brain::model::manager::get_model_manager().get_info(model_id)
+        crate::syslib::brain::model::manager::get_model_manager().get_info(model_id)
     }
 
     // ===== Inference API =====

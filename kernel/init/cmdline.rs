@@ -575,7 +575,7 @@ impl CmdlineManager {
 }
 
 /// Global cmdline manager
-static CMDLINE_MANAGER: core::sync::OnceLock<CmdlineManager> = core::sync::OnceLock::new();
+static CMDLINE_MANAGER: crate::sync_oncelock::OnceLock<CmdlineManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get cmdline manager
 pub fn cmdline_manager() -> &'static CmdlineManager {

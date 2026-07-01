@@ -20,6 +20,8 @@
 
 use super::{TestContext, create_test_project, run_command};
 use std::path::PathBuf;
+use alloc::vec;
+use alloc::format;
 
 /// Test complete workflow: init -> build -> run
 #[test]

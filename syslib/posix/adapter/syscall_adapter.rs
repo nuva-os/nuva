@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  */
 
-use crate::kernel::posix::Syscall;
+use crate::syslib::posix::syscall::Syscall;
 use crate::kernel::ipc::nuvaipc::MessageBits;
 use super::errno_adapter::ErrnoAdapter;
 

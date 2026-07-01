@@ -29,10 +29,12 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
-use crate::mm::mem_map::{Zone, ZoneType};
-use crate::mm::advanced_memory::{NumaManager, get_numa_manager};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys};
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages};
+use crate::kernel::mm::page_flags;
+use crate::kernel::mm::Page;
+use crate::kernel::mm::advanced_memory::NumaManager;
 
 /// Error code
 pub mod errno {
@@ -573,7 +575,7 @@ impl MemoryCompactor {
  /// - strategy: Compressionpolicy
  /// # return
  /// Compressionresult
- pub fn compact_zone(&mut self, zone: &Zone, strategy: CompactionStrategy) -> CompactionResult {
+ pub fn compact_zone(&mut self, zone: &ZoneType, strategy: CompactionStrategy) -> CompactionResult {
  log_info!("MemoryCompactor: compacting zone '{}' with strategy {:?}",
  zone.name, strategy);
 
@@ -619,41 +621,41 @@ impl MemoryCompactor {
  }
 
  /// fastCompression
- fn compact_fast(&mut self, zone: &Zone, result: &mut CompactionResult) {
+ fn compact_fast(&mut self, zone: &ZoneType, result: &mut CompactionResult) {
  // fastCompression: scanpartPaginationFace
  // TODO: ImplementationfastCompressionAlgorithm
  log_debug!("MemoryCompactor: fast compaction");
  }
 
  /// standardcriterionCompression
- fn compact_standard(&mut self, zone: &Zone, result: &mut CompactionResult) {
+ fn compact_standard(&mut self, zone: &ZoneType, result: &mut CompactionResult) {
  // standardcriterionCompression: scanplacefinitepageFace
  // TODO: ImplementationstandardcriterionCompressionAlgorithm
  log_debug!("MemoryCompactor: standard compaction");
  }
 
  /// deepDegreeCompression
- fn compact_deep(&mut self, zone: &Zone, result: &mut CompactionResult) {
+ fn compact_deep(&mut self, zone: &ZoneType, result: &mut CompactionResult) {
  // deepDegreeCompression: manytimescan, tryCreatelargeBlock
  // TODO: ImplementationdeepDegreeCompressionAlgorithm
  log_debug!("MemoryCompactor: deep compaction");
  }
 
  /// enterCompression
- fn compact_aggressive(&mut self, zone: &Zone, result: &mut CompactionResult) {
+ fn compact_aggressive(&mut self, zone: &ZoneType, result: &mut CompactionResult) {
  // enterCompression: MigrationplacefinitecanMigrationpageFace
  // TODO: ImplementationenterCompressionAlgorithm
  log_debug!("MemoryCompactor: aggressive compaction");
  }
 
  /// FindemptyidlepageFace
- fn find_free_pages(&self, zone: &Zone, start_pfn: u64, count: u64) -> Option<u64> {
+ fn find_free_pages(&self, zone: &ZoneType, start_pfn: u64, count: u64) -> Option<u64> {
  // TODO: ImplementationemptyidlepageFaceFind
  None
  }
 
  /// FindalreadyAllocatepageFace
- fn find_allocated_pages(&self, zone: &Zone, start_pfn: u64, count: u64) -> Option<u64> {
+ fn find_allocated_pages(&self, zone: &ZoneType, start_pfn: u64, count: u64) -> Option<u64> {
  // TODO: ImplementationalreadyAllocatepageFaceFind
  None
  }
@@ -1096,22 +1098,22 @@ impl StatsManager {
 // ============================================================================
 
 /// GlobalpageFaceLockfixedManager
-static PAGE_LOCK_MANAGER: core::sync::OnceLock<PageLockManager> = core::sync::OnceLock::new();
+static PAGE_LOCK_MANAGER: crate::sync_oncelock::OnceLock<PageLockManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalPage TableUpdatedevice
-static PAGE_TABLE_UPDATER: core::sync::OnceLock<PageTableUpdater> = core::sync::OnceLock::new();
+static PAGE_TABLE_UPDATER: crate::sync_oncelock::OnceLock<PageTableUpdater> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalMemoryCompressiondevice
-static MEMORY_COMPACTOR: core::sync::OnceLock<MemoryCompactor> = core::sync::OnceLock::new();
+static MEMORY_COMPACTOR: crate::sync_oncelock::OnceLock<MemoryCompactor> = crate::sync_oncelock::OnceLock::new();
 
 /// Global NUMA flatdevice
-static NUMA_BALANCER: core::sync::OnceLock<NumaBalancer> = core::sync::OnceLock::new();
+static NUMA_BALANCER: crate::sync_oncelock::OnceLock<NumaBalancer> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalMemorypolicyManager
-static MEMORY_POLICY_MANAGER: core::sync::OnceLock<MemoryPolicyManager> = core::sync::OnceLock::new();
+static MEMORY_POLICY_MANAGER: crate::sync_oncelock::OnceLock<MemoryPolicyManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalStatisticsManager
-static STATS_MANAGER: core::sync::OnceLock<StatsManager> = core::sync::OnceLock::new();
+static STATS_MANAGER: crate::sync_oncelock::OnceLock<StatsManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GetpageFaceLockfixedManager
 pub fn page_lock_manager() -> &'static PageLockManager {
@@ -1163,13 +1165,13 @@ pub fn init_advanced_features() {
  page_lock_manager().init();
 
  // InitializePage TableUpdatedevice
- get_page_table_updater().init();
+ page_table_updater().init();
 
  // InitializeMemoryCompressiondevice
- get_memory_compactor().init();
+ memory_compactor().init();
 
  // Initialize NUMA flatdevice
- get_numa_balancer().init(NumaBalanceStrategy::Auto);
+ numa_balancer().init(NumaBalanceStrategy::Auto);
 
  // InitializeMemorypolicyManager
  memory_policy_manager().init();

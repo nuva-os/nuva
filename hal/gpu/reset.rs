@@ -43,15 +43,20 @@ use super::{GpuState, GpuError};
 // Reset Constants
 // ============================================================================
 
-/// Maximum consecutive hang detections before escalation const MAX_HANG_COUNT_BEFORE_ESCALATION: u32 = 3;
+/// Maximum consecutive hang detections before escalation
+const MAX_HANG_COUNT_BEFORE_ESCALATION: u32 = 3;
 
-/// Maximum soft reset attempts before trying hard reset const MAX_SOFT_RESET_ATTEMPTS: u32 = 3;
+/// Maximum soft reset attempts before trying hard reset
+const MAX_SOFT_RESET_ATTEMPTS: u32 = 3;
 
-/// Maximum hard reset attempts before marking device unavailable const MAX_HARD_RESET_ATTEMPTS: u32 = 2;
+/// Maximum hard reset attempts before marking device unavailable
+const MAX_HARD_RESET_ATTEMPTS: u32 = 2;
 
-/// GPU status poll interval in microseconds const HANG_POLL_INTERVAL_US: u32 = 1000;
+/// GPU status poll interval in microseconds
+const HANG_POLL_INTERVAL_US: u32 = 1000;
 
-/// Number of consecutive stalled polls to declare a hang const HANG_STALL_THRESHOLD: u32 = 5;
+/// Number of consecutive stalled polls to declare a hang
+const HANG_STALL_THRESHOLD: u32 = 5;
 
 // ============================================================================
 // Reset Register Offsets (Maleoon GPU)
@@ -63,7 +68,8 @@ const GPU_RESET_SOFT_REG: u64 = 0x0040;
 /// Hard reset register (full GPU)
 const GPU_RESET_HARD_REG: u64 = 0x0044;
 
-/// Reset status register const GPU_RESET_STATUS_REG: u64 = 0x0048;
+/// Reset status register
+const GPU_RESET_STATUS_REG: u64 = 0x0048;
 
 /// Hang detect register (GPU self-reporting)
 const GPU_HANG_DETECT_REG: u64 = 0x004C;
@@ -75,21 +81,29 @@ const GPU_ENGINE_STATUS_REG: u64 = 0x0050;
 // Reset Register Values
 // ============================================================================
 
-/// Trigger soft reset const RESET_SOFT_TRIGGER: u32 = 0x0000_0001;
+/// Trigger soft reset 
+const RESET_SOFT_TRIGGER: u32 = 0x0000_0001;
 
-/// Trigger hard reset const RESET_HARD_TRIGGER: u32 = 0x0000_0001;
+/// Trigger hard reset 
+const RESET_HARD_TRIGGER: u32 = 0x0000_0001;
 
-/// Reset completed status const RESET_STATUS_DONE: u32 = 0x0000_0001;
+/// Reset completed status 
+const RESET_STATUS_DONE: u32 = 0x0000_0001;
 
-/// Reset in progress status const RESET_STATUS_IN_PROGRESS: u32 = 0x0000_0002;
+/// Reset in progress status 
+const RESET_STATUS_IN_PROGRESS: u32 = 0x0000_0002;
 
-/// Reset failed status const RESET_STATUS_FAILED: u32 = 0x0000_0003;
+/// Reset failed status 
+const RESET_STATUS_FAILED: u32 = 0x0000_0003;
 
-/// Engine idle status const ENGINE_STATUS_IDLE: u32 = 0x0000_0000;
+/// Engine idle status 
+const ENGINE_STATUS_IDLE: u32 = 0x0000_0000;
 
-/// Engine busy status const ENGINE_STATUS_BUSY: u32 = 0x0000_0001;
+/// Engine busy status 
+const ENGINE_STATUS_BUSY: u32 = 0x0000_0001;
 
-/// Engine hung status const ENGINE_STATUS_HUNG: u32 = 0x0000_0002;
+/// Engine hung status 
+const ENGINE_STATUS_HUNG: u32 = 0x0000_0002;
 
 // ============================================================================
 // Hang Detection Result
@@ -134,7 +148,8 @@ pub enum ResetResult {
 /// This handler performs GPU reset at the plugin/driver level.
 /// It NEVER triggers a kernel panic. If all reset attempts fail,
 /// the device is marked as unavailable and the OS continues running
-/// without GPU acceleration. struct GpuResetHandler {
+/// without GPU acceleration.
+struct GpuResetHandler {
     /// GPU control register base address
     ctrl_base: u64,
     /// Current hang status
@@ -428,6 +443,7 @@ pub struct GpuResetDiagnostics {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
     #[test]
     fn test_reset_handler_creation() {
         let handler = GpuResetHandler::new(0xF600_0000);

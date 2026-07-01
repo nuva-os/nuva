@@ -28,7 +28,8 @@ use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use crate::kernel::plugin::{Plugin, PluginType, PluginFlags, PluginOps, PluginInfo};
 use crate::kernel::plugin::core::PluginMeta;
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Device Match Type
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -498,7 +499,7 @@ impl DriverPluginRegistry {
 }
 
 /// Global driver registry
-static DRIVER_REGISTRY: core::sync::OnceLock<DriverPluginRegistry> = core::sync::OnceLock::new();
+static DRIVER_REGISTRY: crate::sync_oncelock::OnceLock<DriverPluginRegistry> = crate::sync_oncelock::OnceLock::new();
 
 /// Get driver registry
 pub fn driver_registry() -> &'static DriverPluginRegistry {
@@ -522,8 +523,8 @@ pub fn init_driver_plugin() {
 #[macro_export]
 macro_rules! define_driver_plugin {
     ($name:ident, $probe:expr, $remove:expr) => {
-        static mut $name: $crate::plugin::driver_plugin::DriverPlugin = {
-            let mut driver = $crate::plugin::driver_plugin::DriverPlugin::new(
+        static mut $name: $crate::kernel::plugin::driver_plugin::DriverPlugin = {
+            let mut driver = $crate::kernel::plugin::driver_plugin::DriverPlugin::new(
                 stringify!($name).as_bytes(),
             );
             driver.driver_ops.probe = Some($probe);
@@ -538,9 +539,9 @@ macro_rules! define_driver_plugin {
 macro_rules! driver_of_match {
     ($driver:ident, $compatible:expr, $data:expr) => {
         {
-            static mut MATCH_ENTRY: $crate::plugin::driver_plugin::DeviceMatchEntry = {
-                let mut entry = $crate::plugin::driver_plugin::DeviceMatchEntry {
-                    match_type: $crate::plugin::driver_plugin::DeviceMatchType::OfDevice,
+            static mut MATCH_ENTRY: $crate::kernel::plugin::driver_plugin::DeviceMatchEntry = {
+                let mut entry = $crate::kernel::plugin::driver_plugin::DeviceMatchEntry {
+                    match_type: $crate::kernel::plugin::driver_plugin::DeviceMatchType::OfDevice,
                     compatible: [0; 128],
                     vendor: 0,
                     device: 0,
@@ -566,9 +567,9 @@ macro_rules! driver_of_match {
 macro_rules! driver_pci_match {
     ($driver:ident, $vendor:expr, $device:expr, $data:expr) => {
         {
-            static mut MATCH_ENTRY: $crate::plugin::driver_plugin::DeviceMatchEntry = {
-                $crate::plugin::driver_plugin::DeviceMatchEntry {
-                    match_type: $crate::plugin::driver_plugin::DeviceMatchType::PciDevice,
+            static mut MATCH_ENTRY: $crate::kernel::plugin::driver_plugin::DeviceMatchEntry = {
+                $crate::kernel::plugin::driver_plugin::DeviceMatchEntry {
+                    match_type: $crate::kernel::plugin::driver_plugin::DeviceMatchType::PciDevice,
                     compatible: [0; 128],
                     vendor: $vendor,
                     device: $device,

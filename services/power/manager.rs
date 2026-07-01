@@ -349,7 +349,7 @@ impl PowerManagerService {
 }
 
 /// GlobalpowermanagementadministrationService
-static POWER_MANAGER: core::sync::OnceLock<PowerManagerService> = core::sync::OnceLock::new();
+static POWER_MANAGER: crate::sync_oncelock::OnceLock<PowerManagerService> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_power_manager() -> &'static mut PowerManagerService {
  // SAFETY: unsafe block required for low-level memory or hardware access

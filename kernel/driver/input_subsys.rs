@@ -329,7 +329,7 @@ impl InputSubsystem {
 }
 
 /// Global input subsystem
-static INPUT_SUBSYSTEM: core::sync::OnceLock<InputSubsystem> = core::sync::OnceLock::new();
+static INPUT_SUBSYSTEM: crate::sync_oncelock::OnceLock<InputSubsystem> = crate::sync_oncelock::OnceLock::new();
 
 /// Get input subsystem
 pub fn input_subsystem() -> &'static InputSubsystem {
@@ -338,7 +338,7 @@ pub fn input_subsystem() -> &'static InputSubsystem {
 
 /// Initialize input subsystem
 pub fn init_input_subsystem() {
-    let subsys = get_input_subsystem();
+    let subsys = input_subsystem();
     subsys.init();
 }
 
@@ -346,31 +346,31 @@ pub fn init_input_subsystem() {
 
 /// Input event
 pub fn input_event(dev_id: InputDeviceId, event: &InputEvent) -> i32 {
-    get_input_subsystem().event(dev_id, event)
+    input_subsystem().event(dev_id, event)
 }
 
 /// Report key
 pub fn input_report_key(dev_id: InputDeviceId, code: u16, value: i32) {
     let event = InputEvent::key(code, value);
-    get_input_subsystem().event(dev_id, &event);
+    input_subsystem().event(dev_id, &event);
 }
 
 /// Report relative
 pub fn input_report_rel(dev_id: InputDeviceId, code: u16, value: i32) {
     let event = InputEvent::relative(code, value);
-    get_input_subsystem().event(dev_id, &event);
+    input_subsystem().event(dev_id, &event);
 }
 
 /// Report absolute
 pub fn input_report_abs(dev_id: InputDeviceId, code: u16, value: i32) {
     let event = InputEvent::absolute(code, value);
-    get_input_subsystem().event(dev_id, &event);
+    input_subsystem().event(dev_id, &event);
 }
 
 /// Sync
 pub fn input_sync(dev_id: InputDeviceId) {
     let event = InputEvent::sync();
-    get_input_subsystem().event(dev_id, &event);
+    input_subsystem().event(dev_id, &event);
 }
 
 #[cfg(test)]

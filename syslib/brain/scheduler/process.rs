@@ -24,7 +24,7 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use crate::hal::npu::{NpuHal, NpuModelId, NpuBuffer, NpuInferenceRequest, npu};
-use crate::sched::task::{TaskStruct, TaskState, Prio};
+use crate::kernel::sched::task::{TaskStruct, TaskState, Prio};
 
 /// AI Scheduler Configuration
 pub struct AISchedulerConfig {

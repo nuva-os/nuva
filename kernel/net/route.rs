@@ -28,7 +28,8 @@ use alloc::format;
 use alloc::string::String;
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Route Entry
 #[repr(C)]
 pub struct RouteEntry {
@@ -447,7 +448,7 @@ impl RouteManager {
 }
 
 /// Global route manager
-static ROUTE_MANAGER: core::sync::OnceLock<RouteManager> = core::sync::OnceLock::new();
+static ROUTE_MANAGER: crate::sync_oncelock::OnceLock<RouteManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get route manager
 pub fn route_manager() -> &'static RouteManager {

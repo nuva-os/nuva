@@ -210,7 +210,7 @@ impl ScreenLifecycleManager {
 }
 
 /** Global screen lifecycle manager instance. */
-static SCREEN_LIFECYCLE_MANAGER: core::sync::OnceLock<ScreenLifecycleManager> = core::sync::OnceLock::new();
+static SCREEN_LIFECYCLE_MANAGER: crate::sync_oncelock::OnceLock<ScreenLifecycleManager> = crate::sync_oncelock::OnceLock::new();
 
 /** Get a reference to the global screen lifecycle manager. */
 pub fn get_screen_lifecycle_manager() -> &'static ScreenLifecycleManager {

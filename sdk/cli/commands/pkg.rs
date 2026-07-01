@@ -22,6 +22,8 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::PkgCommand;
 use crate::cli::output;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Execute package management command
 pub fn execute(sdk: &mut NuvaSdk, cmd: PkgCommand) -> Result<(), SdkError> {

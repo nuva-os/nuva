@@ -70,7 +70,7 @@ fn panic(info: &PanicInfo) -> ! {
 
 /// printstamp panic Info
 fn print_panic_info(info: &PanicInfo) {
- use crate::debug::printk::*;
+ use crate::kernel::debug::printk::*;
  
  log_emerg!("========================================");
  log_emerg!("KERNEL PANIC");
@@ -94,7 +94,8 @@ fn print_panic_info(info: &PanicInfo) {
  
  // OutputRegisterInfo
  log_emerg!("Register State:");
- crate::arch::arm64::boot::early_console::print_registers();
+ #[cfg(target_arch = "aarch64")]
+ crate::kernel::arch::arm64::boot::early_console::print_registers();
  
  // OutputtuneuseStack
  log_emerg!("Call Stack:");
@@ -106,7 +107,7 @@ fn print_panic_info(info: &PanicInfo) {
 
 /// printstamptuneuseStack
 fn print_stack_trace() {
- use crate::debug::printk::*;
+ use crate::kernel::debug::printk::*;
  
  // SAFETY: unsafe block required for low-level memory or hardware access
  unsafe {
@@ -201,12 +202,12 @@ macro_rules! nuva_bug {
 macro_rules! nuva_warn {
  ($cond:expr) => {
  if $cond {
- $crate::debug::printk::log_warn!("WARNING at {}:{}", file!(), line!());
+ $crate::kernel::debug::printk::log_warn!("WARNING at {}:{}", file!(), line!());
  }
  };
  ($cond:expr, $($arg:tt)*) => {
  if $cond {
- $crate::debug::printk::log_warn!("WARNING: {} at {}:{}",
+ $crate::kernel::debug::printk::log_warn!("WARNING: {} at {}:{}",
  format_args!($($arg)*), file!(), line!());
  }
  };
@@ -270,6 +271,7 @@ macro_rules! assert_barrier {
 #[cfg(test)]
 mod tests {
  use super::*;
+use core::arch::asm;
  
  #[test]
  #[should_panic]

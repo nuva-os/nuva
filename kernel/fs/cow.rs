@@ -184,7 +184,7 @@ impl CowManager {
 }
 
 /// Global COW manager
-static COW_MANAGER: core::sync::OnceLock<CowManager> = core::sync::OnceLock::new();
+static COW_MANAGER: crate::sync_oncelock::OnceLock<CowManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global COW manager
 pub fn get_cow_manager() -> &'static CowManager {

@@ -63,17 +63,17 @@ pub fn sha256_digest(data: &[u8]) -> [u8; SHA256_DIGEST_SIZE] {
             w[i] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
         }
         for i in 16..64 {
-            let s0 = w[i-15].rotate_right(7)  w[i-15].rotate_right(18)  (w[i-15] >> 3);
-            let s1 = w[i-2].rotate_right(17)  w[i-2].rotate_right(19)  (w[i-2] >> 10);
+            let s0 = w[i-15].rotate_right(7) ^ w[i-15].rotate_right(18) ^ (w[i-15] >> 3);
+            let s1 = w[i-2].rotate_right(17) ^ w[i-2].rotate_right(19) ^ (w[i-2] >> 10);
             w[i] = w[i-16].wrapping_add(s0).wrapping_add(w[i-7]).wrapping_add(s1);
         }
         let mut h = state;
         for i in 0..64 {
-            let s1 = h[4].rotate_right(6)  h[4].rotate_right(11)  h[4].rotate_right(25);
-            let ch = (h[4] & h[5])  (!h[4] & h[6]);
+            let s1 = h[4].rotate_right(6) ^ h[4].rotate_right(11) ^ h[4].rotate_right(25);
+            let ch = (h[4] & h[5]) ^ (!h[4] & h[6]);
             let t1 = h[7].wrapping_add(s1).wrapping_add(ch).wrapping_add(K[i]).wrapping_add(w[i]);
-            let s0 = h[0].rotate_right(2)  h[0].rotate_right(13)  h[0].rotate_right(22);
-            let maj = (h[0] & h[1])  (h[0] & h[2])  (h[1] & h[2]);
+            let s0 = h[0].rotate_right(2) ^ h[0].rotate_right(13) ^ h[0].rotate_right(22);
+            let maj = (h[0] & h[1]) ^ (h[0] & h[2]) ^ (h[1] & h[2]);
             let t2 = s0.wrapping_add(maj);
             h[7] = h[6]; h[6] = h[5]; h[5] = h[4];
             h[4] = h[3].wrapping_add(t1);

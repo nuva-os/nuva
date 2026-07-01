@@ -454,7 +454,7 @@ impl CoolingDevice {
 static CPU_COOLING_DEVICES: [u32; 2] = [0, 1];  // CPU freq, GPU freq
 
 /// CPU thermal zone
-static CPU_THERMAL_ZONE: ThermalZone = ThermalZone::new(
+static CPU_THERMAL_ZONE: ThermalZone = ThermalZoneType::new(
     "cpu",
     0,
     ThermalThresholds::new(),
@@ -462,7 +462,7 @@ static CPU_THERMAL_ZONE: ThermalZone = ThermalZone::new(
 );
 
 /// GPU thermal zone
-static GPU_THERMAL_ZONE: ThermalZone = ThermalZone::new(
+static GPU_THERMAL_ZONE: ThermalZone = ThermalZoneType::new(
     "gpu",
     1,
     ThermalThresholds::new(),

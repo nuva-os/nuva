@@ -103,7 +103,7 @@ impl DeclarativeCompositor {
 }
 
 /// Global compositor singleton.
-static COMPOSITOR: core::sync::OnceLock<DeclarativeCompositor> = core::sync::OnceLock::new();
+static COMPOSITOR: crate::sync_oncelock::OnceLock<DeclarativeCompositor> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global compositor.
 pub fn get_compositor() -> &'static DeclarativeCompositor {

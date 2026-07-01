@@ -22,6 +22,9 @@
 
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// dependencydiagram
 pub struct DependencyGraph {

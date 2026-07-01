@@ -235,7 +235,7 @@ fn handle_page_fault(exc_type: ExceptionType, ctx: &mut ExceptionContext, esr: &
 
     // Call page fault handler
     // Implementation: Invoke page fault handler to resolve demand paging or COW
-    // if !crate::mm::fault::handle_page_fault(ctx.far, is_write, is_user) {
+    // if !crate::kernel::mm::fault::handle_page_fault(ctx.far, is_write, is_user) {
     //     log_error!("Page fault handling failed");
     //     if is_user {
     //         // Terminate user process

@@ -77,7 +77,7 @@ impl AiClient {
         let server_handle = self.server_handle.load(Ordering::Acquire);
         let client_id = self.client_id.load(Ordering::Acquire);
         if server_handle != 0 && client_id != 0 {
-            crate::ipc::nuvaipc::disconnect_from_service(server_handle, client_id);
+            crate::kernel::ipc::nuvaipc::disconnect_from_service(server_handle, client_id);
         }
         self.server_handle.store(0, Ordering::Release);
         self.client_id.store(0, Ordering::Release);
@@ -110,7 +110,7 @@ impl AiClient {
         let server_handle = self.server_handle.load(Ordering::Acquire);
         let request = model_path.as_bytes();
         let mut response = [0u8; 8];
-        let result = crate::ipc::nuvaipc::send_request(
+        let result = crate::kernel::ipc::nuvaipc::send_request(
             server_handle, request, &mut response
         );
 
@@ -132,7 +132,7 @@ impl AiClient {
 
         // Send inference request via IPC
         let server_handle = self.server_handle.load(Ordering::Acquire);
-        let result = crate::ipc::nuvaipc::send_request(
+        let result = crate::kernel::ipc::nuvaipc::send_request(
             server_handle, input, output
         );
 
@@ -150,7 +150,7 @@ impl AiClient {
 
         // Send async inference request via IPC
         let server_handle = self.server_handle.load(Ordering::Acquire);
-        let task_id = crate::ipc::nuvaipc::send_async_request(
+        let task_id = crate::kernel::ipc::nuvaipc::send_async_request(
             server_handle, input
         );
 
@@ -208,7 +208,7 @@ impl ClientManager {
     }
 }
 
-static CLIENT_MANAGER: core::sync::OnceLock<ClientManager> = core::sync::OnceLock::new();
+static CLIENT_MANAGER: crate::sync_oncelock::OnceLock<ClientManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global client manager instance
 pub fn get_client_manager() -> &'static mut ClientManager {

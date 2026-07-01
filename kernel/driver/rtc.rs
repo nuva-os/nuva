@@ -293,14 +293,10 @@ impl RtcManager {
 }
 
 /// Global RTC manager
-static RTC_MANAGER: core::sync::OnceLock<RtcManager> = core::sync::OnceLock::new();
+static RTC_MANAGER: crate::sync_oncelock::OnceLock<RtcManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get RTC manager
 pub fn rtc_manager() -> &'static RtcManager {
-    RTC_MANAGER.get_or_init(RtcManager::new)
-}
-
-pub fn init_rtc_manager() -> &'static RtcManager {
     RTC_MANAGER.get_or_init(RtcManager::new)
 }
 

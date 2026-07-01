@@ -363,14 +363,14 @@ impl AddressSpace {
 }
 
 /// GlobalPhysicsMemoryManager
-static PHYS_MEM: core::sync::OnceLock<PhysMemManager> = core::sync::OnceLock::new();
+static PHYS_MEM: crate::sync_oncelock::OnceLock<PhysMemManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn phys_mem() -> &'static PhysMemManager {
     PHYS_MEM.get_or_init(PhysMemManager::new)
 }
 
 pub fn init_phys_mem(total_memory: u64) {
- let mem = get_phys_mem();
+ let mem = phys_mem();
  mem.init(total_memory);
 }
 

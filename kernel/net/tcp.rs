@@ -27,7 +27,7 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_debug, pr_info, pr_warn};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
 /// TCP Header
 #[repr(C, packed)]
 pub struct TcpHeader {
@@ -364,6 +364,8 @@ impl TcpStateMachine {
     /// This provides robustness when unexpected segments arrive.
     fn clamp_transition(old: TcpState, new: TcpState) -> TcpState {
         use TcpState::*;
+use core::sync::atomic::AtomicU8;
+use crate::kernel::error::Errno;
         // For bidirectional CLOSED transitions, allow
         match (old, new) {
             // If attempting to go to ESTABLISHED from unexpected state, try SYN_RECEIVED
@@ -1603,7 +1605,7 @@ impl TcpManager {
 }
 
 /// Global TCP manager
-static TCP_MANAGER: core::sync::OnceLock<TcpManager> = core::sync::OnceLock::new();
+static TCP_MANAGER: crate::sync_oncelock::OnceLock<TcpManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get TCP manager
 pub fn tcp_manager() -> &'static TcpManager {

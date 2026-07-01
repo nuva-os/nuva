@@ -349,13 +349,9 @@ impl UserManager {
 }
 
 /// GlobalUserManager
-static USER_MANAGER: core::sync::OnceLock<UserManager> = core::sync::OnceLock::new();
+static USER_MANAGER: crate::sync_oncelock::OnceLock<UserManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn user_manager() -> &'static UserManager {
-    USER_MANAGER.get_or_init(UserManager::new)
-}
-
-pub fn init_user_manager() -> &'static UserManager {
     USER_MANAGER.get_or_init(UserManager::new)
 }
 

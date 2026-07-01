@@ -28,6 +28,8 @@ pub mod script;
 
 use std::path::PathBuf;
 use std::collections::HashMap;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Linker
 pub struct Linker {

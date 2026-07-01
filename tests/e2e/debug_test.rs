@@ -20,6 +20,7 @@
 
 use super::{TestContext, create_test_project, run_command};
 use std::path::PathBuf;
+use alloc::vec;
 
 /// Test debugger launch
 #[test]

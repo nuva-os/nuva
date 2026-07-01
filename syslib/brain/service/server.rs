@@ -91,7 +91,7 @@ impl AiServer {
         // 2. Unregister service from IPC name server
         let handle = self.handle.load(Ordering::Acquire);
         if handle != 0 {
-            crate::ipc::nuvaipc::unregister_service(handle);
+            crate::kernel::ipc::nuvaipc::unregister_service(handle);
         }
 
         // 3. Stop request handling thread
@@ -218,7 +218,7 @@ impl ServerManager {
     }
 }
 
-static SERVER_MANAGER: core::sync::OnceLock<ServerManager> = core::sync::OnceLock::new();
+static SERVER_MANAGER: crate::sync_oncelock::OnceLock<ServerManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global server manager instance
 pub fn get_server_manager() -> &'static mut ServerManager {

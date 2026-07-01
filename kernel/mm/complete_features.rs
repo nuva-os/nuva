@@ -30,10 +30,13 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, AtomicPtr, Ordering};
 use core::ptr;
 use core::mem;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
-use crate::mm::mem_map::{Zone, ZoneType};
-use crate::include::mm::layout::{pgd_index, pud_index, pmd_index, pte_index, PTRS_PER_TABLE};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys};
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages};
+use crate::kernel::mm::page_flags;
+use crate::kernel::mm::Page;
+use crate::kernel::mm::page_table::{pgd_index, pud_index, pmd_index, pte_index, PTRS_PER_TABLE};
+use alloc::vec::Vec;
 
 /// Error code
 pub mod errno {
@@ -1191,19 +1194,19 @@ impl VisualizationManager {
 // ============================================================================
 
 /// GlobalWaitQueueManager
-static WAIT_QUEUE_MANAGER: core::sync::OnceLock<WaitQueueManager> = core::sync::OnceLock::new();
+static WAIT_QUEUE_MANAGER: crate::sync_oncelock::OnceLock<WaitQueueManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalPage Tabletraversedevice
-static PAGE_TABLE_WALKER: core::sync::OnceLock<PageTableWalker> = core::sync::OnceLock::new();
+static PAGE_TABLE_WALKER: crate::sync_oncelock::OnceLock<PageTableWalker> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalCompressionMigrationdevice
-static COMPACTION_MIGRATOR: core::sync::OnceLock<CompactionMigrator> = core::sync::OnceLock::new();
+static COMPACTION_MIGRATOR: crate::sync_oncelock::OnceLock<CompactionMigrator> = crate::sync_oncelock::OnceLock::new();
 
 /// Global NUMA Monitoringdevice
-static NUMA_MONITOR: core::sync::OnceLock<NumaMonitor> = core::sync::OnceLock::new();
+static NUMA_MONITOR: crate::sync_oncelock::OnceLock<NumaMonitor> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalVisualizationManager
-static VISUALIZATION_MANAGER: core::sync::OnceLock<VisualizationManager> = core::sync::OnceLock::new();
+static VISUALIZATION_MANAGER: crate::sync_oncelock::OnceLock<VisualizationManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GetWaitQueueManager
 pub fn wait_queue_manager() -> &'static WaitQueueManager {
@@ -1246,13 +1249,13 @@ pub fn init_complete_features() {
  wait_queue_manager().init();
 
  // InitializePage Tabletraversedevice
- get_page_table_walker().init();
+ page_table_walker().init();
 
  // InitializeCompressionMigrationdevice
- get_compaction_migrator().init();
+ compaction_migrator().init();
 
  // Initialize NUMA Monitoringdevice
- get_numa_monitor().init();
+ numa_monitor().init();
 
  // InitializeVisualizationManager
  visualization_manager().init();
@@ -1277,7 +1280,7 @@ pub fn print_complete_stats() {
  }
 
  // Page TabletraverseStatistics
- let walker = get_page_table_walker();
+ let walker = page_table_walker();
  let walker_stats = walker.get_stats();
  log_info!(" Page Table Walker:");
  log_info!(" Walks: {}", walker_stats.walk_count);
@@ -1285,14 +1288,14 @@ pub fn print_complete_stats() {
  log_info!(" Errors: {}", walker_stats.error_count);
 
  // CompressionMigrationstatistics
- let migrator = get_compaction_migrator();
+ let migrator = compaction_migrator();
  let migrator_stats = migrator.get_stats();
  log_info!(" Compaction Migrator:");
  log_info!(" Migrations: {}", migrator_stats.migrate_count);
  log_info!(" Failures: {}", migrator_stats.migrate_failures);
 
  // NUMA Monitoringstatistics
- let monitor = get_numa_monitor();
+ let monitor = numa_monitor();
  let monitor_stats = monitor.get_stats();
  log_info!(" NUMA Monitor:");
  log_info!(" Monitors: {}", monitor_stats.monitor_count);

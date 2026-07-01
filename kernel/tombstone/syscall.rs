@@ -52,19 +52,19 @@ pub const SYS_TOMBSTONE_STATS: u64 = 503;
 /** Check if the caller has CAP_SYS_PTRACE or CAP_SYS_ADMIN for read access */
 fn check_read_capability() -> bool {
     crate::kernel::security::security_manager()
-        .check_capability(crate::kernel::security::capability::Capability::Debug)
-        == crate::kernel::security::security_hook::AccessResult::Allow
+        .check_capability(crate::kernel::security::Capability::Debug)
+        == crate::kernel::security::AccessResult::Allow
         || crate::kernel::security::security_manager()
-            .check_capability(crate::kernel::security::capability::Capability::SysAdmin)
-            == crate::kernel::security::security_hook::AccessResult::Allow
+            .check_capability(crate::kernel::security::Capability::SysAdmin)
+        == crate::kernel::security::AccessResult::Allow
 }
 
-/** Check if the caller has CAP_SYS_ADMIN for write/modify access */
 fn check_admin_capability() -> bool {
     crate::kernel::security::security_manager()
-        .check_capability(crate::kernel::security::capability::Capability::SysAdmin)
-        == crate::kernel::security::security_hook::AccessResult::Allow
+        .check_capability(crate::kernel::security::Capability::SysAdmin)
+        == crate::kernel::security::AccessResult::Allow
 }
+
 
 // ---------------------------------------------------------------------------
 // System call handlers

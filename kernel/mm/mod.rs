@@ -36,13 +36,24 @@ pub mod page_table;
 pub mod mempool_opt;
 pub mod npu_mem;
 pub mod region;
+pub mod buddy;
+pub mod address_space;
+pub mod vma;
+pub mod slab;
+pub mod allocator;
+pub mod fault;
+pub mod memory;
+pub mod complete_mem_map;
+pub mod complete_features;
+pub mod advanced_memory;
+pub mod advanced_features;
 
 // Re-export key types
 pub use percpu_cache::{PerCpuPageCache, PerCpuPageCacheManager, init_pcp_cache as init_percpu_cache};
 pub use huge_page::{HugePageSize, HugePagePool, ThpManager, init_huge_pages};
 pub use numa::{NumaNode, NumaTopology, init_numa, cpu_to_node};
 pub use compaction::{MemoryCompactor, CompactResult, init_memory_compaction};
-pub use stats::{MemoryStats, MemoryMonitor, MemoryPressure, get_memory_monitor, init_memory_monitoring};
+pub use stats::{MemoryStats, MemoryMonitor, MemoryPressure, memory_monitor, init_memory_monitoring};
 pub use reclaim::{PageReclaimer, ReclaimError, init_reclaimer, reclaim_pages};
 pub use cow::{CowManager, CowEntry, CowError, init_cow, create_cow_page};
 pub use region::{NvMemoryRegion, NvMemoryType};
@@ -485,7 +496,7 @@ pub struct PhysMemManager {
     /// Free pages
     pub free_pages: AtomicU64,
     /// Memory zones
-    pub zones: [Option<Zone>; 5],
+    pub zones: [Option<ZoneType>; 5],
     /// mem_map array
     pub mem_map: *mut Page,
     /// Number of zones
@@ -657,7 +668,7 @@ impl PhysMemManager {
 }
 
 /// Global physical memory manager
-static PHYS_MEM_MANAGER: core::sync::OnceLock<PhysMemManager> = core::sync::OnceLock::new();
+static PHYS_MEM_MANAGER: crate::sync_oncelock::OnceLock<PhysMemManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get physical memory manager
 pub fn phys_mem_manager() -> &'static PhysMemManager {

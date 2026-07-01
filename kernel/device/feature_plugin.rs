@@ -28,7 +28,8 @@ use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use crate::kernel::plugin::{Plugin, PluginType, PluginFlags, PluginOps, PluginInfo};
 use crate::kernel::plugin::core::PluginMeta;
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Feature Category
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -538,7 +539,7 @@ impl FeatureIterator {
 }
 
 /// Global feature registry
-static FEATURE_REGISTRY: core::sync::OnceLock<FeaturePluginRegistry> = core::sync::OnceLock::new();
+static FEATURE_REGISTRY: crate::sync_oncelock::OnceLock<FeaturePluginRegistry> = crate::sync_oncelock::OnceLock::new();
 
 /// Get feature registry
 pub fn feature_registry() -> &'static FeaturePluginRegistry {
@@ -587,8 +588,8 @@ pub fn feature_is_enabled(name: &[u8]) -> bool {
 #[macro_export]
 macro_rules! define_feature_plugin {
     ($name:ident, $category:expr, $enable:expr, $disable:expr) => {
-        static mut $name: $crate::plugin::feature_plugin::FeaturePlugin = {
-            let mut feature = $crate::plugin::feature_plugin::FeaturePlugin::new(
+        static mut $name: $crate::kernel::plugin::feature_plugin::FeaturePlugin = {
+            let mut feature = $crate::kernel::plugin::feature_plugin::FeaturePlugin::new(
                 stringify!($name).as_bytes(),
                 $category,
             );
@@ -604,8 +605,8 @@ macro_rules! define_feature_plugin {
 macro_rules! feature_add_hook {
     ($feature:ident, $point:expr, $func:expr) => {
         {
-            static mut HOOK: $crate::plugin::feature_plugin::FeatureHook = {
-                $crate::plugin::feature_plugin::FeatureHook {
+            static mut HOOK: $crate::kernel::plugin::feature_plugin::FeatureHook = {
+                $crate::kernel::plugin::feature_plugin::FeatureHook {
                     point: $point,
                     func: $func,
                     priority: 0,

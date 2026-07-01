@@ -211,14 +211,10 @@ impl ResetManager {
 }
 
 /// Global reset manager
-static RESET_MANAGER: core::sync::OnceLock<ResetManager> = core::sync::OnceLock::new();
+static RESET_MANAGER: crate::sync_oncelock::OnceLock<ResetManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get reset manager
 pub fn reset_manager() -> &'static ResetManager {
-    RESET_MANAGER.get_or_init(ResetManager::new)
-}
-
-pub fn init_reset_manager() -> &'static ResetManager {
     RESET_MANAGER.get_or_init(ResetManager::new)
 }
 

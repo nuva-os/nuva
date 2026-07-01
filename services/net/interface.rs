@@ -150,7 +150,7 @@ impl InterfaceManager {
     }
 }
 
-static INTERFACE_MANAGER: core::sync::OnceLock<InterfaceManager> = core::sync::OnceLock::new();
+static INTERFACE_MANAGER: crate::sync_oncelock::OnceLock<InterfaceManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_interface_manager() -> &'static mut InterfaceManager {
     // SAFETY: unsafe block required for low-level memory or hardware access

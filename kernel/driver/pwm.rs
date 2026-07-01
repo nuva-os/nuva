@@ -297,14 +297,10 @@ impl PwmManager {
 }
 
 /// Global PWM manager
-static PWM_MANAGER: core::sync::OnceLock<PwmManager> = core::sync::OnceLock::new();
+static PWM_MANAGER: crate::sync_oncelock::OnceLock<PwmManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get PWM manager
 pub fn pwm_manager() -> &'static PwmManager {
-    PWM_MANAGER.get_or_init(PwmManager::new)
-}
-
-pub fn init_pwm_manager() -> &'static PwmManager {
     PWM_MANAGER.get_or_init(PwmManager::new)
 }
 

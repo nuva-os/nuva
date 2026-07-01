@@ -24,6 +24,9 @@ pub mod pthread_ops;
 pub mod signal_ops;
 
 use crate::compat::{TestCategory, TestResult, TestStatus};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// POSIX compatibilityTestingsuitecase
 pub struct PosixCompatSuite;

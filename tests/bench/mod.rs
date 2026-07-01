@@ -213,6 +213,8 @@ pub fn measure_command(cmd: &str, args: &[&str], cwd: &PathBuf) -> Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::format;
+use alloc::vec::Vec;
     
     #[test]
     fn test_benchmark_runner() {

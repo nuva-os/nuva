@@ -296,6 +296,7 @@ impl ConstructorGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_layout_calculator_new() {

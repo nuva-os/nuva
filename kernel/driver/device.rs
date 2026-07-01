@@ -704,14 +704,10 @@ impl DeviceManager {
 }
 
 /// Global device manager instance
-static DEVICE_MANAGER: core::sync::OnceLock<DeviceManager> = core::sync::OnceLock::new();
+static DEVICE_MANAGER: crate::sync_oncelock::OnceLock<DeviceManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get reference to global device manager
 pub fn device_manager() -> &'static DeviceManager {
-    DEVICE_MANAGER.get_or_init(DeviceManager::new)
-}
-
-pub fn init_device_manager() -> &'static DeviceManager {
     DEVICE_MANAGER.get_or_init(DeviceManager::new)
 }
 
@@ -724,6 +720,7 @@ pub fn init_device_manager() {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_major_minor() {

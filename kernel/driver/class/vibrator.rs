@@ -297,14 +297,10 @@ impl VibratorManager {
 }
 
 /// Global vibrator manager
-static VIBRATOR_MANAGER: core::sync::OnceLock<VibratorManager> = core::sync::OnceLock::new();
+static VIBRATOR_MANAGER: crate::sync_oncelock::OnceLock<VibratorManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get vibrator manager
 pub fn vibrator_manager() -> &'static VibratorManager {
-    VIBRATOR_MANAGER.get_or_init(VibratorManager::new)
-}
-
-pub fn init_vibrator_manager() -> &'static VibratorManager {
     VIBRATOR_MANAGER.get_or_init(VibratorManager::new)
 }
 

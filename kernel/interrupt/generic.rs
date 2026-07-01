@@ -476,7 +476,7 @@ impl InterruptManager {
 }
 
 /// GlobalInterruptManager
-static INTERRUPT_MANAGER: core::sync::OnceLock<InterruptManager> = core::sync::OnceLock::new();
+static INTERRUPT_MANAGER: crate::sync_oncelock::OnceLock<InterruptManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GetInterruptManager
 pub fn interrupt_manager() -> &'static InterruptManager {

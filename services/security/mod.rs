@@ -29,6 +29,6 @@ pub use permission::*;
 
 /// Initializes the security service, including the permission manager.
 pub fn init_security_service() {
-    permission::init_permission_manager();
+    permission::init_nuva_capability_manager();
     // TODO: Initialize TEE client, keymaster, gatekeeper
 }

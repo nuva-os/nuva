@@ -27,7 +27,8 @@
 use crate::{pr_debug, pr_info, pr_warn};
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// UDP Header
 #[repr(C, packed)]
 pub struct UdpHeader {
@@ -402,7 +403,7 @@ impl UdpSocket {
             .fetch_add(data.len() as u32, Ordering::AcqRel);
 
         // IP layer transmission would happen here:
-        // crate::net::ip::send_packet(self.local_addr, dst_addr, 17, &header_bytes, data);
+        // crate::kernel::net::ip::send_packet(self.local_addr, dst_addr, 17, &header_bytes, data);
 
         log_debug!(
             "UDP send: {}:{} -> {}:{}, len={}",
@@ -988,7 +989,7 @@ impl UdpManager {
         header.calc_checksum(tcb.local_addr, dst_addr, data);
 
         // IP layer transmission would happen here:
-        // crate::net::ip::send_packet(tcb.local_addr, dst_addr, 17, &header_bytes, data);
+        // crate::kernel::net::ip::send_packet(tcb.local_addr, dst_addr, 17, &header_bytes, data);
 
         log_debug!(
             "UDP send: {}:{} -> {}:{}, len={}",
@@ -1052,7 +1053,7 @@ impl UdpManager {
 }
 
 /// Global UDP manager
-static UDP_MANAGER: core::sync::OnceLock<UdpManager> = core::sync::OnceLock::new();
+static UDP_MANAGER: crate::sync_oncelock::OnceLock<UdpManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get UDP manager
 pub fn udp_manager() -> &'static UdpManager {

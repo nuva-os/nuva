@@ -21,6 +21,9 @@
 use std::collections::HashMap;
 use crate::error::SdkError;
 use super::cpu::{CpuProfile, CallNode};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Generate flamegraph with default width
 pub fn generate(profile: &CpuProfile) -> Result<String, SdkError> {

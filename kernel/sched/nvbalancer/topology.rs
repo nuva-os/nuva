@@ -29,6 +29,7 @@ use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use super::device_types::{NvHeteroDeviceType, HeteroDeviceState, DeviceCapabilityFlags};
 use super::MAX_HETERO_DEVICES;
+use alloc::vec::Vec;
 
 /// Maximum NUMA nodes
 pub const MAX_NUMA_NODES: usize = 8;

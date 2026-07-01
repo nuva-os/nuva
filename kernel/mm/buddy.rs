@@ -303,7 +303,7 @@ impl BuddyAllocator {
             order -= 1;
             
             // Calculate buddy block address
-            let buddy = self.get_buddy(current_block, order);
+            let buddy = self.buddy(current_block, order);
             
             if !buddy.is_null() {
                 // SAFETY: unsafe block required for low-level memory or hardware access
@@ -355,7 +355,7 @@ impl BuddyAllocator {
         let mut current_block = block;
         
         while current_order < MAX_ORDER {
-            let buddy = self.get_buddy(current_block, current_order);
+            let buddy = self.buddy(current_block, current_order);
             
             // Check if buddy can be merged
             // SAFETY: unsafe block required for low-level memory or hardware access
@@ -393,7 +393,7 @@ impl BuddyAllocator {
     /// @param block: Current block
     /// @param order: Order of the block
     /// @return Pointer to buddy block, or null if invalid
-    fn get_buddy(&self, block: *mut Page, order: usize) -> *mut Page {
+    fn buddy(&self, block: *mut Page, order: usize) -> *mut Page {
         if self.page_array.is_null() {
             return core::ptr::null_mut();
         }
@@ -474,7 +474,7 @@ impl BuddyAllocator {
 }
 
 /// Global buddy allocator instance
-static BUDDY_ALLOC: core::sync::OnceLock<BuddyAllocator> = core::sync::OnceLock::new();
+static BUDDY_ALLOC: crate::sync_oncelock::OnceLock<BuddyAllocator> = crate::sync_oncelock::OnceLock::new();
 
 /// Get reference to global buddy allocator
 pub fn buddy() -> &'static BuddyAllocator {
@@ -486,36 +486,36 @@ pub fn buddy() -> &'static BuddyAllocator {
 /// @param total_pages: Total number of pages to manage
 /// @param page_array: Pointer to page descriptor array
 pub fn init_buddy(mem_start: u64, total_pages: u32, page_array: *mut Page) {
-    let buddy = get_buddy();
+    let buddy = buddy();
     buddy.init(mem_start, total_pages, page_array);
 }
 
 /// Allocate a single page
 pub fn alloc_page() -> *mut Page {
-    get_buddy().alloc(0)
+    buddy().alloc(0)
 }
 
 /// Allocate pages of specified order
 /// @param order: Order of allocation (log2 of pages needed)
 /// @return Pointer to page descriptor, or null on failure
 pub fn alloc_pages(order: usize) -> *mut Page {
-    get_buddy().alloc(order)
+    buddy().alloc(order)
 }
 
 /// Free a page block
 /// @param page: Pointer to page descriptor to free
 pub fn free_page(page: *mut Page) {
-    get_buddy().free(page);
+    buddy().free(page);
 }
 
 /// Get number of free pages
 pub fn nr_free_pages() -> u32 {
-    get_buddy().get_free_pages()
+    buddy().get_free_pages()
 }
 
 /// Get total number of pages
 pub fn nr_total_pages() -> u32 {
-    get_buddy().get_total_pages()
+    buddy().get_total_pages()
 }
 
 #[cfg(test)]

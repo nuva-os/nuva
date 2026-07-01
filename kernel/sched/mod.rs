@@ -900,7 +900,7 @@ impl Scheduler {
     }
     
     /// Get task by PID
-    pub fn get_task_by_pid(&self, pid: Pid) -> *mut Task {
+    pub fn task_by_pid(&self, pid: Pid) -> *mut Task {
         let mut task = self.task_list;
         while !task.is_null() {
             // SAFETY: unsafe block required for low-level memory or hardware access
@@ -925,7 +925,7 @@ impl Scheduler {
 }
 
 /// Global scheduler
-static SCHEDULER: core::sync::OnceLock<Scheduler> = core::sync::OnceLock::new();
+static SCHEDULER: crate::sync_oncelock::OnceLock<Scheduler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get scheduler
 pub fn scheduler() -> &'static Scheduler {
@@ -934,28 +934,28 @@ pub fn scheduler() -> &'static Scheduler {
 
 /// Initialize scheduler
 pub fn init_scheduler(nr_cpus: u32) {
-    let sched = get_scheduler();
+    let sched = scheduler();
     sched.init(nr_cpus);
 }
 
 /// Schedule
 pub fn schedule() {
-    get_scheduler().schedule();
+    scheduler().schedule();
 }
 
 /// Yield CPU
 pub fn yield_cpu() {
-    get_scheduler().yield_cpu();
+    scheduler().yield_cpu();
 }
 
 /// Get current task
 pub fn get_current_task() -> *mut Task {
-    get_scheduler().get_current()
+    scheduler().get_current()
 }
 
 /// Scheduler tick (called from timer interrupt)
 pub fn scheduler_tick() {
-    get_scheduler().tick();
+    scheduler().tick();
 }
 
 // Task state enumeration
@@ -976,7 +976,7 @@ pub fn enqueue_task(task: *mut Task) {
     if task.is_null() {
         return;
     }
-    let sched = get_scheduler();
+    let sched = scheduler();
     // SAFETY: task pointer is valid, checked above
     unsafe {
         (*task).state.store(TaskState::Ready as u32, Ordering::Release);

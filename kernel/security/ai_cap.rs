@@ -358,7 +358,7 @@ impl AiCapManager {
 }
 
 /// Global AI capability manager
-static AI_CAP_MANAGER: core::sync::OnceLock<AiCapManager> = core::sync::OnceLock::new();
+static AI_CAP_MANAGER: crate::sync_oncelock::OnceLock<AiCapManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global manager
 pub fn get_ai_cap_manager() -> &'static AiCapManager {
@@ -373,6 +373,7 @@ pub fn init_ai_cap() {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_ai_capability_empty() {

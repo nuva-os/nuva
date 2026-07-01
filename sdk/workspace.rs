@@ -321,6 +321,9 @@ impl LockFile {
  fn calculate_checksum(name: &str, version: &str) -> String {
  use core::hash::{Hash, Hasher};
  use core::collections::hash_map::DefaultHasher;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
  let mut hasher = DefaultHasher::new();
  name.hash(&mut hasher);

@@ -26,7 +26,7 @@ use super::superblock::*;
 use super::inode::*;
 use super::dir::*;
 use super::journal::*;
-use super::file::*;
+use super::vfs::file::*;
 use super::snapshot::*;
 use super::posix::*;
 
@@ -632,6 +632,7 @@ pub fn run_all_tests() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::format;
 
     #[test]
     fn test_run_all() {

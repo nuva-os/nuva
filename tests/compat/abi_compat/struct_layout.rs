@@ -23,6 +23,9 @@ use crate::compat::config::TargetArch;
 use crate::compat::{TestResult, TestStatus};
 use std::mem::{align_of, size_of};
 use std::time::Instant;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// runStructlayoutTesting
 pub fn run_tests(arch: TargetArch) -> Vec<TestResult> {

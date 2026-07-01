@@ -22,6 +22,8 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::ProfileCommand;
 use crate::cli::output;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// executeperformanceanalyze
 pub fn execute(sdk: &mut NuvaSdk, cmd: ProfileCommand) -> Result<(), SdkError> {

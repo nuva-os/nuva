@@ -18,7 +18,7 @@
  */
 
 
-use crate::nuva_brain::inference::tensor::{Tensor, TensorShape, DataType};
+use crate::syslib::brain::inference::tensor::{Tensor, TensorShape, DataType};
 
 /// Convolution parameters
 pub struct ConvParams {

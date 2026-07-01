@@ -389,14 +389,10 @@ impl PhyManager {
 }
 
 /// Global PHY manager
-static PHY_MANAGER: core::sync::OnceLock<PhyManager> = core::sync::OnceLock::new();
+static PHY_MANAGER: crate::sync_oncelock::OnceLock<PhyManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get PHY manager
 pub fn phy_manager() -> &'static PhyManager {
-    PHY_MANAGER.get_or_init(PhyManager::new)
-}
-
-pub fn init_phy_manager() -> &'static PhyManager {
     PHY_MANAGER.get_or_init(PhyManager::new)
 }
 

@@ -291,7 +291,7 @@ impl DeclarativeEventDispatcher {
 }
 
 /** Global event dispatcher. */
-static EVENT_DISPATCHER: core::sync::OnceLock<DeclarativeEventDispatcher> = core::sync::OnceLock::new();
+static EVENT_DISPATCHER: crate::sync_oncelock::OnceLock<DeclarativeEventDispatcher> = crate::sync_oncelock::OnceLock::new();
 
 /** Get the global event dispatcher. */
 pub fn get_event_dispatcher() -> &'static DeclarativeEventDispatcher {

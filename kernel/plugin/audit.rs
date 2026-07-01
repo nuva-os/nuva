@@ -434,7 +434,7 @@ impl Default for AuditManager {
 /// Get current timestamp from the system timer.
 /// Reads the architectural cycle counter and converts to milliseconds.
 fn current_timestamp() -> u64 {
-    crate::hal::cpu::timer::read_cycle_counter() / 1000
+    crate::hal::cpu::read_cycle_counter() / 1000
 }
 
 // ============================================================================

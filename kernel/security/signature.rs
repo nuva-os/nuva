@@ -473,7 +473,7 @@ fn verify_signature_hw(
 }
 
 /// Global signature context
-static SIGNATURE_CONTEXT: core::sync::OnceLock<SignatureContext> = core::sync::OnceLock::new();
+static SIGNATURE_CONTEXT: crate::sync_oncelock::OnceLock<SignatureContext> = crate::sync_oncelock::OnceLock::new();
 
 /// Get signature context
 pub fn signature_context() -> &'static SignatureContext {
@@ -482,7 +482,7 @@ pub fn signature_context() -> &'static SignatureContext {
 
 /// Initialize code signature subsystem
 pub fn init_signature() -> Result<(), SignatureResult> {
-    get_signature_context().init()
+    signature_context().init()
 }
 
 #[cfg(test)]

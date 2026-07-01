@@ -491,6 +491,8 @@ pub struct TlsHandshakeResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_tls_kem_id_values() {

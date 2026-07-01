@@ -35,13 +35,14 @@ pub use dcache::{DentryCache, Dentry, init_dcache};
 pub use io_uring::{IoUring, IoSqe, IoCqe, init_io_uring};
 
 // Re-export VFS types
-pub use vfs::{InoT as Ino, OffT as Off, FileType, FileSystemType as FsType};
+pub use vfs::{InoT as Ino, OffT as Off, FileType, FileSystemType as FsType, Stat};
 
 
 use core::sync::atomic::Ordering;
 
-use crate::posix::errno::Errno;
-static CURRENT_FD_TABLE: core::sync::OnceLock<vfs::FileDescriptorTable> = core::sync::OnceLock::new();
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
+static CURRENT_FD_TABLE: crate::sync_oncelock::OnceLock<vfs::FileDescriptorTable> = crate::sync_oncelock::OnceLock::new();
 
 fn fd_table() -> &'static vfs::FileDescriptorTable {
     CURRENT_FD_TABLE.get_or_init(vfs::FileDescriptorTable::new)
@@ -89,7 +90,7 @@ pub fn sys_open(path: *const u8, flags: u32, mode: u32) -> i64 {
         }
     };
 
-    let fd_table = get_fd_table();
+    let fd_table = fd_table();
     match fd_table.alloc_fd(lookup.inode, flags) {
         Some(fd) => {
             vfs::VFS_STATS.open_files.fetch_add(1, Ordering::Relaxed);
@@ -103,7 +104,7 @@ pub fn sys_close(fd: i32) -> i64 {
     if fd < 0 {
         return Errno::Ebadf.to_syscall_return();
     }
-    let fd_table = get_fd_table();
+    let fd_table = fd_table();
     if fd_table.free_fd(fd as u32) {
         vfs::VFS_STATS.open_files.fetch_sub(1, Ordering::Relaxed);
         0
@@ -116,7 +117,7 @@ pub fn sys_read(fd: i32, buf: *mut u8, count: usize) -> i64 {
     if fd < 0 || buf.is_null() || count == 0 {
         return Errno::Einval.to_syscall_return();
     }
-    let fd_table = get_fd_table();
+    let fd_table = fd_table();
     if fd_table.get_fd(fd as u32).is_none() {
         return Errno::Ebadf.to_syscall_return();
     }
@@ -131,7 +132,7 @@ pub fn sys_write(fd: i32, buf: *const u8, count: usize) -> i64 {
     if fd < 0 || buf.is_null() || count == 0 {
         return Errno::Einval.to_syscall_return();
     }
-    let fd_table = get_fd_table();
+    let fd_table = fd_table();
     if fd_table.get_fd(fd as u32).is_none() {
         return Errno::Ebadf.to_syscall_return();
     }

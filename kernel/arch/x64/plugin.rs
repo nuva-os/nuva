@@ -19,9 +19,9 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use super::super::{ArchOps, ArchPlugin, ArchPluginMeta, ArchType, DeviceInfo, PluginError};
-use super::super::super::{PageTableOps, IrqControllerOps, TimerOps, PowerOps, ContextOps};
-use super::super::super::{PhysAddr, VirtAddr, ProtFlags, CpuContext};
+use crate::kernel::arch::plugins::{ArchPlugin, ArchPluginMeta, ArchType, DeviceInfo, PluginError};
+use crate::kernel::arch::{ArchOps, PageTableOps, IrqControllerOps, TimerOps, PowerOps, ContextOps};
+use crate::kernel::arch::{PhysAddr, VirtAddr, ProtFlags, CpuContext};
 
 /// x86_64 plugin metadata
 pub const X64_PLUGIN_META: ArchPluginMeta = ArchPluginMeta {
@@ -60,27 +60,19 @@ impl ArchPlugin for X64Plugin {
         Ok(())
     }
 
-    fn detect(&self) -> bool {
-        #[cfg(target_arch = "x86_64")]
-        {
-            let (_, ebx, ecx, edx) = super::cpuid(0, 0);
-            let is_genuine_intel = ebx == 0x756E_6547 && ecx == 0x6E_49_65_6E && edx == 0x69_6E_65_49;
-            let is_authentic_amd = ebx == 0x6874_7541 && ecx == 0x444D_4163 && edx == 0x6974_6E65;
-            is_genuine_intel || is_authentic_amd
-        }
-        #[cfg(not(target_arch = "x86_64"))]
-        false
+    fn shutdown(&self) -> Result<(), PluginError> {
+        Ok(())
     }
 
     fn ops(&self) -> &dyn ArchOps {
         &super::X64_ARCH
     }
 
-    fn supported_devices(&self) -> &[&'static str] {
-        X64_PLUGIN_META.supported_devices
+    fn is_compatible(&self, device: &DeviceInfo) -> bool {
+        X64_PLUGIN_META.supported_devices.contains(&device.name.as_str())
     }
 
-    fn is_initialized(&self) -> bool {
-        self.initialized
+    fn get_features(&self) -> Vec<&'static str> {
+        vec!["x86_64", "sse", "sse2", "fxsr"]
     }
 }

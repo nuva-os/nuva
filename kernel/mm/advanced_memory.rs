@@ -28,10 +28,12 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
-use crate::mm::allocator::{kmalloc, kfree};
-use crate::mm::mem_map::{Zone, ZoneType};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys};
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages};
+use crate::kernel::mm::page_flags;
+use crate::kernel::mm::Page;
+use crate::kernel::mm::allocator::{kmalloc, kfree};
 
 /// Error code
 pub mod errno {
@@ -502,7 +504,7 @@ pub struct NumaNode {
  /// mem_map Array
  pub mem_map: *mut Page,
  /// MemoryRegion
- pub zones: [Option<Zone>; 4],
+ pub zones: [Option<ZoneType>; 4],
  /// DistanceMatrix(toOtherNode Distance)
  pub distances: [u32; 16],
  /// CPU List
@@ -912,7 +914,7 @@ impl PageMigrator {
  /// - zone: MemoryRegion
  /// # return
  /// SuccessMigration pageFacenumber
- pub fn compact_zone(&mut self, zone: &Zone) -> u64 {
+ pub fn compact_zone(&mut self, zone: &ZoneType) -> u64 {
  log_info!("PageMigrator: compacting zone '{}'", zone.name);
 
  // TODO: ImplementationMemoryCompressionAlgorithm
@@ -944,16 +946,16 @@ pub struct MigratorStats {
 // ============================================================================
 
 /// GlobalDynamic mem_map
-static DYNAMIC_MEM_MAP: core::sync::OnceLock<DynamicMemMap> = core::sync::OnceLock::new();
+static DYNAMIC_MEM_MAP: crate::sync_oncelock::OnceLock<DynamicMemMap> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalMemoryheat
-static MEMORY_HOTPLUG: core::sync::OnceLock<MemoryHotplug> = core::sync::OnceLock::new();
+static MEMORY_HOTPLUG: crate::sync_oncelock::OnceLock<MemoryHotplug> = crate::sync_oncelock::OnceLock::new();
 
 /// Global NUMA Manager
-static NUMA_MANAGER: core::sync::OnceLock<NumaManager> = core::sync::OnceLock::new();
+static NUMA_MANAGER: crate::sync_oncelock::OnceLock<NumaManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalpageFaceMigrationdevice
-static PAGE_MIGRATOR: core::sync::OnceLock<PageMigrator> = core::sync::OnceLock::new();
+static PAGE_MIGRATOR: crate::sync_oncelock::OnceLock<PageMigrator> = crate::sync_oncelock::OnceLock::new();
 
 /// GetDynamic mem_map
 pub fn dynamic_mem_map() -> &'static DynamicMemMap {
@@ -984,13 +986,13 @@ pub fn init_advanced_memory() {
  log_info!("Initializing advanced memory management");
 
  // InitializeMemoryheat
- get_memory_hotplug().init();
+ memory_hotplug().init();
 
  // Initialize NUMA Manager
  numa_manager().init();
 
  // InitializepageFaceMigrationdevice
- get_page_migrator().init();
+ page_migrator().init();
 
  log_info!("Advanced memory management initialized");
 }
@@ -1000,7 +1002,7 @@ pub fn print_advanced_memory_stats() {
  log_info!("Advanced Memory Management Statistics:");
 
  // MemoryheatStatistics
- let hotplug = get_memory_hotplug();
+ let hotplug = memory_hotplug();
  log_info!(" Memory Hotplug:");
  log_info!(" Regions: {}", hotplug.num_regions);
  log_info!(" Total memory: {} bytes", hotplug.get_total_memory());
@@ -1014,7 +1016,7 @@ pub fn print_advanced_memory_stats() {
  }
 
  // pageFaceMigrationStatistics
- let migrator = get_page_migrator();
+ let migrator = page_migrator();
  if migrator.initialized.load(Ordering::Acquire) {
  let stats = migrator.get_stats();
  log_info!(" Page Migration:");

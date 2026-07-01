@@ -24,6 +24,7 @@ use alloc::string::ToString;
 use crate::kernel::arch::plugins::*;
 use crate::kernel::arch::*;
 use super::arch_impl::RISCV64_ARCH;
+use alloc::vec;
 
 /// RISC-V 64 plugin metadata.
 pub static RISCV64_PLUGIN_META: ArchPluginMeta = ArchPluginMeta {

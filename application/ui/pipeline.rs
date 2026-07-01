@@ -211,7 +211,7 @@ impl RenderPipeline {
 }
 
 /// Global render pipeline singleton.
-static RENDER_PIPELINE: core::sync::OnceLock<RenderPipeline> = core::sync::OnceLock::new();
+static RENDER_PIPELINE: crate::sync_oncelock::OnceLock<RenderPipeline> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global render pipeline.
 pub fn get_render_pipeline() -> &'static RenderPipeline {

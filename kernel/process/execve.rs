@@ -773,7 +773,7 @@ impl ExecveHandler {
 }
 
 /// Global execve handler
-static EXECVE_HANDLER: core::sync::OnceLock<ExecveHandler> = core::sync::OnceLock::new();
+static EXECVE_HANDLER: crate::sync_oncelock::OnceLock<ExecveHandler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get execve handler
 pub fn execve_handler() -> &'static ExecveHandler {

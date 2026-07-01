@@ -19,6 +19,7 @@
 //! Audio service specific error types and audio data types.
 
 use core::fmt;
+use alloc::vec::Vec;
 
 /// Audio service error type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

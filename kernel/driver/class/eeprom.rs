@@ -241,14 +241,10 @@ impl EepromManager {
 }
 
 /// Global EEPROM manager
-static EEPROM_MANAGER: core::sync::OnceLock<EepromManager> = core::sync::OnceLock::new();
+static EEPROM_MANAGER: crate::sync_oncelock::OnceLock<EepromManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get EEPROM manager
 pub fn eeprom_manager() -> &'static EepromManager {
-    EEPROM_MANAGER.get_or_init(EepromManager::new)
-}
-
-pub fn init_eeprom_manager() -> &'static EepromManager {
     EEPROM_MANAGER.get_or_init(EepromManager::new)
 }
 

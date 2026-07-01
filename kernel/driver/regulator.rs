@@ -368,14 +368,10 @@ impl RegulatorManager {
 }
 
 /// Global regulator manager
-static REGULATOR_MANAGER: core::sync::OnceLock<RegulatorManager> = core::sync::OnceLock::new();
+static REGULATOR_MANAGER: crate::sync_oncelock::OnceLock<RegulatorManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get regulator manager
 pub fn regulator_manager() -> &'static RegulatorManager {
-    REGULATOR_MANAGER.get_or_init(RegulatorManager::new)
-}
-
-pub fn init_regulator_manager() -> &'static RegulatorManager {
     REGULATOR_MANAGER.get_or_init(RegulatorManager::new)
 }
 

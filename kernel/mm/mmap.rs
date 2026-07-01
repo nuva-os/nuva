@@ -28,7 +28,8 @@
 use crate::kernel::arch::{PhysAddr, VirtAddr, ProtFlags};
 use crate::{pr_debug, pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Page size constant.
 pub const PAGE_SIZE: u64 = 4096;
 
@@ -628,7 +629,7 @@ impl AddressSpace {
 }
 
 /// Global address space (kernel).
-static KERNEL_ADDRESS_SPACE: core::sync::OnceLock<AddressSpace> = core::sync::OnceLock::new();
+static KERNEL_ADDRESS_SPACE: crate::sync_oncelock::OnceLock<AddressSpace> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the kernel address space.
 pub fn get_kernel_address_space() -> &'static AddressSpace {

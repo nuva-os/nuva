@@ -56,7 +56,7 @@ mod port;
 mod message;
 mod rights;
 mod queue;
-mod manager;
+pub mod manager;
 mod fastpath;
 mod quantum_secure;
 

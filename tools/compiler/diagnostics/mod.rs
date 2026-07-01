@@ -24,6 +24,9 @@ pub mod suggestions;
 
 use std::path::PathBuf;
 use std::fmt;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// breakEngine
 pub struct DiagnosticEngine {

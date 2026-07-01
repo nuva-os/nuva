@@ -19,6 +19,9 @@
 // ! Optimization pass Implementation
 
 use super::{IR, OptError};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// optimize Pass trait
 pub trait OptimizationPass {

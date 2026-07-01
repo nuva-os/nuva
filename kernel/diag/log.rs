@@ -25,7 +25,8 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Log Level
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -409,7 +410,7 @@ impl LogManager {
 }
 
 /// Global log manager
-static LOG_MANAGER: core::sync::OnceLock<LogManager> = core::sync::OnceLock::new();
+static LOG_MANAGER: crate::sync_oncelock::OnceLock<LogManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get log manager
 pub fn log_manager() -> &'static LogManager {

@@ -37,6 +37,7 @@ use super::format_detect::{detect_image_format, ImageDetectResult};
 use super::hw_accel::HwImageCodec;
 use super::sw_fallback::SwFallback;
 use super::transform::TransformPipeline;
+use alloc::vec::Vec;
 
 /// Convert ImageError to ServiceError
 impl From<ImageError> for ServiceError {

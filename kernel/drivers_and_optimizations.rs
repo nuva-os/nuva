@@ -29,8 +29,11 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, AtomicPtr, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys}
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages}
+use crate::kernel::mm::page_flags
+use crate::kernel::mm::Page;
 use crate::advanced_features::{IpAddr, SocketAddr};
 
 /// Error code
@@ -1105,25 +1108,25 @@ impl SecurityManager {
 // ============================================================================
 
 /// GlobalnetworkcardDriver
-static NETWORK_DRIVER: core::sync::OnceLock<NetworkDriver> = core::sync::OnceLock::new();
+static NETWORK_DRIVER: crate::sync_oncelock::OnceLock<NetworkDriver> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalBlockDeviceDriver
-static BLOCK_DRIVER: core::sync::OnceLock<BlockDriver> = core::sync::OnceLock::new();
+static BLOCK_DRIVER: crate::sync_oncelock::OnceLock<BlockDriver> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalInputDeviceDriver
-static INPUT_DRIVER: core::sync::OnceLock<InputDriver> = core::sync::OnceLock::new();
+static INPUT_DRIVER: crate::sync_oncelock::OnceLock<InputDriver> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalFile SystemManager
-static FILESYSTEM_MANAGER: core::sync::OnceLock<FileSystemManager> = core::sync::OnceLock::new();
+static FILESYSTEM_MANAGER: crate::sync_oncelock::OnceLock<FileSystemManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalZero-copyManager
-static ZEROCOPY_MANAGER: core::sync::OnceLock<ZeroCopyManager> = core::sync::OnceLock::new();
+static ZEROCOPY_MANAGER: crate::sync_oncelock::OnceLock<ZeroCopyManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalBatch ProcessingManager
-static BATCH_MANAGER: core::sync::OnceLock<BatchManager> = core::sync::OnceLock::new();
+static BATCH_MANAGER: crate::sync_oncelock::OnceLock<BatchManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalSecurityManager
-static SECURITY_MANAGER: core::sync::OnceLock<SecurityManager> = core::sync::OnceLock::new();
+static SECURITY_MANAGER: crate::sync_oncelock::OnceLock<SecurityManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GetnetworkcardDriver
 pub fn network_driver() -> &'static NetworkDriver {

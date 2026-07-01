@@ -18,7 +18,7 @@
  */
 
 
-use crate::sched::task::{TaskStruct, TaskState, SchedPolicy};
+use crate::kernel::sched::task::{TaskStruct, TaskState, SchedPolicy};
 
 /// realtimePriorityRange: 0-99
 pub const MAX_RT_PRIO: u32 = 100;
@@ -94,7 +94,7 @@ impl RtScheduler {
  }
 }
 
-static RT_SCHEDULER: core::sync::OnceLock<RtScheduler> = core::sync::OnceLock::new();
+static RT_SCHEDULER: crate::sync_oncelock::OnceLock<RtScheduler> = crate::sync_oncelock::OnceLock::new();
 
 pub fn rt_scheduler() -> &'static RtScheduler {
     RT_SCHEDULER.get_or_init(RtScheduler::new)

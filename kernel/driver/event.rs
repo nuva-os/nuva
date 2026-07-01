@@ -344,14 +344,10 @@ impl EventManager {
 }
 
 /// Global event manager
-static EVENT_MANAGER: core::sync::OnceLock<EventManager> = core::sync::OnceLock::new();
+static EVENT_MANAGER: crate::sync_oncelock::OnceLock<EventManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get event manager
 pub fn event_manager() -> &'static EventManager {
-    EVENT_MANAGER.get_or_init(EventManager::new)
-}
-
-pub fn init_event_manager() -> &'static EventManager {
     EVENT_MANAGER.get_or_init(EventManager::new)
 }
 

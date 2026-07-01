@@ -21,6 +21,7 @@
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use super::ir::*;
+use alloc::vec::Vec;
 
 /// OptimizationLevel
 #[derive(Debug, Clone, Copy)]

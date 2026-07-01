@@ -20,7 +20,8 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// FileDescriptor
 pub type Fd = i32;
 
@@ -340,7 +341,7 @@ pub fn sys_fstat(fd: Fd, stat: *mut Stat) -> i32 {
     }
 
     // Lookup file by fd in VFS
-    let files = crate::fs::vfs::file::get_global_files();
+    let files = crate::kernel::fs::vfs::file::global_files();
     let file_ref = match files.get_file(fd as u32) {
         Some(f) => f,
         None => return Errno::Ebadf.to_ret_i32(), // EBADF
@@ -400,8 +401,8 @@ pub fn sys_stat(path: *const u8, stat: *mut Stat) -> i32 {
     };
 
     // Lookup inode by path, following symlinks
-    let vfs = crate::fs::vfs::vfs_core();
-    let lookup = match vfs.path_lookup(path_str, crate::fs::vfs::lookup_flags::FOLLOW_SYMLINK) {
+    let vfs = crate::kernel::fs::vfs::vfs_core();
+    let lookup = match vfs.path_lookup(path_str, crate::kernel::fs::vfs::lookup_flags::FOLLOW_SYMLINK) {
         Some(l) => l,
         None => return Errno::Enoent.to_ret_i32(), // ENOENT
     };
@@ -452,8 +453,8 @@ pub fn sys_lstat(path: *const u8, stat: *mut Stat) -> i32 {
     };
 
     // Lookup inode by path, NOT following symlinks
-    let vfs = crate::fs::vfs::vfs_core();
-    let lookup = match vfs.path_lookup(path_str, crate::fs::vfs::lookup_flags::NO_FOLLOW) {
+    let vfs = crate::kernel::fs::vfs::vfs_core();
+    let lookup = match vfs.path_lookup(path_str, crate::kernel::fs::vfs::lookup_flags::NO_FOLLOW) {
         Some(l) => l,
         None => return Errno::Enoent.to_ret_i32(), // ENOENT
     };
@@ -559,7 +560,7 @@ pub fn sys_flock(fd: Fd, operation: u32) -> i32 {
         return Errno::Ebadf.to_ret_i32(); // EBADF
     }
 
-    let files = crate::fs::vfs::file::get_global_files();
+    let files = crate::kernel::fs::vfs::file::global_files();
     let file_ref = match files.get_file(fd as u32) {
         Some(f) => f,
         None => return Errno::Ebadf.to_ret_i32(), // EBADF
@@ -577,7 +578,7 @@ pub fn sys_flock(fd: Fd, operation: u32) -> i32 {
     let owner = fd as u64;
     let pid = 0u32; // TODO: get current process pid
 
-    crate::fs::vfs::file::flock_apply(ino, operation as i32, owner, pid)
+    crate::kernel::fs::vfs::file::flock_apply(ino, operation as i32, owner, pid)
 }
 
 /// POSIX fcntl - file control operations.
@@ -589,12 +590,12 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         return Errno::Ebadf.to_syscall_return(); // EBADF
     }
 
-    use crate::fs::vfs::file::fcntl_cmd;
+    use crate::kernel::fs::vfs::file::fcntl_cmd;
 
     match cmd {
         c if c == fcntl_cmd::F_DUPFD => {
             let min_fd = arg as u32;
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             let src_file = match files.get_file(fd as u32) {
                 Some(f) => f,
                 None => return Errno::Ebadf.to_syscall_return(),
@@ -609,11 +610,11 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
                         files.free_fd(nfd);
                         for i in min_fd..256 {
                             if files.get_file(i).is_none() {
-                                let mut new_file = crate::fs::vfs::inode::File::new();
+                                let mut new_file = crate::kernel::fs::vfs::inode::File::new();
                                 new_file.f_flags = src_flags;
                                 new_file.f_mode = src_mode;
                                 new_file.f_inode = inode_ptr;
-                                if files.install_file(i, &mut new_file as *mut crate::fs::vfs::inode::File) {
+                                if files.install_file(i, &mut new_file as *mut crate::kernel::fs::vfs::inode::File) {
                                     break;
                                 }
                             }
@@ -625,11 +626,11 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
                 None => return Errno::Enotty.to_syscall_return(), // EMFILE
             };
 
-            let mut new_file = crate::fs::vfs::inode::File::new();
+            let mut new_file = crate::kernel::fs::vfs::inode::File::new();
             new_file.f_flags = src_flags;
             new_file.f_mode = src_mode;
             new_file.f_inode = inode_ptr;
-            if files.install_file(new_fd, &mut new_file as *mut crate::fs::vfs::inode::File) {
+            if files.install_file(new_fd, &mut new_file as *mut crate::kernel::fs::vfs::inode::File) {
                 new_fd as i64
             } else {
                 -24
@@ -637,13 +638,13 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         }
 
         c if c == fcntl_cmd::F_GETFD => {
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             match files.get_file(fd as u32) {
                 Some(_) => {
                     if (fd as usize) < 256 {
                         if let Some(ref desc) = files.fd_array[fd as usize] {
                             if desc.close_on_exec {
-                                return crate::fs::vfs::file::fd_flags::FD_CLOEXEC as i64;
+                                return crate::kernel::fs::vfs::file::fd_flags::FD_CLOEXEC as i64;
                             }
                         }
                     }
@@ -654,12 +655,12 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         }
 
         c if c == fcntl_cmd::F_SETFD => {
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             if (fd as usize) >= 256 {
                 return Errno::Ebadf.to_ret_i32();
             }
             if let Some(ref mut desc) = files.fd_array[fd as usize] {
-                desc.close_on_exec = (arg & crate::fs::vfs::file::fd_flags::FD_CLOEXEC as u64) != 0;
+                desc.close_on_exec = (arg & crate::kernel::fs::vfs::file::fd_flags::FD_CLOEXEC as u64) != 0;
                 0
             } else {
                 -9
@@ -667,7 +668,7 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         }
 
         c if c == fcntl_cmd::F_GETFL => {
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             match files.get_file(fd as u32) {
                 Some(f) => f.f_flags as i64,
                 None => Errno::Ebadf.to_ret_i32(),
@@ -675,12 +676,12 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         }
 
         c if c == fcntl_cmd::F_SETFL => {
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             if let Some(f) = files.get_fd_mut_internal(fd as u32) {
-                let valid_mask = (crate::fs::vfs::open_flags::O_APPEND as u32)
-                    | (crate::fs::vfs::open_flags::O_NONBLOCK as u32)
-                    | (crate::fs::vfs::open_flags::O_ASYNC as u32)
-                    | (crate::fs::vfs::open_flags::O_DIRECT as u32);
+                let valid_mask = (crate::kernel::fs::vfs::open_flags::O_APPEND as u32)
+                    | (crate::kernel::fs::vfs::open_flags::O_NONBLOCK as u32)
+                    | (crate::kernel::fs::vfs::open_flags::O_ASYNC as u32)
+                    | (crate::kernel::fs::vfs::open_flags::O_DIRECT as u32);
                 f.f_flags = (f.f_flags & !valid_mask) | ((arg as u32) & valid_mask);
                 0
             } else {
@@ -689,7 +690,7 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
         }
 
         c if c == fcntl_cmd::F_GETLK || c == fcntl_cmd::F_SETLK || c == fcntl_cmd::F_SETLKW => {
-            let files = crate::fs::vfs::file::get_global_files();
+            let files = crate::kernel::fs::vfs::file::global_files();
             let file_ref = match files.get_file(fd as u32) {
                 Some(f) => f,
                 None => return Errno::Ebadf.to_ret_i32(),
@@ -708,9 +709,9 @@ pub fn sys_fcntl(fd: Fd, cmd: i32, arg: u64) -> i64 {
             }
 
             // SAFETY: user-validated non-null pointer for lock structure
-            let user_lock = unsafe { &mut *(arg as *mut crate::fs::vfs::file::FileLockRecord) };
+            let user_lock = unsafe { &mut *(arg as *mut crate::kernel::fs::vfs::file::FileLockRecord) };
 
-            let mgr = crate::fs::vfs::file::lock_manager();
+            let mgr = crate::kernel::fs::vfs::file::lock_manager();
 
             match cmd {
                 _ if cmd == fcntl_cmd::F_GETLK => {

@@ -265,14 +265,10 @@ impl WatchdogManager {
 }
 
 /// Global watchdog manager
-static WATCHDOG_MANAGER: core::sync::OnceLock<WatchdogManager> = core::sync::OnceLock::new();
+static WATCHDOG_MANAGER: crate::sync_oncelock::OnceLock<WatchdogManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get watchdog manager
 pub fn watchdog_manager() -> &'static WatchdogManager {
-    WATCHDOG_MANAGER.get_or_init(WatchdogManager::new)
-}
-
-pub fn init_watchdog_manager() -> &'static WatchdogManager {
     WATCHDOG_MANAGER.get_or_init(WatchdogManager::new)
 }
 

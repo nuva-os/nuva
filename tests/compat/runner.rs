@@ -23,6 +23,9 @@ use crate::compat::config::{TargetArch, TargetPlatform, TestConfig};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Testingrundevice
 pub struct TestRunner {

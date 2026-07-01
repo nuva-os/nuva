@@ -68,11 +68,11 @@ pub mod errno {
 /// File SystemcallImplementation
 pub mod file_ops {
  use super::*;
- use crate::fs::vfs::file::{FilesStruct, FileDescriptor};
- use crate::fs::vfs::{open_flags, file_mode};
+ use crate::kernel::fs::vfs::file::{FilesStruct, FileDescriptor};
+ use crate::kernel::fs::vfs::{open_flags, file_mode};
 
  /// Current process FileDescriptorform(timeImplementation)
- static CURRENT_FILES: core::sync::OnceLock<FilesStruct> = core::sync::OnceLock::new();
+ static CURRENT_FILES: crate::sync_oncelock::OnceLock<FilesStruct> = crate::sync_oncelock::OnceLock::new();
 
  /// GetCurrent process FileDescriptorform
  pub fn current_files() -> &'static mut FilesStruct {
@@ -113,7 +113,7 @@ pub mod file_ops {
  };
 
  // call VFS SheafOpenFile
- match crate::fs::vfs::file::open(path_str, flags, mode) {
+ match crate::kernel::fs::vfs::file::open(path_str, flags, mode) {
  vfs_fd if vfs_fd >= 0 => {
  log_debug!("sys_openat: opened file, fd={}", fd);
  fd as i64
@@ -134,7 +134,7 @@ pub mod file_ops {
  log_debug!("sys_close: fd={}", fd);
 
  let files = current_files();
- match crate::fs::vfs::file::close(fd as u32) {
+ match crate::kernel::fs::vfs::file::close(fd as u32) {
  0 => {
  files.free_fd(fd as u32);
  errno::ESUCCESS
@@ -164,7 +164,7 @@ pub mod file_ops {
  let buffer = unsafe { core::slice::from_raw_parts_mut(buf, count) };
 
  // call VFS SheafRead
- crate::fs::vfs::file::read(fd as u32, buffer)
+ crate::kernel::fs::vfs::file::read(fd as u32, buffer)
  }
 
  /// WriteFile
@@ -188,7 +188,7 @@ pub mod file_ops {
  let buffer = unsafe { core::slice::from_raw_parts(buf, count) };
 
  // call VFS SheafWrite
- crate::fs::vfs::file::write(fd as u32, buffer)
+ crate::kernel::fs::vfs::file::write(fd as u32, buffer)
  }
 
  /// FilefixedBit
@@ -199,11 +199,11 @@ pub mod file_ops {
 
  log_debug!("sys_lseek: fd={}, offset={}, whence={}", fd, offset, whence);
 
- crate::fs::vfs::file::lseek(fd as u32, offset, whence)
+ crate::kernel::fs::vfs::file::lseek(fd as u32, offset, whence)
  }
 
  /// GetFileState
- pub fn sys_fstat(fd: i32, stat_buf: *mut crate::fs::vfs::Stat) -> i64 {
+ pub fn sys_fstat(fd: i32, stat_buf: *mut crate::kernel::fs::vfs::Stat) -> i64 {
  if fd < 0 || fd >= 256 {
  return errno::EBADF;
  }
@@ -273,7 +273,7 @@ pub mod file_ops {
 
  log_debug!("sys_mkdir: path={}, mode={:#o}", path_str, mode);
 
- crate::fs::vfs::file::mkdir(path_str, mode) as i64
+ crate::kernel::fs::vfs::file::mkdir(path_str, mode) as i64
  }
 
  /// DeleteDirectory
@@ -298,7 +298,7 @@ pub mod file_ops {
 
  log_debug!("sys_rmdir: path={}", path_str);
 
- let result = crate::fs::vfs::file::rmdir(path_str);
+ let result = crate::kernel::fs::vfs::file::rmdir(path_str);
  result as i64
  }
 
@@ -324,7 +324,7 @@ pub mod file_ops {
 
  log_debug!("sys_unlink: path={}", path_str);
 
- let result = crate::fs::vfs::file::unlink(path_str);
+ let result = crate::kernel::fs::vfs::file::unlink(path_str);
  result as i64
  }
 
@@ -380,7 +380,7 @@ pub mod file_ops {
  }
 
  /// GetFileState (throughPath)
- pub fn sys_stat(path: *const u8, stat_buf: *mut crate::fs::vfs::Stat) -> i64 {
+ pub fn sys_stat(path: *const u8, stat_buf: *mut crate::kernel::fs::vfs::Stat) -> i64 {
  if path.is_null() {
  return errno::EFAULT;
  }
@@ -406,8 +406,8 @@ pub mod file_ops {
  log_debug!("sys_stat: path={}", path_str);
 
  // Lookup inode by path, following symlinks
- let vfs = crate::fs::vfs::vfs_core();
- let lookup = match vfs.path_lookup(path_str, crate::fs::vfs::lookup_flags::FOLLOW_SYMLINK) {
+ let vfs = crate::kernel::fs::vfs::vfs_core();
+ let lookup = match vfs.path_lookup(path_str, crate::kernel::fs::vfs::lookup_flags::FOLLOW_SYMLINK) {
  Some(l) => l,
  None => return errno::ENOENT,
  };
@@ -434,7 +434,7 @@ pub mod file_ops {
  }
 
  /// GetFileState (notfollowSignlinkaccept)
- pub fn sys_lstat(path: *const u8, stat_buf: *mut crate::fs::vfs::Stat) -> i64 {
+ pub fn sys_lstat(path: *const u8, stat_buf: *mut crate::kernel::fs::vfs::Stat) -> i64 {
  if path.is_null() {
  return errno::EFAULT;
  }
@@ -460,8 +460,8 @@ pub mod file_ops {
  log_debug!("sys_lstat: path={}", path_str);
 
  // Lookup inode by path, NOT following symlinks
- let vfs = crate::fs::vfs::vfs_core();
- let lookup = match vfs.path_lookup(path_str, crate::fs::vfs::lookup_flags::NO_FOLLOW) {
+ let vfs = crate::kernel::fs::vfs::vfs_core();
+ let lookup = match vfs.path_lookup(path_str, crate::kernel::fs::vfs::lookup_flags::NO_FOLLOW) {
  Some(l) => l,
  None => return errno::ENOENT,
  };
@@ -491,7 +491,7 @@ pub mod file_ops {
 /// ProcessSystemcallImplementation
 pub mod process_ops {
  use super::*;
- use crate::process::{ProcessManager, ProcessState};
+ use crate::kernel::process::{ProcessManager, ProcessState};
  use super::super::process_integration;
 
  /// Current process ID(timeImplementation)
@@ -718,7 +718,7 @@ pub mod memory_ops {
  const PAGE_SIZE: u64 = 4096;
 
  // Get current process mm_struct
- let current = crate::process::get_current();
+ let current = crate::kernel::process::get_current();
  if current.is_null() {
  return errno::ENOMEM;
  }
@@ -757,18 +757,18 @@ pub mod memory_ops {
  let nr_pages = (new_aligned - old_aligned) / PAGE_SIZE;
 
  // Map pages via the page allocator and page table
- let pte_flags = crate::mm::page_table::pte_flags::VALID
- | crate::mm::page_table::pte_flags::WRITABLE
- | crate::mm::page_table::pte_flags::USER;
+ let pte_flags = crate::kernel::mm::page_table::pte_flags::VALID
+ | crate::kernel::mm::page_table::pte_flags::WRITABLE
+ | crate::kernel::mm::page_table::pte_flags::USER;
  for page_idx in 0..nr_pages {
  let vaddr = old_aligned + page_idx * PAGE_SIZE;
- let page = crate::mm::alloc_pages(0);
+ let page = crate::kernel::mm::alloc_pages(0);
  if page.is_null() {
  // Out of memory: roll back already mapped pages
  for rollback_idx in 0..page_idx {
  let rollback_vaddr = old_aligned + rollback_idx * PAGE_SIZE;
  // SAFETY: vaddr is within the process heap range
- crate::mm::page_table::unmap_user_page(mm.pgd, rollback_vaddr);
+ crate::kernel::mm::page_table::unmap_user_page(mm.pgd, rollback_vaddr);
  }
  mm.total_vm.fetch_add(page_idx * PAGE_SIZE, Ordering::AcqRel);
  mm.data_vm.fetch_add(page_idx * PAGE_SIZE, Ordering::AcqRel);
@@ -776,7 +776,7 @@ pub mod memory_ops {
  }
  // SAFETY: page is a valid freshly allocated page
  let paddr = unsafe { (*page).phys_addr };
- crate::mm::page_table::map_user_page(mm.pgd, vaddr, paddr, pte_flags);
+ crate::kernel::mm::page_table::map_user_page(mm.pgd, vaddr, paddr, pte_flags);
  }
 
  mm.total_vm.fetch_add(new_aligned - old_aligned, Ordering::AcqRel);
@@ -794,7 +794,7 @@ pub mod memory_ops {
  for page_idx in 0..nr_pages {
  let vaddr = new_aligned + page_idx * PAGE_SIZE;
  // SAFETY: vaddr is within the process heap range
- crate::mm::page_table::unmap_user_page(mm.pgd, vaddr);
+ crate::kernel::mm::page_table::unmap_user_page(mm.pgd, vaddr);
  }
 
  let freed = old_aligned - new_aligned;
@@ -835,7 +835,7 @@ pub mod time_ops {
  }
 
  /// GethighpreciseDegreeTime
- pub fn sys_clock_gettime(clockid: i32, tp: *mut crate::fs::vfs::Timespec) -> i64 {
+ pub fn sys_clock_gettime(clockid: i32, tp: *mut crate::kernel::fs::vfs::Timespec) -> i64 {
  log_debug!("sys_clock_gettime: clockid={}", clockid);
 
  if tp.is_null() {
@@ -858,7 +858,7 @@ pub mod time_ops {
  }
 
  /// nslevel
- pub fn sys_nanosleep(req: *const crate::fs::vfs::Timespec, rem: *mut crate::fs::vfs::Timespec) -> i64 {
+ pub fn sys_nanosleep(req: *const crate::kernel::fs::vfs::Timespec, rem: *mut crate::kernel::fs::vfs::Timespec) -> i64 {
  if req.is_null() {
  return errno::EINVAL;
  }
@@ -880,7 +880,7 @@ pub mod time_ops {
  }
 
  /// GetTime
- pub fn sys_gettimeofday(tv: *mut crate::fs::vfs::Timeval, tz: *mut u8) -> i64 {
+ pub fn sys_gettimeofday(tv: *mut crate::kernel::fs::vfs::Timeval, tz: *mut u8) -> i64 {
  log_debug!("sys_gettimeofday");
 
  if !tv.is_null() {

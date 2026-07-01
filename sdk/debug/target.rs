@@ -21,6 +21,9 @@
 use crate::error::SdkError;
 use super::stack::StackFrame;
 use super::variable::Variable;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Debug target
 pub struct DebugTarget {

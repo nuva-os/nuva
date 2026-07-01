@@ -36,6 +36,7 @@
 
 use crate::Nuva_compiler::lexer::{Lexer, Token, TokenKind};
 use crate::Nuva_compiler::ast::*;
+use alloc::boxed::Box;
 
 /// Syntax Analyzer
 pub struct Parser {

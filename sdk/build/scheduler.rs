@@ -24,6 +24,8 @@ use super::config::BuildConfig;
 use super::target::Target;
 use super::executor::BuildExecutor;
 use super::{BuildResult, TargetKind};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// buildschedulingdevice
 pub struct BuildScheduler {

@@ -28,7 +28,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use crate::kernel::net::ipv6::Ipv6Addr;
 use crate::{pr_debug, pr_info, pr_warn};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// ICMPv6 Header
 #[repr(C, packed)]
 pub struct Icmpv6Header {
@@ -369,7 +370,7 @@ impl Icmpv6Manager {
         // header.checksum = checksum.to_be();
         
         // Send via IPv6 layer
-        // crate::net::ipv6::send(&[header, &echo], dst, ipv6_next_header::ICMPV6);
+        // crate::kernel::net::ipv6::send(&[header, &echo], dst, ipv6_next_header::ICMPV6);
         
         self.echo_sequence = self.echo_sequence.wrapping_add(1);
         
@@ -393,7 +394,7 @@ impl Icmpv6Manager {
         // header.checksum = checksum.to_be();
         
         // Send via IPv6 layer
-        // crate::net::ipv6::send(&[header, &echo, data], dst, ipv6_next_header::ICMPV6);
+        // crate::kernel::net::ipv6::send(&[header, &echo, data], dst, ipv6_next_header::ICMPV6);
     }
     
     /// Send destination unreachable
@@ -411,14 +412,14 @@ impl Icmpv6Manager {
         // header.checksum = checksum.to_be();
         
         // Send via IPv6 layer
-        // crate::net::ipv6::send(&header, dst, ipv6_next_header::ICMPV6);
+        // crate::kernel::net::ipv6::send(&header, dst, ipv6_next_header::ICMPV6);
         
         0
     }
 }
 
 /// Global ICMPv6 manager
-static ICMPV6_MANAGER: core::sync::OnceLock<Icmpv6Manager> = core::sync::OnceLock::new();
+static ICMPV6_MANAGER: crate::sync_oncelock::OnceLock<Icmpv6Manager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get ICMPv6 manager
 pub fn icmpv6_manager() -> &'static Icmpv6Manager {

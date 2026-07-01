@@ -389,7 +389,7 @@ impl ArpTable {
 }
 
 /// Global ARP table
-static ARP_TABLE: core::sync::OnceLock<ArpTable> = core::sync::OnceLock::new();
+static ARP_TABLE: crate::sync_oncelock::OnceLock<ArpTable> = crate::sync_oncelock::OnceLock::new();
 
 /// ARP entry pool
 static mut ARP_ENTRY_POOL: [ArpEntry; 256] = [const {

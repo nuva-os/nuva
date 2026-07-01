@@ -29,6 +29,9 @@ use super::target::DebugTarget;
 use super::stack::{StackFrame, StackVariable};
 use super::variable::{Variable, VariableType, VariableValue};
 use super::memory::MemoryViewer;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// DAP server
 pub struct DapServer {

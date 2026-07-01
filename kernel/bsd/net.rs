@@ -375,7 +375,7 @@ impl BsdNetCompat {
 }
 
 /// Global BSD network compatibility layer
-static BSD_NET_COMPAT: core::sync::OnceLock<BsdNetCompat> = core::sync::OnceLock::new();
+static BSD_NET_COMPAT: crate::sync_oncelock::OnceLock<BsdNetCompat> = crate::sync_oncelock::OnceLock::new();
 
 pub fn bsd_net() -> &'static BsdNetCompat {
     BSD_NET_COMPAT.get_or_init(BsdNetCompat::new)

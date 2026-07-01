@@ -19,7 +19,8 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_debug, pr_info, pr_warn};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Process ID type
 pub type Pid = u32;
 
@@ -354,7 +355,7 @@ impl ForkHandler {
         // return proc;
         // The process slab cache (process_cachep) is created during
         // fork_init() with the size of task_struct + thread_info.
-        static PROCESS_BUF: core::sync::OnceLock<ProcessDesc> = core::sync::OnceLock::new();
+        static PROCESS_BUF: crate::sync_oncelock::OnceLock<ProcessDesc> = crate::sync_oncelock::OnceLock::new();
         // SAFETY: unsafe block required for low-level memory or hardware access
         unsafe { &mut PROCESS_BUF as *mut ProcessDesc }
     }
@@ -686,8 +687,8 @@ impl ForkHandler {
             // Add the child task to the scheduler's run queue so it
             // can be picked up by the next schedule() call.
             // In a full implementation:
-            // crate::sched::enqueue_task(child_task);
-            // crate::sched::wake_up_process(child_task);
+            // crate::kernel::sched::enqueue_task(child_task);
+            // crate::kernel::sched::wake_up_process(child_task);
             // This sets the task state to TASK_RUNNING and triggers
             // a reschedule IPI if the child is on a different CPU.
             let child_pid = (*child).pid;
@@ -698,7 +699,7 @@ impl ForkHandler {
     /// Get current process
     fn get_current(&self) -> *mut ProcessDesc {
         // TODO: Get from current_thread_info()->task
-        static CURRENT_PROC: core::sync::OnceLock<ProcessDesc> = core::sync::OnceLock::new();
+        static CURRENT_PROC: crate::sync_oncelock::OnceLock<ProcessDesc> = crate::sync_oncelock::OnceLock::new();
         // SAFETY: unsafe block required for low-level memory or hardware access
         unsafe { &mut CURRENT_PROC as *mut ProcessDesc }
     }
@@ -835,7 +836,7 @@ impl ForkHandler {
 }
 
 /// Global fork handler
-static FORK_HANDLER: core::sync::OnceLock<ForkHandler> = core::sync::OnceLock::new();
+static FORK_HANDLER: crate::sync_oncelock::OnceLock<ForkHandler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get fork handler
 pub fn fork_handler() -> &'static ForkHandler {

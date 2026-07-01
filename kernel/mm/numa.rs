@@ -18,6 +18,7 @@
 
 use core::ptr::read_unaligned;
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use alloc::vec::Vec;
 
 /// NUMA configuration
 pub mod numa_config {
@@ -172,7 +173,7 @@ impl NumaNode {
             flags: AtomicU32::new(0),
             cpus: [const { AtomicU32::new(0) }; numa_config::MAX_CPUS_PER_NODE],
             nr_cpus: AtomicU32::new(0),
-            zones: [const { NumaZone::new() }; numa_config::MAX_ZONES_PER_NODE],
+            zones: [const { NumaZoneType::new() }; numa_config::MAX_ZONES_PER_NODE],
             nr_zones: 0,
             stats: NumaNodeStats::new(),
             distance: [0; numa_config::MAX_NUMA_NODES],
@@ -368,54 +369,49 @@ impl NumaTopology {
         // to proximity domains (NUMA nodes).
         let mut nodes: alloc::vec::Vec<(u32, u64, u64)> = alloc::vec::Vec::new();
 
-        // Use the ACPI parser to find and parse the SRAT
-        let mut acpi = crate::hal::acpi::AcpiParser::new();
-        if !acpi.find_rsdp() {
-            return None;
-        }
+        #[cfg(feature = "x64")]
+        {
+            let mut acpi = crate::hal::acpi::AcpiParser::new();
+            if !acpi.find_rsdp() {
+                return None;
+            }
 
-        // Find SRAT table
-        let srat_entry = acpi.find_table(b"SRAT");
-        if srat_entry.is_none() {
-            return None;
-        }
+            let srat_entry = acpi.find_table(b"SRAT");
+            if srat_entry.is_none() {
+                return None;
+            }
 
-        let srat_entry = match srat_entry {
-            Some(e) => e,
-            None => return None,
-        };
-        let srat_paddr = srat_entry.address;
+            let srat_entry = match srat_entry {
+                Some(e) => e,
+                None => return None,
+            };
+            let srat_paddr = srat_entry.address;
 
-        // Parse SRAT entries
-        // SAFETY: srat_paddr is a valid physical address of the SRAT table
-        // returned by the ACPI parser.
-        unsafe {
-            let srat = srat_paddr as *const u8;
-            // Read SRAT length from its header (offset 4, 4 bytes)
-            let srat_len = read_unaligned(srat.add(4) as *const u32) as usize;
-            let mut offset: usize = 48; // Skip SRAT header
+            unsafe {
+                let srat = srat_paddr as *const u8;
+                let srat_len = read_unaligned(srat.add(4) as *const u32) as usize;
+                let mut offset: usize = 48;
 
-            while offset + 8 <= srat_len {
-                let entry_type = read_unaligned(srat.add(offset) as *const u8);
-                let entry_len = read_unaligned(srat.add(offset + 1) as *const u8) as usize;
+                while offset + 8 <= srat_len {
+                    let entry_type = read_unaligned(srat.add(offset) as *const u8);
+                    let entry_len = read_unaligned(srat.add(offset + 1) as *const u8) as usize;
 
-                if entry_type == 1 && entry_len >= 40 {
-                    // Memory affinity entry
-                    let proximity_domain = read_unaligned(srat.add(offset + 2) as *const u32);
-                    let base_addr = read_unaligned(srat.add(offset + 8) as *const u64);
-                    let length = read_unaligned(srat.add(offset + 16) as *const u64);
-                    let flags = read_unaligned(srat.add(offset + 28) as *const u32);
+                    if entry_type == 1 && entry_len >= 40 {
+                        let proximity_domain = read_unaligned(srat.add(offset + 2) as *const u32);
+                        let base_addr = read_unaligned(srat.add(offset + 8) as *const u64);
+                        let length = read_unaligned(srat.add(offset + 16) as *const u64);
+                        let flags = read_unaligned(srat.add(offset + 28) as *const u32);
 
-                    // Check if enabled (bit 0 of flags)
-                    if (flags & 1) != 0 && length > 0 {
-                        nodes.push((proximity_domain, base_addr, base_addr + length));
+                        if (flags & 1) != 0 && length > 0 {
+                            nodes.push((proximity_domain, base_addr, base_addr + length));
+                        }
                     }
-                }
 
-                if entry_len == 0 {
-                    break;
+                    if entry_len == 0 {
+                        break;
+                    }
+                    offset += entry_len;
                 }
-                offset += entry_len;
             }
         }
 
@@ -814,7 +810,7 @@ impl NumaTopology {
 }
 
 /// Global NUMA topology
-static NUMA_TOPOLOGY: core::sync::OnceLock<NumaTopology> = core::sync::OnceLock::new();
+static NUMA_TOPOLOGY: crate::sync_oncelock::OnceLock<NumaTopology> = crate::sync_oncelock::OnceLock::new();
 
 /// Get NUMA topology
 pub fn numa_topology() -> &'static NumaTopology {
@@ -823,22 +819,22 @@ pub fn numa_topology() -> &'static NumaTopology {
 
 /// Initialize NUMA support
 pub fn init_numa() {
-    get_numa_topology().init();
+    numa_topology().init();
 }
 
 /// Get node for CPU
 pub fn cpu_to_node(cpu: CpuId) -> NumaNodeId {
-    get_numa_topology().cpu_to_node(cpu)
+    numa_topology().cpu_to_node(cpu)
 }
 
 /// Get node for physical address
 pub fn paddr_to_node(paddr: u64) -> NumaNodeId {
-    get_numa_topology().paddr_to_node(paddr)
+    numa_topology().paddr_to_node(paddr)
 }
 
 /// Check if NUMA is available
 pub fn numa_available() -> bool {
-    get_numa_topology().initialized.load(Ordering::Acquire) && get_numa_topology().nr_nodes > 1
+    numa_topology().initialized.load(Ordering::Acquire) && numa_topology().nr_nodes > 1
 }
 
 /// NUMA page migration error
@@ -854,20 +850,20 @@ pub enum NumaMigrateError {
 
 /// Allocate pages on preferred NUMA node
 pub fn alloc_pages_preferred(order: usize) -> *mut super::Page {
-    get_numa_topology().alloc_pages_preferred(order)
+    numa_topology().alloc_pages_preferred(order)
 }
 
 /// Allocate pages on specific NUMA node
 pub fn alloc_pages_node(node: NumaNodeId, order: usize) -> *mut super::Page {
-    get_numa_topology().alloc_pages_node(node, order)
+    numa_topology().alloc_pages_node(node, order)
 }
 
 /// Free pages on specific NUMA node
 pub fn free_pages_node(node: NumaNodeId, page: *mut super::Page, order: usize) {
-    get_numa_topology().free_pages_node(node, page, order)
+    numa_topology().free_pages_node(node, page, order)
 }
 
 /// Run NUMA balancing scan
 pub fn numa_balance() {
-    get_numa_topology().balance();
+    numa_topology().balance();
 }

@@ -22,6 +22,7 @@
 use crate::syslib::ml::model::{Model, Graph, Operator, OperatorType, TensorDesc};
 use crate::syslib::ml::tensor::{Tensor, Shape, DataType, DeviceType};
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use alloc::boxed::Box;
 
 /// Inference Configuration
 #[derive(Debug, Clone)]

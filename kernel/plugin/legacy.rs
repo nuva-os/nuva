@@ -28,7 +28,8 @@
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicPtr, Ordering};
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Plugin ID
 pub type PluginId = u64;
 
@@ -1012,7 +1013,7 @@ impl PluginIterator {
 }
 
 /// Global plugin manager
-static PLUGIN_MANAGER: core::sync::OnceLock<PluginManager> = core::sync::OnceLock::new();
+static PLUGIN_MANAGER: crate::sync_oncelock::OnceLock<PluginManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get plugin manager
 pub fn plugin_manager() -> &'static PluginManager {
@@ -1072,8 +1073,8 @@ pub fn plugin_probe(device: *const core::ffi::c_void, plugin_type: PluginType) -
 #[macro_export]
 macro_rules! register_plugin {
     ($name:ident, $type:expr, $init:expr) => {
-        static mut $name: $crate::plugin::Plugin = {
-            let mut plugin = $crate::plugin::Plugin::new(
+        static mut $name: $crate::kernel::plugin::Plugin = {
+            let mut plugin = $crate::kernel::plugin::Plugin::new(
                 0,
                 stringify!($name).as_bytes(),
                 $type,
@@ -1086,7 +1087,7 @@ macro_rules! register_plugin {
         #[link_section = ".plugins"]
         static __PLUGIN_REG_ $name: unsafe extern "C" fn() = || {
             // SAFETY: unsafe block required for low-level memory or hardware access
-            let _ = $crate::plugin::plugin_register(unsafe { &mut $name as *mut _ });
+            let _ = $crate::kernel::plugin::plugin_register(unsafe { &mut $name as *mut _ });
         };
     };
 }

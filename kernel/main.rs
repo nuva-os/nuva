@@ -104,7 +104,7 @@ impl KernelState {
 }
 
 /// Global kernel state
-static KERNEL_STATE: core::sync::OnceLock<KernelState> = core::sync::OnceLock::new();
+static KERNEL_STATE: crate::sync_oncelock::OnceLock<KernelState> = crate::sync_oncelock::OnceLock::new();
 
 /// Get kernel state reference
 pub fn kernel_state() -> &'static KernelState {
@@ -141,11 +141,11 @@ fn memory_init() {
     state.total_memory.store(total_memory, Ordering::Release);
     
     // Initialize physical memory management
-    crate::mm::init_phys_mem(total_memory);
-    crate::mm::init_buddy((total_memory / 4096) as u32);
+    crate::kernel::mm::init_phys_mem(total_memory);
+    crate::kernel::mm::init_buddy((total_memory / 4096) as u32);
     
     // Initialize virtual memory
-    crate::mm::init_vm();
+    crate::kernel::mm::init_vm();
     
     log_info!("Memory: {} MB", total_memory / (1024 * 1024));
     log_info!("Memory init complete");
@@ -159,13 +159,13 @@ fn interrupt_init() {
     log_info!("Interrupt initialization...");
     
     // Initialize interrupt controller
-    crate::driver::init_irq_manager();
+    crate::kernel::driver::init_irq_manager();
     
     // Initialize trap handling
     crate::trap::init_trap();
     
     // Initialize system calls
-    crate::syscall::init_syscall();
+    crate::kernel::syscall::init_syscall();
     
     log_info!("Interrupt init complete");
 }
@@ -178,10 +178,10 @@ fn device_init() {
     log_info!("Device initialization...");
     
     // Initialize device manager
-    crate::driver::init_device_manager();
+    crate::kernel::driver::init_device_manager();
     
     // Initialize timer
-    crate::timer::init_timer();
+    crate::kernel::timer::init_timer();
     
     // Initialize time
     crate::time::init_time();
@@ -201,25 +201,25 @@ fn services_init() {
     
     // Initialize scheduler
     let nr_cpus = state.nr_cpus.load(Ordering::Acquire);
-    crate::sched::init_scheduler(nr_cpus);
+    crate::kernel::sched::init_scheduler(nr_cpus);
     
     // Initialize file system
-    crate::fs::init_vfs();
+    crate::kernel::fs::init_vfs();
     
     // Initialize network stack
-    crate::net::init_net_stack();
+    crate::kernel::net::init_net_stack();
     
     // Initialize IPC
-    crate::ipc::init_hybrid_ipc();
+    crate::kernel::ipc::init_hybrid_ipc();
     
     // Initialize BSD compatibility layer
-    crate::bsd::init_bsd_compat();
+    crate::kernel::bsd::init_bsd_compat();
     
     // Initialize power management
     crate::power::init_power_manager(nr_cpus);
     
     // Initialize security module
-    crate::security::init_security();
+    crate::kernel::security::init_security();
     
     log_info!("Services init complete");
 }
@@ -596,7 +596,7 @@ mod allocator {
         
         // Allocate from buddy allocator
         // TODO: Call actual buddy allocator
-        // crate::mm::buddy::alloc_pages(order)
+        // crate::kernel::mm::buddy::alloc_pages(order)
         
         core::ptr::null_mut()
     }
@@ -606,8 +606,8 @@ mod allocator {
     // will return the page to the buddy system.
     unsafe fn buddy_free(ptr: *mut u8, _size: usize) {
         // TODO: Free to buddy allocator
-        // let page = crate::mm::mem_map::virt_to_page(ptr as u64);
-        // crate::mm::buddy::free_page(page);
+        // let page = crate::kernel::mm::mem_map::virt_to_page(ptr as u64);
+        // crate::kernel::mm::buddy::free_page(page);
     }
     
     /// Initialize kernel heap

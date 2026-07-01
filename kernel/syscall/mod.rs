@@ -29,7 +29,8 @@ pub mod nuva_syscall;
 pub mod nv_vulkan_syscall;
 
 #[cfg(feature = "posix")]
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// System call number type
 pub type SyscallNum = u64;
 
@@ -525,7 +526,7 @@ impl SyscallManager {
 }
 
 /// Global syscall manager
-static SYSCALL_MANAGER: core::sync::OnceLock<SyscallManager> = core::sync::OnceLock::new();
+static SYSCALL_MANAGER: crate::sync_oncelock::OnceLock<SyscallManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get syscall manager
 pub fn syscall_manager() -> &'static SyscallManager {
@@ -719,7 +720,7 @@ fn sys_fstat(args: &[u64]) -> i64 {
     }
 
     // Get file from VFS file table
-    let files = crate::kernel::fs::vfs::file::get_global_files();
+    let files = crate::kernel::fs::vfs::file::global_files();
     let file_ref = match files.get_file(fd as u32) {
         Some(f) => f,
         None => return Errno::Ebadf.to_syscall_return(), // EBADF

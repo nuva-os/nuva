@@ -150,6 +150,7 @@ impl NvSchedConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::format;
 
     #[test]
     fn test_sched_policy_no_posix_names() {

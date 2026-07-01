@@ -33,6 +33,7 @@ mod parser_tests {
     use super::*;
     use nuva_lang::parser::parser::Parser;
     use nuva_lang::parser::ast::{ExprKind, ComprehensionExpr};
+use alloc::vec;
 
     #[test]
     fn test_parse_simple_comprehension() {

@@ -31,6 +31,7 @@ use core::fmt;
 use spin::RwLock;
 
 use super::layer::Layer;
+use crate::kernel::error::KernelError;
 
 /// Visibility level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -201,7 +202,7 @@ impl VisibilityManager {
 }
 
 /// Global visibility manager
-static VISIBILITY_MANAGER: core::sync::OnceLock<VisibilityManager> = core::sync::OnceLock::new();
+static VISIBILITY_MANAGER: crate::sync_oncelock::OnceLock<VisibilityManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Initialize visibility manager
 pub fn init_visibility_manager() {

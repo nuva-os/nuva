@@ -30,7 +30,8 @@
  * Only compiled when the "vulkan" feature is enabled.
  */
 
-use crate::types::NuvaError;
+use crate::kernel::types::NuvaError;
+use alloc::vec::Vec;
 
 /// Vulkan result codes (standard VK_RESULT mapping)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

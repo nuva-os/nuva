@@ -21,6 +21,8 @@
 use alloc::collections::BTreeMap;
 use super::ir::*;
 use crate::nuva_lang::parser::ast::*;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Code Generationdevice
 pub struct CodeGenerator {

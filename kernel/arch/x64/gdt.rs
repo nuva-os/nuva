@@ -82,7 +82,7 @@ impl Gdt {
     }
 }
 
-static GDT: core::sync::OnceLock<Gdt> = core::sync::OnceLock::new();
+static GDT: crate::sync_oncelock::OnceLock<Gdt> = crate::sync_oncelock::OnceLock::new();
 
 /// Initialize and load the GDT
 pub fn init_gdt() {
@@ -100,14 +100,14 @@ pub fn init_gdt() {
 
         asm!(
             "lgdt [{}]",
-            "mov ax, {sel:kdata}",
+            "mov ax, {kdata}",
             "mov ds, ax",
             "mov es, ax",
             "mov fs, ax",
             "mov gs, ax",
             "mov ss, ax",
             in(reg) gdtr.as_ptr(),
-            sel:kdata = const KERNEL_DATA,
+            kdata = const KERNEL_DATA,
             out("ax") _,
             options(nostack, preserves_flags)
         );

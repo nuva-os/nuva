@@ -25,6 +25,7 @@ use alloc::vec::Vec;
 
 use super::dom::{DomNode, DomTree, NodeId, NodeType};
 use super::error::WebError;
+use alloc::vec;
 
 /// HTML parser state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

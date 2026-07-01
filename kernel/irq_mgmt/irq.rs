@@ -26,7 +26,9 @@ use crate::pr_info;
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
+use crate::kernel::error::KernelError;
 /// IRQ Number
 pub type IrqNumber = u32;
 
@@ -454,7 +456,7 @@ impl IrqManager {
 }
 
 /// Global IRQ manager
-static IRQ_MANAGER: core::sync::OnceLock<IrqManager> = core::sync::OnceLock::new();
+static IRQ_MANAGER: crate::sync_oncelock::OnceLock<IrqManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IRQ manager
 pub fn irq_manager() -> &'static IrqManager {

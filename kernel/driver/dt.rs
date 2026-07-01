@@ -354,14 +354,14 @@ impl DeviceTree {
 }
 
 /// Global device tree
-static DEVICE_TREE: core::sync::OnceLock<DeviceTree> = core::sync::OnceLock::new();
+static DEVICE_TREE: crate::sync_oncelock::OnceLock<DeviceTree> = crate::sync_oncelock::OnceLock::new();
 
 pub fn device_tree() -> &'static DeviceTree {
     DEVICE_TREE.get_or_init(DeviceTree::new)
 }
 
 pub fn init_device_tree() {
-    let dt = get_device_tree();
+    let dt = device_tree();
     dt.init();
 }
 

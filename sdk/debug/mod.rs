@@ -27,6 +27,8 @@ pub mod stack;
 pub mod dap;
 
 use crate::error::SdkError;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Debugger
 pub struct Debugger {

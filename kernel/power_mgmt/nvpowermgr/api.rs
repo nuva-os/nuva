@@ -27,6 +27,7 @@
 use crate::kernel::error::KernelResult;
 use crate::kernel::power_mgmt::nvpowermgr::{NvPowerMgr, get_nv_powermgr};
 use crate::kernel::power_mgmt::nvpowermgr::stats::get_nv_powermgr_stats;
+use crate::kernel::error::KernelError;
 
 /// NuvaCapabilityId type
 pub type NuvaCapabilityId = u64;

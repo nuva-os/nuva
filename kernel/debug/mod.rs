@@ -19,7 +19,7 @@
 //! Kernel debug module
 
 // Re-export print macros from crate root
-pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info, pr_debug};
+// pr_* macros are automatically exported to crate root by #[macro_export]
 pub mod perf;
 pub mod printk;
 pub mod tracing;
@@ -28,7 +28,7 @@ pub mod tracing;
 pub use tracing::{
     DebugEvent, DebugEventType, DebugEventData, FuncData, MemData, LockData,
     IrqData, SchedData, SyscallData, DebugBuffer, Breakpoint, BreakpointType,
-    Watchpoint, DebugManager, DebugStats, get_debug_manager,
+    Watchpoint, DebugManager, DebugStats, debug_manager,
 };
 
 /// Initialize debug module

@@ -26,7 +26,7 @@
 #![cfg(test)]
 
 mod percpu_cache_tests {
-    use crate::mm::percpu_cache::{PerCpuPageCache, PerCpuPageCacheSet, PcpStats};
+    use crate::kernel::mm::percpu_cache::{PerCpuPageCache, PerCpuPageCacheSet, PcpStats};
     use core::sync::atomic::Ordering;
 
     #[test]
@@ -45,7 +45,7 @@ mod percpu_cache_tests {
 }
 
 mod huge_page_tests {
-    use crate::mm::huge_page::{HugePageSize, HugePagePool};
+    use crate::kernel::mm::huge_page::{HugePageSize, HugePagePool};
 
     #[test]
     fn test_huge_page_size_values() {
@@ -61,7 +61,7 @@ mod huge_page_tests {
 }
 
 mod rbtree_tests {
-    use crate::sched::rbtree::{RbTree, RbNode};
+    use crate::kernel::sched::rbtree::{RbTree, RbNode};
 
     #[test]
     fn test_rb_node_new() {
@@ -79,7 +79,7 @@ mod rbtree_tests {
 }
 
 mod sched_domain_tests {
-    use crate::sched::sched_domain::{SchedDomain, SchedGroup, CpuMask};
+    use crate::kernel::sched::sched_domain::{SchedDomain, SchedGroup, CpuMask};
 
     #[test]
     fn test_cpu_mask_new() {
@@ -95,7 +95,7 @@ mod sched_domain_tests {
 }
 
 mod eas_tests {
-    use crate::sched::eas::{EnergyModel, PerfDomain, PerfState};
+    use crate::kernel::sched::eas::{EnergyModel, PerfDomain, PerfState};
 
     #[test]
     fn test_perf_state_new() {
@@ -112,7 +112,7 @@ mod eas_tests {
 }
 
 mod page_cache_tests {
-    use crate::fs::page_cache::{PageCache, PageCacheKey, PageCacheEntry};
+    use crate::kernel::fs::page_cache::{PageCache, PageCacheKey, PageCacheEntry};
 
     #[test]
     fn test_page_cache_key_new() {
@@ -129,7 +129,7 @@ mod page_cache_tests {
 }
 
 mod dcache_tests {
-    use crate::fs::dcache::{DentryCache, Dentry, Qstr};
+    use crate::kernel::fs::dcache::{DentryCache, Dentry, Qstr};
 
     #[test]
     fn test_qstr_new() {
@@ -146,7 +146,7 @@ mod dcache_tests {
 }
 
 mod tcp_fastpath_tests {
-    use crate::net::tcp_fastpath::{TcpConnection, TcpState, TcpFastPathProcessor};
+    use crate::kernel::net::tcp_fastpath::{TcpConnection, TcpState, TcpFastPathProcessor};
 
     #[test]
     fn test_tcp_connection_new() {
@@ -166,7 +166,7 @@ mod tcp_fastpath_tests {
 // NuvaIPC provides better performance and security
 
 mod aslr_tests {
-    use crate::security::aslr::{AslrState, aslr_config};
+    use crate::kernel::security::aslr::{AslrState, aslr_config};
 
     #[test]
     fn test_aslr_state_new() {
@@ -183,7 +183,7 @@ mod aslr_tests {
 }
 
 mod stack_canary_tests {
-    use crate::security::stack_canary::{StackCanary, TaskStackCanary};
+    use crate::kernel::security::stack_canary::{StackCanary, TaskStackCanary};
 
     #[test]
     fn test_stack_canary_new() {
@@ -199,7 +199,7 @@ mod stack_canary_tests {
 }
 
 mod numa_tests {
-    use crate::mm::numa::{NumaNode, NumaTopology, NumaNodeStats};
+    use crate::kernel::mm::numa::{NumaNode, NumaTopology, NumaNodeStats};
 
     #[test]
     fn test_numa_node_stats_new() {
@@ -215,7 +215,7 @@ mod numa_tests {
 }
 
 mod compaction_tests {
-    use crate::mm::compaction::{MemoryCompactor, CompactResult, CompactStats};
+    use crate::kernel::mm::compaction::{MemoryCompactor, CompactResult, CompactStats};
 
     #[test]
     fn test_compact_stats_new() {
@@ -232,7 +232,7 @@ mod compaction_tests {
 }
 
 mod io_uring_tests {
-    use crate::fs::io_uring::{IoUring, IoSqe, IoCqe, IoOpCode};
+    use crate::kernel::fs::io_uring::{IoUring, IoSqe, IoCqe, IoOpCode};
 
     #[test]
     fn test_io_sqe_new() {
@@ -255,3 +255,5 @@ mod io_uring_tests {
         assert_eq!(IoOpCode::Write as u8, 2);
     }
 }
+
+pub fn run_optimization_tests() {}

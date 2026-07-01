@@ -22,10 +22,10 @@
 // ! theModuleImplementationProcessmanagementadministrationSystemtuneuseandKernelProcessmanagementadministrationChildSystem collectionsuccess
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use crate::user::task::{Process, Thread, TaskManager, ProcessState, ProcessPriority, ThreadState};
-use crate::user::user::{Uid, Gid};
-use crate::fs::vfs::file::FilesStruct;
-use crate::mm::address_space::{AddressSpace, create_address_space, copy_address_space, destroy_address_space};
+use crate::kernel::user::task::{Process, Thread, TaskManager, ProcessState, ProcessPriority, ThreadState};
+use crate::kernel::user::user::{Uid, Gid};
+use crate::kernel::fs::vfs::file::FilesStruct;
+use crate::kernel::mm::address_space::{AddressSpace, create_address_space, copy_address_space, destroy_address_space};
 
 /// ELF magic number
 const ELF_MAGIC: u32 = 0x7F454C46;
@@ -637,8 +637,8 @@ fn validate_elf_header(filename: &str) -> Result<Elf64Ehdr, i64> {
  };
 
  // Open the ELF file via VFS
- let _vfs = crate::fs::vfs::file::get_global_files();
- let fd = crate::fs::vfs::file::open(filename, crate::fs::vfs::open_flags::O_RDONLY, 0);
+ let _vfs = crate::kernel::fs::vfs::file::global_files();
+ let fd = crate::kernel::fs::vfs::file::open(filename, crate::kernel::fs::vfs::open_flags::O_RDONLY, 0);
  if fd < 0 {
  log_error!("validate_elf_header: failed to open {}", filename);
  return Err(errno::ENOENT);
@@ -647,13 +647,13 @@ fn validate_elf_header(filename: &str) -> Result<Elf64Ehdr, i64> {
  // Read ELF header (64 bytes)
  let header_bytes = core::mem::size_of::<Elf64Ehdr>();
  let mut buf = [0u8; 64];
- let nread = crate::fs::vfs::file::read(fd as u32, &mut buf);
+ let nread = crate::kernel::fs::vfs::file::read(fd as u32, &mut buf);
  if nread < 0 || (nread as usize) < header_bytes {
  log_error!("validate_elf_header: failed to read ELF header");
- crate::fs::vfs::file::close(fd as u32);
+ crate::kernel::fs::vfs::file::close(fd as u32);
  return Err(errno::ENOEXEC);
  }
- crate::fs::vfs::file::close(fd as u32);
+ crate::kernel::fs::vfs::file::close(fd as u32);
 
  // Copy bytes into header structure
  // SAFETY: buf has exactly sizeof(Elf64Ehdr) valid bytes
@@ -699,7 +699,7 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
  log_debug!("load_elf_segments: loading {} segments", phnum);
 
  // Open the ELF file to read program headers
- let fd = crate::fs::vfs::file::open(filename, crate::fs::vfs::open_flags::O_RDONLY, 0);
+ let fd = crate::kernel::fs::vfs::file::open(filename, crate::kernel::fs::vfs::open_flags::O_RDONLY, 0);
  if fd < 0 {
  return Err(errno::ENOENT);
  }
@@ -710,16 +710,16 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
  // Read program header from file
  let phdr_offset = ehdr.e_phoff + (i as u64) * (ehdr.e_phentsize as u64);
  let mut phdr_buf = [0u8; 56]; // sizeof(Elf64Phdr)
- let seek_result = crate::fs::vfs::file::lseek(fd as u32, phdr_offset as i64, 0);
+ let seek_result = crate::kernel::fs::vfs::file::lseek(fd as u32, phdr_offset as i64, 0);
  if seek_result < 0 {
  log_error!("load_elf_segments: failed to seek to phdr {}", i);
- crate::fs::vfs::file::close(fd as u32);
+ crate::kernel::fs::vfs::file::close(fd as u32);
  return Err(errno::ENOEXEC);
  }
- let nread = crate::fs::vfs::file::read(fd as u32, &mut phdr_buf);
+ let nread = crate::kernel::fs::vfs::file::read(fd as u32, &mut phdr_buf);
  if nread < 0 || (nread as usize) < core::mem::size_of::<Elf64Phdr>() {
  log_error!("load_elf_segments: failed to read phdr {}", i);
- crate::fs::vfs::file::close(fd as u32);
+ crate::kernel::fs::vfs::file::close(fd as u32);
  return Err(errno::ENOEXEC);
  }
 
@@ -747,12 +747,12 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
  }
 
  // Determine VMA protection flags from p_flags
- let mut vma_flags: u64 = crate::mm::address_space::vm_flags::VM_READ;
+ let mut vma_flags: u64 = crate::kernel::mm::address_space::vm_flags::VM_READ;
  if (phdr.p_flags & PF_W) != 0 {
- vma_flags |= crate::mm::address_space::vm_flags::VM_WRITE;
+ vma_flags |= crate::kernel::mm::address_space::vm_flags::VM_WRITE;
  }
  if (phdr.p_flags & PF_X) != 0 {
- vma_flags |= crate::mm::address_space::vm_flags::VM_EXEC;
+ vma_flags |= crate::kernel::mm::address_space::vm_flags::VM_EXEC;
  }
 
  // Map segment into address space
@@ -764,9 +764,9 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
 
  if map_size > 0 {
  // Map anonymous pages for this segment
- let mmap_flags = crate::mm::mmap::MmapFlags::MAP_FIXED.bits()
- | crate::mm::mmap::MmapFlags::MAP_ANONYMOUS.bits();
- let _mmap_result = crate::mm::mmap::sys_mmap(
+ let mmap_flags = crate::kernel::mm::mmap::MmapFlags::MAP_FIXED.bits()
+ | crate::kernel::mm::mmap::MmapFlags::MAP_ANONYMOUS.bits();
+ let _mmap_result = crate::kernel::mm::mmap::sys_mmap(
  map_start,
  map_size as usize,
  vma_flags as i32,
@@ -777,7 +777,7 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
 
  // Read file data into mapped memory if filesz > 0
  if phdr.p_filesz > 0 {
- let data_seek = crate::fs::vfs::file::lseek(fd as u32, phdr.p_offset as i64, 0);
+ let data_seek = crate::kernel::fs::vfs::file::lseek(fd as u32, phdr.p_offset as i64, 0);
  if data_seek >= 0 {
  // SAFETY: map_start is a valid user virtual address from mmap
  unsafe {
@@ -788,7 +788,7 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
  while remaining > 0 {
  let to_read = core::cmp::min(remaining, chunk_size);
  let mut tmp = [0u8; 4096];
- let nr = crate::fs::vfs::file::read(fd as u32, &mut tmp[..to_read]);
+ let nr = crate::kernel::fs::vfs::file::read(fd as u32, &mut tmp[..to_read]);
  if nr <= 0 {
  break;
  }
@@ -816,7 +816,7 @@ fn load_elf_segments(ehdr: &Elf64Ehdr, mm: &AddressSpace, filename: &str) -> Res
  }
  }
 
- crate::fs::vfs::file::close(fd as u32);
+ crate::kernel::fs::vfs::file::close(fd as u32);
  Ok(entry_point)
 }
 
@@ -886,10 +886,10 @@ pub fn do_exit(status: i32) -> i64 {
  // This decrements the file's reference count; if it reaches zero,
  // the file is truly closed.
  {
- let files = crate::fs::vfs::file::get_global_files();
+ let files = crate::kernel::fs::vfs::file::global_files();
  for fd in 0..256u32 {
  if files.get_file(fd).is_some() {
- crate::fs::vfs::file::close(fd);
+ crate::kernel::fs::vfs::file::close(fd);
  }
  }
  }
@@ -1052,7 +1052,7 @@ fn reap_child(pid: u32) -> i32 {
  // 3. Free the task struct resources
  // 4. Free PID via free_pid
  log_debug!("reap_child: pid={}", pid);
- crate::sched::task::free_pid(pid);
+ crate::kernel::sched::task::free_pid(pid);
  0
 }
 
@@ -1284,6 +1284,6 @@ pub fn do_getpgid(pid: i32) -> i64 {
 /// sched_yield Implementation - letexit CPU
 pub fn do_sched_yield() -> i64 {
  log_debug!("do_sched_yield");
- crate::sched::yield_cpu();
+ crate::kernel::sched::yield_cpu();
  errno::ESUCCESS
 }

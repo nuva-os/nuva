@@ -302,7 +302,7 @@ impl BlockDeviceManager {
 }
 
 /// Global block device manager
-static BLOCK_DEVICE_MANAGER: core::sync::OnceLock<BlockDeviceManager> = core::sync::OnceLock::new();
+static BLOCK_DEVICE_MANAGER: crate::sync_oncelock::OnceLock<BlockDeviceManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn block_device_manager() -> &'static BlockDeviceManager {
     BLOCK_DEVICE_MANAGER.get_or_init(BlockDeviceManager::new)

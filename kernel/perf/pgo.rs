@@ -19,7 +19,8 @@
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use alloc::vec::Vec;
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Maximum profiled functions
 const PGO_MAX_FUNCTIONS: usize = 4096;
 
@@ -399,7 +400,7 @@ impl PgoProfile {
 }
 
 /// Global PGO profile
-static PGO_PROFILE: core::sync::OnceLock<PgoProfile> = core::sync::OnceLock::new();
+static PGO_PROFILE: crate::sync_oncelock::OnceLock<PgoProfile> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global PGO profile
 pub fn pgo_profile() -> &'static PgoProfile {
@@ -408,21 +409,21 @@ pub fn pgo_profile() -> &'static PgoProfile {
 
 /// Record a branch outcome in PGO
 pub fn pgo_record_branch(src_addr: u64, target_addr: u64, taken: bool) -> i32 {
-    get_pgo_profile().record_branch(src_addr, target_addr, taken)
+    pgo_profile().record_branch(src_addr, target_addr, taken)
 }
 
 /// Record a call in PGO
 pub fn pgo_record_call(call_stack: &[u64]) -> i32 {
-    get_pgo_profile().record_call_path(call_stack)
+    pgo_profile().record_call_path(call_stack)
 }
 
 /// Dump PGO profile data
 pub fn pgo_dump_profile() -> Vec<u8> {
-    get_pgo_profile().dump_profile()
+    pgo_profile().dump_profile()
 }
 
 /// Initialize PGO subsystem
 pub fn init_pgo() {
-    let profile = get_pgo_profile();
+    let profile = pgo_profile();
     profile.reset();
 }

@@ -358,6 +358,7 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_hybrid_kem_new() {

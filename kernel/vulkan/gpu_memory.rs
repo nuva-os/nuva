@@ -28,7 +28,7 @@
  */
 
 use core::sync::atomic::{AtomicU64, Ordering};
-use crate::types::NuvaError;
+use crate::kernel::types::NuvaError;
 use super::gpu_capability::NvGpuCapability;
 
 bitflags::bitflags! {

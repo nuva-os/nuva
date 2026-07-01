@@ -429,14 +429,10 @@ impl PmManager {
 }
 
 /// Global PM manager
-static PM_MANAGER: core::sync::OnceLock<PmManager> = core::sync::OnceLock::new();
+static PM_MANAGER: crate::sync_oncelock::OnceLock<PmManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get PM manager
 pub fn pm_manager() -> &'static PmManager {
-    PM_MANAGER.get_or_init(PmManager::new)
-}
-
-pub fn init_pm_manager() -> &'static PmManager {
     PM_MANAGER.get_or_init(PmManager::new)
 }
 

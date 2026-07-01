@@ -20,6 +20,8 @@
 
 use std::path::PathBuf;
 use super::elf::{ElfFile, Section, Symbol};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// targetFile
 #[derive(Debug, Clone)]

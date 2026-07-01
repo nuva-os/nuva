@@ -607,7 +607,7 @@ impl PageFaultHandler {
 }
 
 /// Global page fault handler
-static PAGE_FAULT_HANDLER: core::sync::OnceLock<PageFaultHandler> = core::sync::OnceLock::new();
+static PAGE_FAULT_HANDLER: crate::sync_oncelock::OnceLock<PageFaultHandler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get page fault handler
 pub fn page_fault_handler() -> &'static PageFaultHandler {
@@ -616,7 +616,7 @@ pub fn page_fault_handler() -> &'static PageFaultHandler {
 
 /// Initialize page fault handler
 pub fn init_page_fault() {
-    let handler = get_page_fault_handler();
+    let handler = page_fault_handler();
     handler.init();
 }
 
@@ -625,14 +625,14 @@ pub fn do_user_page_fault(address: u64, error_code: u32) -> FaultResult {
     let mut ctx = FaultContext::new(address, error_code);
     ctx.flags |= fault_flags::USER;
     
-    get_page_fault_handler().handle_fault(&mut ctx)
+    page_fault_handler().handle_fault(&mut ctx)
 }
 
 /// Handle kernel space page fault
 pub fn do_kernel_page_fault(address: u64, error_code: u32) -> FaultResult {
     let mut ctx = FaultContext::new(address, error_code);
     
-    get_page_fault_handler().handle_fault(&mut ctx)
+    page_fault_handler().handle_fault(&mut ctx)
 }
 
 /// ARM64 specific page fault handler

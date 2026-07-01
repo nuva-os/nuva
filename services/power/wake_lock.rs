@@ -201,7 +201,7 @@ impl NuvaPolicyManager {
 }
 
 /** Global Nuva policy manager instance. */
-static NUVA_POLICY_MANAGER: core::sync::OnceLock<NuvaPolicyManager> = core::sync::OnceLock::new();
+static NUVA_POLICY_MANAGER: crate::sync_oncelock::OnceLock<NuvaPolicyManager> = crate::sync_oncelock::OnceLock::new();
 
 /** Get a reference to the global Nuva policy manager. */
 pub fn get_nuva_policy_manager() -> &'static NuvaPolicyManager {

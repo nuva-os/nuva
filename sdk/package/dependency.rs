@@ -19,6 +19,8 @@
 // ! dependencyfixedmeaning
 
 use super::meta::{Dependency, Version, VersionReq, DependencySource};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// dependencydiagram
 #[derive(Debug, Default)]

@@ -231,7 +231,7 @@ impl CommandQueueManager {
 }
 
 /// Global command queue manager
-static QUEUE_MANAGER: core::sync::OnceLock<CommandQueueManager> = core::sync::OnceLock::new();
+static QUEUE_MANAGER: crate::sync_oncelock::OnceLock<CommandQueueManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_queue_manager() -> &'static mut CommandQueueManager {
     // SAFETY: unsafe block required for low-level memory or hardware access

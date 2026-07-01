@@ -20,6 +20,8 @@
 
 use super::{Test, TestConfig, TestKind, TestMetadata, TestOutcome};
 use std::path::PathBuf;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// receivecollectionendtoendTesting
 pub fn collect_e2e_tests(config: &TestConfig) -> Vec<Test> {

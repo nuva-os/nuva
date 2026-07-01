@@ -21,7 +21,8 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Maximum number of CPUs
 pub const MAX_NR_CPUS: usize = 16;
 
@@ -531,7 +532,7 @@ impl LoadBalancer {
 }
 
 /// Global load balancer
-static LOAD_BALANCER: core::sync::OnceLock<LoadBalancer> = core::sync::OnceLock::new();
+static LOAD_BALANCER: crate::sync_oncelock::OnceLock<LoadBalancer> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the load balancer
 pub fn load_balancer() -> &'static LoadBalancer {
@@ -540,5 +541,5 @@ pub fn load_balancer() -> &'static LoadBalancer {
 
 /// Initialize scheduling domains
 pub fn init_sched_domains(nr_cpus: u32) {
-    get_load_balancer().init(nr_cpus);
+    load_balancer().init(nr_cpus);
 }

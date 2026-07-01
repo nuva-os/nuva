@@ -22,6 +22,8 @@ use super::meta::{Package, Dependency, Version};
 use super::dependency::{DependencyGraph, DepNode};
 use super::registry::{PackageRegistry, CentralRegistry};
 use crate::error::SdkError;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Dependency resolver with registry backend
 pub struct DependencyResolver {

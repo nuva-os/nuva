@@ -25,6 +25,7 @@
  */
 
 use super::component_impl::{Element, ComponentType, ComponentProps, LayoutResult};
+use alloc::vec::Vec;
 
 /** Maximum component tree depth. */
 pub const MAX_COMPONENT_DEPTH: u32 = 64;

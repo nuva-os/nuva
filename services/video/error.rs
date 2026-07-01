@@ -19,6 +19,7 @@
 //! Video service specific error types and video data types.
 
 use core::fmt;
+use alloc::vec::Vec;
 
 /// Video service error type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

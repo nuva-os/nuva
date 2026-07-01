@@ -100,10 +100,10 @@ impl NdpPlugin {
 }
 
 /// Global NDP plugin instance
-static NDP_PLUGIN: core::sync::OnceLock<NdpPlugin> = core::sync::OnceLock::new();
+static NDP_PLUGIN: crate::sync_oncelock::OnceLock<NdpPlugin> = crate::sync_oncelock::OnceLock::new();
 
 /// Initialize the NDP subsystem with default configuration
-pub fn init_ndp() -> KernelResult<&"static NdpPlugin> {
+pub fn init_ndp() -> KernelResult<&'static NdpPlugin> {
     NDP_PLUGIN.get_or_init(|| {
         let mut plugin = NdpPlugin::new();
         let _ = plugin.init();

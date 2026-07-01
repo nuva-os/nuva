@@ -30,6 +30,8 @@ use super::record::{
     TOMBSTONE_MAX_FILE_SIZE,
 };
 use super::stats::TombstoneStats;
+use alloc::format;
+use alloc::vec::Vec;
 
 // ---------------------------------------------------------------------------
 // TombstoneIndexEntry

@@ -246,7 +246,7 @@ impl PerfStats {
 }
 
 /// Global performance statistics
-static PERF_STATS: core::sync::OnceLock<PerfStats> = core::sync::OnceLock::new();
+static PERF_STATS: crate::sync_oncelock::OnceLock<PerfStats> = crate::sync_oncelock::OnceLock::new();
 
 /// Get performance statistics
 pub fn get_perf_stats() -> &'static PerfStats {
@@ -322,7 +322,7 @@ impl PerfTimer {
 #[macro_export]
 macro_rules! perf_event {
     ($event_type:expr) => {
-        let _timer = $crate::debug::perf::PerfTimer::start();
+        let _timer = $crate::kernel::debug::perf::PerfTimer::start();
     };
 }
 
@@ -331,7 +331,7 @@ macro_rules! perf_event {
 macro_rules! perf_event_record {
     ($event_type:expr, $code:block) => {
         {
-            let timer = $crate::debug::perf::PerfTimer::start();
+            let timer = $crate::kernel::debug::perf::PerfTimer::start();
             let result = $code;
             timer.stop_and_record($event_type);
             result

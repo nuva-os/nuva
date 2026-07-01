@@ -307,7 +307,7 @@ fn breakpoint_handler(frame: &TrapFrame) {
 }
 
 /// GlobalExceptionform
-static EXCEPTION_TABLE: core::sync::OnceLock<ExceptionTable> = core::sync::OnceLock::new();
+static EXCEPTION_TABLE: crate::sync_oncelock::OnceLock<ExceptionTable> = crate::sync_oncelock::OnceLock::new();
 
 /// GetExceptionform
 pub fn exception_table() -> &'static ExceptionTable {
@@ -316,7 +316,7 @@ pub fn exception_table() -> &'static ExceptionTable {
 
 /// InitializeTrapHandle
 pub fn init_trap() {
- let table = get_exception_table();
+ let table = exception_table();
  
  // RegisterExceptionHandleFunction
  table.register(ExceptionType::DivideError as u8, divide_error_handler);
@@ -330,7 +330,7 @@ pub fn init_trap() {
 
 /// TrapHandleenterport
 pub fn trap_handler(frame: &mut TrapFrame) {
- let table = get_exception_table();
+ let table = exception_table();
  table.handle(frame);
 }
 

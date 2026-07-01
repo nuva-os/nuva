@@ -458,6 +458,7 @@ impl GpuFenceManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
     #[test]
     fn test_timeline_fence() {
         let tl = TimelineFence::new(0, 0xF630_0000);

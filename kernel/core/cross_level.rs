@@ -32,6 +32,7 @@
 
 use crate::kernel::types::NvPrivilegeLevel;
 use crate::kernel::error::{KernelError, KernelResult};
+use alloc::vec::Vec;
 
 /// Cross-level access type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

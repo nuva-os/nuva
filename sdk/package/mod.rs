@@ -27,6 +27,8 @@ pub mod lock_file;
 pub mod validator;
 
 use crate::error::SdkError;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Package manager
 pub struct PackageManager {

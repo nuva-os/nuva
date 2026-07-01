@@ -29,10 +29,12 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, AtomicPtr, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
-use crate::mm::mem_map::{Zone, ZoneType};
-use crate::mm::complete_mem_map::{get_mem_map_manager, MemMapManager};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys}
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages}
+use crate::kernel::mm::page_flags
+use crate::kernel::mm::Page;
+use crate::kernel::mm::complete_mem_map::{get_mem_map_manager, MemMapManager};
 
 /// Error codes
 pub mod errno {
@@ -63,7 +65,7 @@ pub struct NumaNode {
     /// mem_map array
     pub mem_map: *mut Page,
     /// Memory regions (zones)
-    pub zones: [Option<Zone>; 4],
+    pub zones: [Option<ZoneType>; 4],
     /// Distance matrix (distance to other nodes)
     pub distances: [u32; 16],
     /// CPU list
@@ -1010,13 +1012,13 @@ pub struct SchedulerStats {
 // ============================================================================
 
 /// Global NUMA manager instance
-static NUMA_MANAGER: core::sync::OnceLock<NumaManager> = core::sync::OnceLock::new();
+static NUMA_MANAGER: crate::sync_oncelock::OnceLock<NumaManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Global COW manager instance
-static COW_MANAGER: core::sync::OnceLock<CowManager> = core::sync::OnceLock::new();
+static COW_MANAGER: crate::sync_oncelock::OnceLock<CowManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Global scheduler instance
-static SCHEDULER: core::sync::OnceLock<Scheduler> = core::sync::OnceLock::new();
+static SCHEDULER: crate::sync_oncelock::OnceLock<Scheduler> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the NUMA manager instance
 pub fn numa_manager() -> &'static NumaManager {
@@ -1052,7 +1054,7 @@ pub fn init_core_features() {
     cow_manager().init();
 
     // Initialize scheduler
-    get_scheduler().init();
+    scheduler().init();
 
     log_info!("Core features initialized");
 }
@@ -1076,7 +1078,7 @@ pub fn print_core_stats() {
     log_info!("    COW copies: {}", cow_stats.cow_copies);
 
     // Scheduler statistics
-    let scheduler = get_scheduler();
+    let scheduler = scheduler();
     let scheduler_stats = scheduler.get_stats();
     log_info!("  Scheduler:");
     log_info!("    Total processes: {}", scheduler_stats.total_processes);

@@ -283,14 +283,10 @@ impl MfdManager {
 }
 
 /// Global MFD manager
-static MFD_MANAGER: core::sync::OnceLock<MfdManager> = core::sync::OnceLock::new();
+static MFD_MANAGER: crate::sync_oncelock::OnceLock<MfdManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get MFD manager
 pub fn mfd_manager() -> &'static MfdManager {
-    MFD_MANAGER.get_or_init(MfdManager::new)
-}
-
-pub fn init_mfd_manager() -> &'static MfdManager {
     MFD_MANAGER.get_or_init(MfdManager::new)
 }
 

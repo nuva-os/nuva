@@ -443,7 +443,7 @@ impl Default for VmxManager {
 }
 
 /// Global VMX manager
-static VMX_MANAGER: core::sync::OnceLock<VmxManager> = core::sync::OnceLock::new();
+static VMX_MANAGER: crate::sync_oncelock::OnceLock<VmxManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get VMX manager
 pub fn vmx_manager() -> &'static VmxManager {

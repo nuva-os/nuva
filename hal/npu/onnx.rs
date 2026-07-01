@@ -846,6 +846,7 @@ pub fn init_onnx() -> Result<(), NpuError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_onnx_header() {

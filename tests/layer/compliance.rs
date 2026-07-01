@@ -27,6 +27,7 @@
 #[cfg(test)]
 mod tests {
     use crate::kernel::arch::layer::*;
+use alloc::format;
 
     /// Test layer ordering
     #[test]

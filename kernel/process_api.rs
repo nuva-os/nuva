@@ -57,7 +57,7 @@
 // ! - assetsourcemanagementadministration
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use crate::arch::{PhysAddr, VirtAddr, CpuContext};
+use crate::kernel::arch::{PhysAddr, VirtAddr, CpuContext};
 
 /// ProcessIDType
 pub type Pid = u32;

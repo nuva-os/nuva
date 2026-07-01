@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 use crate::{pr_info};
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
 /*
  * Nuva OS - Kernel - Notifier Chain
  * 
@@ -26,6 +26,8 @@ use crate::posix::errno::Errno;
  */
 
 use core::sync::atomic::{AtomicU32, AtomicPtr, Ordering};
+use crate::kernel::error::Errno;
+use alloc::boxed::Box;
 
 /// Notifier Return Values
 pub const NOTIFY_OK: i32 = 0x0001;
@@ -345,7 +347,7 @@ impl NotifierManager {
 }
 
 /// Global notifier manager
-static EVENT_BUS: core::sync::OnceLock<NotifierManager> = core::sync::OnceLock::new();
+static EVENT_BUS: crate::sync_oncelock::OnceLock<NotifierManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get notifier manager
 pub fn notifier_manager() -> &'static NotifierManager {

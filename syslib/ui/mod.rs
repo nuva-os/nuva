@@ -26,6 +26,10 @@ pub mod component;
 pub mod state;
 /** Layout utilities. */
 pub mod layout;
+/** Window management. */
+pub mod window;
+/** View system. */
+pub mod view;
 
 /** Initialize UI Library. */
 pub fn init_ui() {}

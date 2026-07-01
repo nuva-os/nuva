@@ -23,7 +23,7 @@
  * Neural network activation function implementations.
  */
 
-use crate::nuva_brain::inference::tensor::{Tensor, TensorShape, DataType, TensorOps};
+use crate::syslib::brain::inference::tensor::{Tensor, TensorShape, DataType, TensorOps};
 
 /// ReLU Activation Function
 pub struct ReLU;

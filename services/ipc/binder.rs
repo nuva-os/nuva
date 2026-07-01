@@ -153,7 +153,7 @@ impl NuvaIpcService {
 }
 
 /** Global Nuva IPC service instance. */
-static NUVAC_IPC_SERVICE: core::sync::OnceLock<NuvaIpcService> = core::sync::OnceLock::new();
+static NUVAC_IPC_SERVICE: crate::sync_oncelock::OnceLock<NuvaIpcService> = crate::sync_oncelock::OnceLock::new();
 
 /** Get a reference to the global Nuva IPC service. */
 pub fn get_nuva_ipc_service() -> &'static NuvaIpcService {
@@ -164,4 +164,8 @@ pub fn get_nuva_ipc_service() -> &'static NuvaIpcService {
 pub fn init_nuva_ipc_service() {
     let service = get_nuva_ipc_service();
     service.init();
+}
+
+pub fn init_binder() {
+    init_nuva_ipc_service();
 }

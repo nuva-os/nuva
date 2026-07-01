@@ -25,6 +25,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use hal::quantum::pqc::*;
+use alloc::format;
 
 // Kyber benchmarks
 fn kyber_benchmarks(c: &mut Criterion) {

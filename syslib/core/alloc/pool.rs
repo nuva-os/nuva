@@ -287,7 +287,7 @@ impl PoolManager {
         // Size too large for pool, allocate directly from system allocator
         let layout = alloc::alloc::Layout::from_size_align(size, 8).unwrap_or_else(|_| alloc::alloc::Layout::new::<u8>());
         // SAFETY: unsafe block required for low-level memory or hardware access
-        let ptr = unsafe { alloc::alloc::alloc(layout) };
+        let ptr = unsafe { alloc::alloc::alloc_layout(layout) };
         if ptr.is_null() {
             ptr::null_mut()
         } else {
@@ -315,7 +315,7 @@ impl PoolManager {
         // Large allocation, free directly to system allocator
         let layout = alloc::alloc::Layout::from_size_align(size, 8).unwrap_or_else(|_| alloc::alloc::Layout::new::<u8>());
         // SAFETY: unsafe block required for low-level memory or hardware access
-        unsafe { alloc::alloc::dealloc(ptr, layout); }
+        unsafe { alloc::alloc::dealloc_layout(ptr, layout); }
         self.stats.allocated.fetch_sub(1, Ordering::Relaxed);
     }
 

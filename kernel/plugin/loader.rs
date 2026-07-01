@@ -919,6 +919,7 @@ mod hosted_compat {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_elf_validation_too_small() {

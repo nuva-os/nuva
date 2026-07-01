@@ -135,6 +135,7 @@ mod exhaustiveness_tests {
 
 mod pattern_space_tests {
     use super::*;
+use alloc::vec;
 
     #[test]
     fn test_pattern_space_from_wildcard() {

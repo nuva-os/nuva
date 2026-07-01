@@ -197,69 +197,6 @@ macro_rules! printk {
  };
 }
 
-/// emergency log
-#[macro_export]
-macro_rules! log_emerg {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_emerg(format_args!($($arg)*))
- };
-}
-
-/// alert log
-#[macro_export]
-macro_rules! log_alert {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_alert(format_args!($($arg)*))
- };
-}
-
-/// critical log
-#[macro_export]
-macro_rules! log_crit {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_crit(format_args!($($arg)*))
- };
-}
-
-/// error log
-#[macro_export]
-macro_rules! log_error {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_err(format_args!($($arg)*))
- };
-}
-
-/// warning log
-#[macro_export]
-macro_rules! log_warn {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_warn(format_args!($($arg)*))
- };
-}
-
-/// notice log
-#[macro_export]
-macro_rules! log_notice {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_notice(format_args!($($arg)*))
- };
-}
-
-/// info log
-#[macro_export]
-macro_rules! log_info {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_info(format_args!($($arg)*))
- };
-}
-
-/// debug log
-#[macro_export]
-macro_rules! log_debug {
- ($($arg:tt)*) => {
- $crate::kernel::debug::printk::printk_debug(format_args!($($arg)*))
- };
-}
 
 /// Hex dump
 pub fn hex_dump(prefix: &str, data: &[u8]) {

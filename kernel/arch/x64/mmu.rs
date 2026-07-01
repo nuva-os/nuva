@@ -193,7 +193,7 @@ pub fn create_next_level(entry: &mut PageTableEntry) -> u64 {
     if entry.is_present() {
         entry.get_phys()
     } else {
-        let next_phys = crate::mm::page_alloc::alloc_page().as_u64();
+        let next_phys = crate::kernel::mm::page_alloc::alloc_page().as_u64();
         clear_page_table(next_phys);
         *entry = PageTableEntry::create_table(next_phys);
         next_phys

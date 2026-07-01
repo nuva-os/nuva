@@ -348,14 +348,10 @@ impl PinctrlManager {
 }
 
 /// Global pin control manager
-static PINCTRL_MANAGER: core::sync::OnceLock<PinctrlManager> = core::sync::OnceLock::new();
+static PINCTRL_MANAGER: crate::sync_oncelock::OnceLock<PinctrlManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get pin control manager
 pub fn pinctrl_manager() -> &'static PinctrlManager {
-    PINCTRL_MANAGER.get_or_init(PinctrlManager::new)
-}
-
-pub fn init_pinctrl_manager() -> &'static PinctrlManager {
     PINCTRL_MANAGER.get_or_init(PinctrlManager::new)
 }
 

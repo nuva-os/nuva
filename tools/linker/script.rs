@@ -20,6 +20,8 @@
 
 use std::path::PathBuf;
 use super::elf::Section;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// linkacceptScript
 #[derive(Debug, Clone)]

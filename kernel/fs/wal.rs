@@ -229,7 +229,7 @@ impl WalManager {
 }
 
 /// Global WAL manager
-static WAL_MANAGER: core::sync::OnceLock<WalManager> = core::sync::OnceLock::new();
+static WAL_MANAGER: crate::sync_oncelock::OnceLock<WalManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global WAL manager
 pub fn get_wal_manager() -> &'static WalManager {

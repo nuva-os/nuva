@@ -468,7 +468,7 @@ unsafe fn alloc_security_event() -> *mut SecurityEvent {
 }
 
 /// Global security manager
-static SECURITY_MANAGER: core::sync::OnceLock<SecurityManager> = core::sync::OnceLock::new();
+static SECURITY_MANAGER: crate::sync_oncelock::OnceLock<SecurityManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get security manager
 pub fn security_manager() -> &'static SecurityManager {

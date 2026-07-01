@@ -114,6 +114,7 @@ pub fn run_command(cmd: &str, args: &[&str], cwd: &PathBuf) -> Result<String, st
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::format;
     
     #[test]
     fn test_context_creation() {

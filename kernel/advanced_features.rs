@@ -32,8 +32,11 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, AtomicPtr, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys}
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages}
+use crate::kernel::mm::page_flags
+use crate::kernel::mm::Page;
 use crate::core_features::{ProcessControlBlock, ProcessState, get_scheduler};
 
 /// Error code
@@ -1338,16 +1341,16 @@ impl ContextManager {
 // ============================================================================
 
 /// Global signal manager
-static SIGNAL_MANAGER: core::sync::OnceLock<SignalManager> = core::sync::OnceLock::new();
+static SIGNAL_MANAGER: crate::sync_oncelock::OnceLock<SignalManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalNetworkManager
-static NETWORK_MANAGER: core::sync::OnceLock<NetworkManager> = core::sync::OnceLock::new();
+static NETWORK_MANAGER: crate::sync_oncelock::OnceLock<NetworkManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalPage table manager
-static PAGE_TABLE_MANAGER: core::sync::OnceLock<PageTableManager> = core::sync::OnceLock::new();
+static PAGE_TABLE_MANAGER: crate::sync_oncelock::OnceLock<PageTableManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalContextManager
-static CONTEXT_MANAGER: core::sync::OnceLock<ContextManager> = core::sync::OnceLock::new();
+static CONTEXT_MANAGER: crate::sync_oncelock::OnceLock<ContextManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get signal manager
 pub fn signal_manager() -> &'static SignalManager {
@@ -1444,6 +1447,7 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::arch::asm;
 
     #[test]
     fn test_signal_manager_new() {

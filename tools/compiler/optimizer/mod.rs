@@ -23,6 +23,8 @@
 pub mod passes;
 
 use std::collections::HashMap;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Optimizationdevice
 pub struct Optimizer {

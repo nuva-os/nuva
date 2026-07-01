@@ -29,6 +29,7 @@
 
 use crate::kernel::types::{NuvaCapabilityId, NvPortId, NvFaultDomainId, NvTimestamp, NvDuration};
 use crate::kernel::error::{KernelError, KernelResult};
+use alloc::vec::Vec;
 
 /// Async I/O completion token
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -743,6 +743,8 @@ pub fn init_qkd() {
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
+use core::sync::atomic::AtomicU8;
 
     /// Simple simulated QKD channel for testing
     struct SimulatedChannel {

@@ -351,7 +351,7 @@ impl ShmIpcManager {
 }
 
 /// GlobalSharedMemory IPC Manager
-static SHM_IPC_MANAGER: core::sync::OnceLock<ShmIpcManager> = core::sync::OnceLock::new();
+static SHM_IPC_MANAGER: crate::sync_oncelock::OnceLock<ShmIpcManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn shm_ipc_manager() -> &'static ShmIpcManager {
     SHM_IPC_MANAGER.get_or_init(ShmIpcManager::new)

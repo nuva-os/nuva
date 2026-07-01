@@ -209,7 +209,7 @@ impl DeclarativeWindowManager {
 }
 
 /// Global declarative window manager.
-static WINDOW_MANAGER: core::sync::OnceLock<DeclarativeWindowManager> = core::sync::OnceLock::new();
+static WINDOW_MANAGER: crate::sync_oncelock::OnceLock<DeclarativeWindowManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global declarative window manager.
 pub fn get_window_manager() -> &'static DeclarativeWindowManager {

@@ -24,8 +24,9 @@ use alloc::vec::Vec;
 use core::ptr;
 use core::sync::atomic::{AtomicU32, Ordering};
 
-use crate::posix::errno::Errno;
-static GLOBAL_FILES: core::sync::OnceLock<FilesStruct> = core::sync::OnceLock::new();
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
+static GLOBAL_FILES: crate::sync_oncelock::OnceLock<FilesStruct> = crate::sync_oncelock::OnceLock::new();
 
 pub fn global_files() -> &'static FilesStruct {
     GLOBAL_FILES.get_or_init(FilesStruct::new)
@@ -137,7 +138,7 @@ pub fn open(path: &str, flags: i32, mode: u32) -> i32 {
             }
         }
     };
-    let files = get_global_files();
+    let files = global_files();
     match files.alloc_fd() {
         Some(fd) => {
             let mut file = File::new();
@@ -159,7 +160,7 @@ pub fn open(path: &str, flags: i32, mode: u32) -> i32 {
 
 pub fn close(fd: u32) -> i32 {
     log_debug!("close({})", fd);
-    let files = get_global_files();
+    let files = global_files();
     if let Some(file_ref) = files.get_file(fd) {
         let inode_ptr = file_ref.f_inode;
         let fop = file_ref.f_op;
@@ -177,7 +178,7 @@ pub fn close(fd: u32) -> i32 {
 
 pub fn read(fd: u32, buf: &mut [u8]) -> i64 {
     log_debug!("read({}, {})", fd, buf.len());
-    let files = get_global_files();
+    let files = global_files();
     match files.get_file(fd) {
         Some(file_ref) => {
             let offset = file_ref.f_pos;
@@ -196,7 +197,7 @@ pub fn read(fd: u32, buf: &mut [u8]) -> i64 {
 
 pub fn write(fd: u32, buf: &[u8]) -> i64 {
     log_debug!("write({}, {})", fd, buf.len());
-    let files = get_global_files();
+    let files = global_files();
     match files.get_file(fd) {
         Some(file_ref) => {
             let offset = file_ref.f_pos;
@@ -215,7 +216,7 @@ pub fn write(fd: u32, buf: &[u8]) -> i64 {
 
 pub fn lseek(fd: u32, offset: OffT, whence: i32) -> OffT {
     log_debug!("lseek({}, {}, {})", fd, offset, whence);
-    let files = get_global_files();
+    let files = global_files();
     match files.get_file(fd) {
         Some(file_ref) => {
             let fop = file_ref.f_op;
@@ -227,7 +228,7 @@ pub fn lseek(fd: u32, offset: OffT, whence: i32) -> OffT {
 
 pub fn readdir(fd: u32, buf: &mut [u8]) -> i32 {
     log_debug!("readdir({})", fd);
-    let files = get_global_files();
+    let files = global_files();
     match files.get_file(fd) {
         Some(file_ref) => {
             let fop = file_ref.f_op;
@@ -288,7 +289,7 @@ pub fn chown(path: &str, uid: u32, gid: u32) -> i32 {
 
 pub fn fsync(fd: u32) -> i32 {
     log_debug!("fsync({})", fd);
-    let files = get_global_files();
+    let files = global_files();
     match files.get_file(fd) {
         Some(file_ref) => {
             let fop = file_ref.f_op;
@@ -567,7 +568,7 @@ impl FileLockManager {
 }
 
 /// Global file lock manager
-static GLOBAL_LOCK_MANAGER: core::sync::OnceLock<FileLockManager> = core::sync::OnceLock::new();
+static GLOBAL_LOCK_MANAGER: crate::sync_oncelock::OnceLock<FileLockManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn lock_manager() -> &'static FileLockManager {
     GLOBAL_LOCK_MANAGER.get_or_init(FileLockManager::new)

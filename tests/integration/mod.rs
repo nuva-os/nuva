@@ -99,7 +99,7 @@ impl IntegrationTests {
     }
 
     fn test_process_create_schedule(&mut self) -> TestResult {
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::scheduler();
         let nr_before = scheduler.nr_running.load(Ordering::Relaxed);
         let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
         let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
@@ -112,7 +112,7 @@ impl IntegrationTests {
     }
 
     fn test_load_balancing(&mut self) -> TestResult {
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::scheduler();
         let nr_running = scheduler.nr_running.load(Ordering::Relaxed);
         let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
 
@@ -124,7 +124,7 @@ impl IntegrationTests {
     }
 
     fn test_realtime_scheduling(&mut self) -> TestResult {
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::scheduler();
         let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
         let _ = nr_switches;
         TestResult::Pass
@@ -317,7 +317,7 @@ impl StressTests {
     }
 
     fn test_process_stress(&mut self) -> TestResult {
-        let scheduler = crate::kernel::sched::get_scheduler();
+        let scheduler = crate::kernel::sched::scheduler();
         let nr_tasks = scheduler.nr_tasks.load(Ordering::Relaxed);
         let nr_switches = scheduler.nr_switches.load(Ordering::Relaxed);
 

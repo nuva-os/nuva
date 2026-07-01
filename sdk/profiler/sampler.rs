@@ -21,6 +21,8 @@
 use std::time::{Duration, Instant};
 use crate::error::SdkError;
 use super::cpu::{Sample, StackFrame};
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Sampler configuration
 #[derive(Debug, Clone)]

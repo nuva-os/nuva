@@ -26,6 +26,9 @@ pub mod snapdragon;
 
 use crate::compat::config::TargetPlatform;
 use crate::compat::{TestCategory, TestResult, TestStatus};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// PlatformcompatibilityTestingsuitecase
 pub struct PlatformCompatSuite {

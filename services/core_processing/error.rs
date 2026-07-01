@@ -21,6 +21,7 @@
 use core::fmt;
 
 /// General service error type
+#[repr(C, i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceError {
     /// Service not initialized

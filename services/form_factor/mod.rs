@@ -358,7 +358,7 @@ impl FormFactorManager {
 }
 
 /// Global Form Factor Manager.
-static FORM_FACTOR_MANAGER: core::sync::OnceLock<FormFactorManager> = core::sync::OnceLock::new();
+static FORM_FACTOR_MANAGER: crate::sync_oncelock::OnceLock<FormFactorManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global Form Factor Manager.
 pub fn get_form_factor_manager() -> &'static FormFactorManager {

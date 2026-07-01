@@ -25,7 +25,7 @@
  * Nuva native calls occupy 0x0000_0000 - 0x0000_FFFF.
  */
 
-use crate::types::{NuvaProcessId, NuvaError, NuvaCapabilityId, NuvaAccessRight};
+use crate::kernel::types::{NuvaProcessId, NuvaError, NuvaCapabilityId, NuvaAccessRight};
 
 // ============================================================================
 // Nuva Native System Call Numbers (0x0000_0000 - 0x0000_FFFF)
@@ -139,7 +139,7 @@ pub fn syscall_dispatch(call_num: u32, args: &[u64]) -> Result<u64, NuvaError> {
         // Vulkan system call space (0x70-0x8F)
         #[cfg(feature = "vulkan")]
         {
-            crate::syscall::nv_vulkan_syscall::nv_vulkan_syscall_dispatch(call_num, args)
+            crate::kernel::syscall::nv_vulkan_syscall::nv_vulkan_syscall_dispatch(call_num, args)
         }
         #[cfg(not(feature = "vulkan"))]
         {

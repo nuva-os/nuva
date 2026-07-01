@@ -21,7 +21,8 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use crate::{pr_info};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// BufferSize
 pub const BUFFER_SIZE: usize = 4096;
 
@@ -290,14 +291,14 @@ impl BufferCache {
 }
 
 /// GlobalBufferCaching
-static BUFFER_CACHE: core::sync::OnceLock<BufferCache> = core::sync::OnceLock::new();
+static BUFFER_CACHE: crate::sync_oncelock::OnceLock<BufferCache> = crate::sync_oncelock::OnceLock::new();
 
 pub fn buffer_cache() -> &'static BufferCache {
     BUFFER_CACHE.get_or_init(BufferCache::new)
 }
 
 pub fn init_buffer_cache() {
- let bc = get_buffer_cache();
+ let bc = buffer_cache();
  bc.init();
 }
 

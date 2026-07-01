@@ -21,6 +21,8 @@
 use std::path::PathBuf;
 use crate::error::SdkError;
 use super::config::{BuildConfig, TargetConfig};
+use alloc::format;
+use alloc::vec::Vec;
 
 /// crosscompiledevice
 pub struct CrossCompiler {

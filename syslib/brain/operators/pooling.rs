@@ -23,7 +23,7 @@
  * Neural network pooling layer implementations.
  */
 
-use crate::nuva_brain::inference::tensor::{Tensor, TensorShape, DataType, TensorOps};
+use crate::syslib::brain::inference::tensor::{Tensor, TensorShape, DataType, TensorOps};
 
 /// Pool type
 #[derive(Debug, Clone, Copy)]

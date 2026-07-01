@@ -267,6 +267,8 @@ pub fn check_overlapping(patterns: &[Pattern]) -> Vec<(usize, usize)> {
 mod tests {
     use super::*;
     use crate::nuva_lang::semantic::types::TypeKind;
+use alloc::vec;
+use alloc::vec::Vec;
 
     #[test]
     fn test_pattern_space_from_wildcard() {

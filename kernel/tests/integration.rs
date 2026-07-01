@@ -122,7 +122,7 @@ impl IntegrationTestSuite {
 }
 
 /// Global test suite
-static INTEGRATION_SUITE: core::sync::OnceLock<IntegrationTestSuite> = core::sync::OnceLock::new();
+static INTEGRATION_SUITE: crate::sync_oncelock::OnceLock<IntegrationTestSuite> = crate::sync_oncelock::OnceLock::new();
 
 /// Get integration test suite
 pub fn integration_suite() -> &'static IntegrationTestSuite {
@@ -139,7 +139,7 @@ fn test_memory_alloc_write_read_free() -> TestResult {
     };
 
     // SAFETY: allocating memory for test
-    let ptr = unsafe { alloc::alloc::alloc(layout) };
+    let ptr = unsafe { alloc::alloc::alloc_layout(layout) };
     if ptr.is_null() {
         return TestResult::Fail;
     }
@@ -164,7 +164,7 @@ fn test_memory_alloc_write_read_free() -> TestResult {
 
     // SAFETY: freeing allocated memory
     unsafe {
-        alloc::alloc::dealloc(ptr, layout);
+        alloc::alloc::dealloc_layout(ptr, layout);
     }
 
     if valid {
@@ -231,7 +231,7 @@ fn test_socket_bind_listen_accept_send_recv() -> TestResult {
 /// Test: Perf event open -> read -> close
 fn test_perf_event_lifecycle() -> TestResult {
     use crate::kernel::perf::events::{
-        PerfEventType, PerfEventAttr, get_perf_manager, EventState,
+        PerfEventType, PerfEventAttr, init_perf_manager, EventState, perf_manager,
     };
 
     let mgr = perf_manager();
@@ -291,9 +291,9 @@ fn test_perf_event_lifecycle() -> TestResult {
 
 /// Test: ftrace enable -> trace -> disable -> verify
 fn test_ftrace_lifecycle() -> TestResult {
-    use crate::kernel::perf::ftrace::{get_ftrace_ctx, FtraceRecord};
+    use crate::kernel::perf::ftrace::{ftrace_ctx, FtraceRecord};
 
-    let ctx = get_ftrace_ctx();
+    let ctx = ftrace_ctx();
     ctx.reset();
     ctx.enable();
 
@@ -334,9 +334,9 @@ fn test_ftrace_lifecycle() -> TestResult {
 
 /// Test: PGO record -> dump
 fn test_pgo_lifecycle() -> TestResult {
-    use crate::kernel::perf::pgo::get_pgo_profile;
+    use crate::kernel::perf::pgo::pgo_profile;
 
-    let profile = get_pgo_profile();
+    let profile = pgo_profile();
     profile.reset();
     profile.enable();
 
@@ -427,7 +427,7 @@ fn test_io_uring_lifecycle() -> TestResult {
 
 /// Initialize and run integration tests
 pub fn run_integration_tests() {
-    let suite = get_integration_suite();
+    let suite = integration_suite();
 
     suite.register("memory_alloc_write_read_free", "memory", test_memory_alloc_write_read_free);
     suite.register("process_create_schedule_signal_exit", "process", test_process_create_schedule_signal_exit);

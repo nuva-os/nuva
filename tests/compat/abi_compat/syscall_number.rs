@@ -21,6 +21,8 @@ use super::make_result;
 use crate::compat::config::TargetArch;
 use crate::compat::{TestResult, TestStatus};
 use std::time::Instant;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// runsystem callsignalTesting
 pub fn run_tests(arch: TargetArch) -> Vec<TestResult> {

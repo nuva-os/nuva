@@ -27,6 +27,7 @@
 use crate::kernel::error::KernelResult;
 use crate::kernel::sched::nvbalancer::{NvBalancer, get_nv_balancer};
 use crate::kernel::sched::nvbalancer::stats::get_nv_balancer_stats;
+use crate::kernel::error::KernelError;
 
 /// NuvaCapabilityId type (placeholder for capability system)
 pub type NuvaCapabilityId = u64;

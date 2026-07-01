@@ -29,7 +29,8 @@ use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::{pr_debug, pr_info, pr_warn, pr_err};
-use crate::net::socket::{Socket, SockAddrInet, AddressFamily, SocketType, Protocol};
+use crate::kernel::net::socket::{Socket, SockAddrInet, AddressFamily, SocketType, Protocol};
+use alloc::vec;
 
 /// SMB2 direct TCP packet wrapper: 4-byte length prefix + payload
 fn encode_tcp_packet(payload: &[u8]) -> Vec<u8> {

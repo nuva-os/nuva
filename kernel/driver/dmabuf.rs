@@ -333,14 +333,10 @@ impl DmaBufManager {
 }
 
 /// Global DMA-BUF manager
-static DMABUF_MANAGER: core::sync::OnceLock<DmaBufManager> = core::sync::OnceLock::new();
+static DMABUF_MANAGER: crate::sync_oncelock::OnceLock<DmaBufManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get DMA-BUF manager
 pub fn dmabuf_manager() -> &'static DmaBufManager {
-    DMABUF_MANAGER.get_or_init(DmaBufManager::new)
-}
-
-pub fn init_dmabuf_manager() -> &'static DmaBufManager {
     DMABUF_MANAGER.get_or_init(DmaBufManager::new)
 }
 

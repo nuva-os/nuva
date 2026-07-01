@@ -27,6 +27,7 @@ use alloc::vec::Vec;
 use super::css_parser::{ComputedStyle, CssValue};
 use super::dom::{DomTree, NodeId, NodeType};
 use super::error::WebError;
+use alloc::format;
 
 /// 2D point/size
 #[derive(Debug, Clone, Copy, PartialEq)]

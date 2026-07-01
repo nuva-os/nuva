@@ -25,6 +25,8 @@ use alloc::vec::Vec;
 
 use super::core::{PluginId, PluginError, Version};
 use super::signature::{TrustStore, SignaturePolicy};
+use alloc::vec;
+use alloc::format;
 
 // ============================================================================
 // Package Types
@@ -100,9 +102,9 @@ impl PluginRegistryRemote {
     /// Connects to the remote registry via TCP and retrieves package info.
     pub fn fetch_package_info(&self, name: &str) -> Result<PluginPackage, PkgError> {
         let socket = crate::kernel::net::socket::Socket::new(
-            crate::kernel::net::socket::SocketDomain::Inet,
+            crate::kernel::net::socket::AddressFamily::Inet,
             crate::kernel::net::socket::SocketType::Stream,
-            0,
+            crate::kernel::net::socket::Protocol::Tcp,
         ).map_err(|_| PkgError::NetworkError)?;
 
         let addr = crate::kernel::net::socket::SockAddrInet::from_str(&self.url, 443);
@@ -138,9 +140,9 @@ impl PluginRegistryRemote {
     /// Connects to the remote registry and downloads the package binary.
     pub fn download_package(&self, pkg: &PluginPackage) -> Result<Vec<u8>, PkgError> {
         let socket = crate::kernel::net::socket::Socket::new(
-            crate::kernel::net::socket::SocketDomain::Inet,
+            crate::kernel::net::socket::AddressFamily::Inet,
             crate::kernel::net::socket::SocketType::Stream,
-            0,
+            crate::kernel::net::socket::Protocol::Tcp,
         ).map_err(|_| PkgError::NetworkError)?;
 
         let addr = crate::kernel::net::socket::SockAddrInet::from_str(&self.url, 443);

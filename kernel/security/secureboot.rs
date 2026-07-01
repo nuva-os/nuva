@@ -252,7 +252,7 @@ impl BootAttestationManager {
     pub fn has_capability(&self, cap: u32) -> bool { (self.capabilities.load(Ordering::Acquire) & (1 << cap)) != 0 }
 }
 
-static BOOT_CONFIG: core::sync::OnceLock<BootConfig> = core::sync::OnceLock::new();
+static BOOT_CONFIG: crate::sync_oncelock::OnceLock<BootConfig> = crate::sync_oncelock::OnceLock::new();
 pub fn boot_config() -> &'static BootConfig { BOOT_CONFIG.get_or_init(BootConfig::new) }
 pub fn get_boot_config() -> &'static BootConfig { boot_config() }
 
@@ -264,6 +264,7 @@ pub fn init_secure_boot() {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
     #[test]
     fn test_boot_state_transitions() {
         let config = BootConfig::new();

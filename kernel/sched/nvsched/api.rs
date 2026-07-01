@@ -29,6 +29,7 @@ use crate::kernel::sched::nvsched::{
     NvScheduler, NvSchedMode, get_nv_scheduler,
 };
 use crate::kernel::sched::nvsched::stats::get_nv_sched_stats;
+use crate::kernel::error::KernelError;
 
 /// NuvaCapabilityId type (placeholder for capability system)
 pub type NuvaCapabilityId = u64;

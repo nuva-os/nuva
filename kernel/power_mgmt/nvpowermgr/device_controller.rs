@@ -24,7 +24,7 @@
  * management. Critical devices never sleep.
  */
 
-use core::sync::atomic::{AtomicU32, AtomicBool, Ordering};
+use core::sync::atomic::{AtomicU32, AtomicU8, AtomicBool, Ordering};
 
 use crate::kernel::error::{KernelError, KernelResult};
 
@@ -210,6 +210,7 @@ impl DevicePowerController {
 #[cfg(test)]
 mod tests {
     use super::*;
+use core::sync::atomic::AtomicU8;
 
     #[test]
     fn test_sleep_device() {

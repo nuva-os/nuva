@@ -238,6 +238,9 @@ fn sync_benchmark(c: &mut Criterion) {
 
     // Atomic operations
     use std::sync::atomic::AtomicUsize;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
     let counter = AtomicUsize::new(0);
 
     c.bench_function("atomic_fetch_add", |b| {

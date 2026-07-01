@@ -628,7 +628,7 @@ impl SuspendManager {
 }
 
 /// Global suspend manager
-static SUSPEND_MANAGER: core::sync::OnceLock<SuspendManager> = core::sync::OnceLock::new();
+static SUSPEND_MANAGER: crate::sync_oncelock::OnceLock<SuspendManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_suspend_manager() -> &'static mut SuspendManager {
     // SAFETY: unsafe block required for low-level memory or hardware access

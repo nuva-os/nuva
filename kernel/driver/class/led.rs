@@ -348,14 +348,10 @@ impl LedManager {
 }
 
 /// Global LED manager
-static LED_MANAGER: core::sync::OnceLock<LedManager> = core::sync::OnceLock::new();
+static LED_MANAGER: crate::sync_oncelock::OnceLock<LedManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get LED manager
 pub fn led_manager() -> &'static LedManager {
-    LED_MANAGER.get_or_init(LedManager::new)
-}
-
-pub fn init_led_manager() -> &'static LedManager {
     LED_MANAGER.get_or_init(LedManager::new)
 }
 

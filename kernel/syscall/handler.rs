@@ -20,7 +20,8 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// SystemtuneusesignalType
 pub type SyscallNo = u32;
 
@@ -377,7 +378,7 @@ fn sys_kill(_args: &SyscallArgs) -> SyscallResult {
 }
 
 /// GlobalSystemtuneuseform
-static SYSCALL_TABLE: core::sync::OnceLock<SyscallTable> = core::sync::OnceLock::new();
+static SYSCALL_TABLE: crate::sync_oncelock::OnceLock<SyscallTable> = crate::sync_oncelock::OnceLock::new();
 
 pub fn syscall_table() -> &'static SyscallTable {
     SYSCALL_TABLE.get_or_init(SyscallTable::new)

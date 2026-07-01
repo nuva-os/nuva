@@ -21,6 +21,8 @@
 use super::make_result;
 use crate::compat::{TestResult, TestStatus};
 use std::time::Instant;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// runmessagesignalOperationTesting
 pub fn run_tests() -> Vec<TestResult> {

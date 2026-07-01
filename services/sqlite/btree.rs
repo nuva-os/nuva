@@ -24,6 +24,7 @@ use core::cmp::Ordering;
 
 use super::error::{SqliteError, Value};
 use super::pager::{PageId, Pager};
+use alloc::vec;
 
 /// B-Tree key for index entries
 #[derive(Debug, Clone, PartialEq)]

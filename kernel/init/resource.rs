@@ -26,7 +26,8 @@ use crate::{pr_info};
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Resource Type
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -520,7 +521,7 @@ impl ResourceManager {
 }
 
 /// Global resource manager
-static RESOURCE_MANAGER: core::sync::OnceLock<ResourceManager> = core::sync::OnceLock::new();
+static RESOURCE_MANAGER: crate::sync_oncelock::OnceLock<ResourceManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get resource manager
 pub fn resource_manager() -> &'static ResourceManager {

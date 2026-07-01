@@ -150,6 +150,8 @@ extern "C" { fn dilithium3_aik_sign(signature: *mut u8, hash: *const u8) -> i32;
 #[cfg(test)]
 mod tests {
     use super::*;
+use alloc::vec;
+use core::sync::atomic::AtomicU8;
     #[test]
     fn test_aik_new() {
         let aik = AikManager::new();

@@ -22,6 +22,7 @@
 use nuva_lang::parser::ast::{Expr, ExprKind, Literal, BinaryOp};
 use nuva_lang::semantic::inference::{TypeInference, TypeVar, TypeScheme};
 use nuva_lang::semantic::types::Type;
+use alloc::boxed::Box;
 
 /// Test suite for type inference implementation
 /// This module tests all aspects of Hindley-Milner type inference:

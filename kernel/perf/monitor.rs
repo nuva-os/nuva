@@ -390,7 +390,7 @@ impl MetricCollector for CpuMetricsCollector {
     fn collect(&self) -> Result<BTreeMap<String, MetricValue>, MonitorError> {
         let mut metrics = BTreeMap::new();
 
-        let sched = crate::kernel::sched::get_scheduler();
+        let sched = crate::kernel::sched::scheduler();
         let nr_running = sched.nr_running.load(Ordering::Relaxed) as f64;
         let nr_tasks = sched.nr_tasks.load(Ordering::Relaxed) as f64;
         let utilization = if nr_tasks > 0.0 { (nr_running / nr_tasks) * 100.0 } else { 0.0 };

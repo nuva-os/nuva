@@ -497,7 +497,7 @@ impl SandboxManager {
 }
 
 /// GlobalManager
-static SANDBOX_MANAGER: core::sync::OnceLock<SandboxManager> = core::sync::OnceLock::new();
+static SANDBOX_MANAGER: crate::sync_oncelock::OnceLock<SandboxManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GetManager
 pub fn sandbox_manager() -> &'static SandboxManager {

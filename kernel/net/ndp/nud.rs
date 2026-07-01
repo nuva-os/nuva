@@ -22,6 +22,7 @@
  */
 
 use crate::kernel::net::ipv6::Ipv6Addr;
+use alloc::vec::Vec;
 
 /// NUD states per RFC 4861 Section 7.3
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

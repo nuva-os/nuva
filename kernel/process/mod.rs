@@ -31,19 +31,13 @@ pub use crate::{pr_emerg, pr_alert, pr_crit, pr_err, pr_warn, pr_notice, pr_info
 // Migrated from: POSIX fork() → nv_process_spawn (kernel::nv_process)
 // Migrated from: POSIX execve() → nv_process_execute (kernel::nv_process)
 // Migrated from: POSIX signal → nv_event (kernel::nv_event)
-#[cfg(feature = "posix")]
 pub mod fork;
-#[cfg(feature = "posix")]
 pub mod execve;
-#[cfg(feature = "posix")]
 pub mod wait4;
-#[cfg(feature = "posix")]
 pub mod signal;
 pub mod tests;
 
-#[cfg(feature = "posix")]
 pub use fork::*;
-#[cfg(feature = "posix")]
 pub use signal::*;
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
@@ -917,7 +911,7 @@ pub struct Timeval {
 }
 
 /// Global process manager
-static PROCESS_MANAGER: core::sync::OnceLock<ProcessManager> = core::sync::OnceLock::new();
+static PROCESS_MANAGER: crate::sync_oncelock::OnceLock<ProcessManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Global process table (array of process pointers)
 static mut PROCESS_TABLE: [*mut Process; 4096] = [core::ptr::null_mut(); 4096];

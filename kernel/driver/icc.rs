@@ -248,14 +248,10 @@ impl IccManager {
 }
 
 /// Global interconnect manager
-static ICC_MANAGER: core::sync::OnceLock<IccManager> = core::sync::OnceLock::new();
+static ICC_MANAGER: crate::sync_oncelock::OnceLock<IccManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get interconnect manager
 pub fn icc_manager() -> &'static IccManager {
-    ICC_MANAGER.get_or_init(IccManager::new)
-}
-
-pub fn init_icc_manager() -> &'static IccManager {
     ICC_MANAGER.get_or_init(IccManager::new)
 }
 

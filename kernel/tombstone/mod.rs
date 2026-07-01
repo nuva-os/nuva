@@ -304,7 +304,7 @@ fn generate_tombstone(pid: u32, tid: u32, signal: u8, reason: CrashReason, sourc
 
     // Get process name (best effort)
     let mut process_name = [0u8; PROCESS_NAME_MAX_LEN];
-    if let Some(task) = unsafe { crate::kernel::sched::get_task_by_pid(pid).as_ref() } {
+    if let Some(task) = unsafe { crate::kernel::sched::task_by_pid(pid).as_ref() } {
         let name = task.name();
         let len = name.len().min(PROCESS_NAME_MAX_LEN);
         process_name[..len].copy_from_slice(&name.as_bytes()[..len]);

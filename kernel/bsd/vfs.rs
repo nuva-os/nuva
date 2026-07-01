@@ -407,7 +407,7 @@ impl BsdVfsCompat {
 }
 
 /// Global BSD VFS compatibility layer
-static BSD_VFS_COMPAT: core::sync::OnceLock<BsdVfsCompat> = core::sync::OnceLock::new();
+static BSD_VFS_COMPAT: crate::sync_oncelock::OnceLock<BsdVfsCompat> = crate::sync_oncelock::OnceLock::new();
 
 pub fn bsd_vfs() -> &'static BsdVfsCompat {
     BSD_VFS_COMPAT.get_or_init(BsdVfsCompat::new)

@@ -279,7 +279,7 @@ impl ModelManager {
 }
 
 /// GlobalModelManager
-static MODEL_MANAGER: core::sync::OnceLock<ModelManager> = core::sync::OnceLock::new();
+static MODEL_MANAGER: crate::sync_oncelock::OnceLock<ModelManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_model_manager() -> &'static mut ModelManager {
  // SAFETY: unsafe block required for low-level memory or hardware access

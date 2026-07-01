@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use super::codec::VideoCodec;
 use super::error::{VideoError, VideoFormat, VideoPacket};
 use super::frame_buffer::{DecodeResult, FrameBuffer, FrameRef};
+use alloc::vec;
 
 /// AV1 OBU type constants
 pub const OBU_SEQUENCE_HEADER: u8 = 1;

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Nuva OS - Kernel - PQC Provider Abstraction
  *
  * Copyright (C) 2026 Nuva OS Team
@@ -20,6 +20,7 @@
 //! Unified interface for post-quantum cryptographic operations,
 //! supporting both HAL FFI and software reference implementations.
 
+use alloc::vec;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU64, Ordering};
 

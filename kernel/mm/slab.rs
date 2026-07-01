@@ -123,14 +123,14 @@ impl KmemCache {
     /// @return true on success, false on failure
     fn grow(&mut self) -> bool {
         // Allocate a page from buddy allocator
-        let page = crate::mm::buddy::alloc_page();
+        let page = crate::kernel::mm::buddy::alloc_page();
         if page.is_null() {
             log_warn!("Slab: failed to allocate page for cache {}", self.name);
             return false;
         }
 
         // Get physical address of the page
-        let page_phys = crate::mm::buddy::get_buddy().get_phys_addr(page);
+        let page_phys = crate::kernel::mm::buddy::buddy().get_phys_addr(page);
 
         // Calculate number of objects that fit in a page
         let num = 4096 / self.object_size;
@@ -204,7 +204,7 @@ impl SlabAllocator {
 }
 
 /// Global slab allocator instance
-static SLAB_ALLOCATOR: core::sync::OnceLock<SlabAllocator> = core::sync::OnceLock::new();
+static SLAB_ALLOCATOR: crate::sync_oncelock::OnceLock<SlabAllocator> = crate::sync_oncelock::OnceLock::new();
 
 /// Get reference to global slab allocator
 pub fn slab_allocator() -> &'static SlabAllocator {

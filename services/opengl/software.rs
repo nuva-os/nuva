@@ -21,6 +21,8 @@
 
 use super::command::GlCommand;
 use super::error::{ClearMask, GlError, Rgba};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Software renderer state
 pub struct SoftwareRenderer {

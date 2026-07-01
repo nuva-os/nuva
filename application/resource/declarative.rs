@@ -246,7 +246,7 @@ impl DeclarativeResourceManager {
 }
 
 /// Global declarative resource manager (default 8 MB cache).
-static RESOURCE_MANAGER: core::sync::OnceLock<DeclarativeResourceManager> = core::sync::OnceLock::new();
+static RESOURCE_MANAGER: crate::sync_oncelock::OnceLock<DeclarativeResourceManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get the global declarative resource manager.
 pub fn get_resource_manager() -> &'static DeclarativeResourceManager {

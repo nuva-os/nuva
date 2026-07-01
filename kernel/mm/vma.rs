@@ -18,6 +18,7 @@
 */
 
 use core::ptr;
+use alloc::boxed::Box;
 
 /** VMA merge policy for controlling when adjacent VMAs are coalesced.
  *
@@ -289,10 +290,10 @@ impl MmStruct {
         // Create new VMA
         // Implementation of actual VMA creation
         let vma = Box::leak(Vma {
-            vm_start: start,
-            vm_end: end,
+            vm_start: addr,
+            vm_end: addr + len,
             vm_flags: flags,
-            vm_page_prot: prot,
+            vm_page_prot: flags,
             vm_ops: None,
             vm_private_data: core::ptr::null_mut(),
             vm_prev: core::ptr::null_mut(),

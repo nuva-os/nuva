@@ -23,6 +23,8 @@ use crate::compat::config::TestConfig;
 use std::fs::{self, File};
 use std::io::Write as IoWrite;
 use std::path::Path;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// TestingReportdevice
 pub struct TestReporter {

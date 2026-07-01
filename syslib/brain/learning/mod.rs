@@ -22,6 +22,7 @@
 //! Implementation of online learning and model update
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, Ordering};
+use alloc::vec::Vec;
 
 // Learning engine configuration
 pub struct LearningConfig {

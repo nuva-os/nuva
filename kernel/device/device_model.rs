@@ -26,7 +26,8 @@ use crate::{pr_debug, pr_info};
 
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicPtr, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// Device ID
 pub type DeviceId = u64;
 
@@ -771,7 +772,7 @@ impl DeviceModel {
 }
 
 /// Global device model
-static DEVICE_MODEL: core::sync::OnceLock<DeviceModel> = core::sync::OnceLock::new();
+static DEVICE_MODEL: crate::sync_oncelock::OnceLock<DeviceModel> = crate::sync_oncelock::OnceLock::new();
 
 /// Get device model
 pub fn device_model() -> &'static DeviceModel {
@@ -780,7 +781,7 @@ pub fn device_model() -> &'static DeviceModel {
 
 /// Initialize device model
 pub fn init_device_model() {
- let dm = get_device_model();
+ let dm = device_model();
  dm.init();
 }
 
@@ -788,17 +789,17 @@ pub fn init_device_model() {
 
 /// Register device
 pub fn device_register(dev: *mut Device) -> i32 {
- get_device_model().device_register(dev)
+ device_model().device_register(dev)
 }
 
 /// Unregister device
 pub fn device_unregister(dev: *mut Device) {
- get_device_model().device_unregister(dev);
+ device_model().device_unregister(dev);
 }
 
 /// Register driver
 pub fn driver_register(drv: *mut DeviceDriver) -> i32 {
- get_device_model().driver_register(drv)
+ device_model().driver_register(drv)
 }
 
 /// Get driver data

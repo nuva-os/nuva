@@ -19,6 +19,7 @@
 //! Image service specific error types and image data types.
 
 use core::fmt;
+use alloc::vec::Vec;
 
 /// Image service error type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

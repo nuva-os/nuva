@@ -20,6 +20,7 @@
 
 use super::{BenchmarkContext, BenchmarkRunner, create_bench_benchmark_project, measure_command};
 use std::time::Duration;
+use alloc::vec;
 
 /// Benchmark package installation
 #[test]

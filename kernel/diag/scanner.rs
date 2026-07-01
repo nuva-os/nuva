@@ -28,7 +28,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
-use super::defense::{ScanResult, ScanStatus, ThreatCategory, ThreatInfo, ThreatLevel};
+use crate::kernel::core::defense::{ScanResult, ScanStatus, ThreatCategory, ThreatInfo, ThreatLevel};
 
 /// Scanner type
 #[repr(u8)]

@@ -615,14 +615,10 @@ impl IrqManager {
 }
 
 /// Global IRQ manager
-static IRQ_MANAGER: core::sync::OnceLock<IrqManager> = core::sync::OnceLock::new();
+static IRQ_MANAGER: crate::sync_oncelock::OnceLock<IrqManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IRQ manager
 pub fn irq_manager() -> &'static IrqManager {
-    IRQ_MANAGER.get_or_init(IrqManager::new)
-}
-
-pub fn init_irq_manager() -> &'static IrqManager {
     IRQ_MANAGER.get_or_init(IrqManager::new)
 }
 

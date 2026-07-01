@@ -181,6 +181,8 @@ ss = 303132333435363738393A3B3C3D3E3F
         
         // Write to temp file
         use std::io::Write;
+use alloc::vec;
+use alloc::vec::Vec;
         let mut temp_file = tempfile::NamedTempFile::new().unwrap();
         temp_file.write_all(test_content.as_bytes()).unwrap();
         

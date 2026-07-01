@@ -28,7 +28,8 @@ use alloc::format;
 use alloc::string::String;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use crate::posix::errno::Errno;
+use crate::syslib::posix::errno::Errno;
+use crate::kernel::error::Errno;
 /// IPv6 Address (128 bits)
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -316,15 +317,15 @@ impl Ipv6Manager {
         match next_header {
             ipv6_next_header::ICMPV6 => {
                 log_debug!("Routing to ICMPv6");
-                // crate::net::icmpv6::receive(&data[Ipv6Header::SIZE..]);
+                // crate::kernel::net::icmpv6::receive(&data[Ipv6Header::SIZE..]);
             }
             ipv6_next_header::TCP => {
                 log_debug!("Routing to TCP");
-                // crate::net::tcp::receive(&data[Ipv6Header::SIZE..]);
+                // crate::kernel::net::tcp::receive(&data[Ipv6Header::SIZE..]);
             }
             ipv6_next_header::UDP => {
                 log_debug!("Routing to UDP");
-                // crate::net::udp::receive(&data[Ipv6Header::SIZE..]);
+                // crate::kernel::net::udp::receive(&data[Ipv6Header::SIZE..]);
             }
             _ => {
                 log_debug!("Unknown next header: {}", next_header);
@@ -349,14 +350,14 @@ impl Ipv6Manager {
         let header = Ipv6Header::new(self.local_addr, dst, data.len() as u16, next_header);
 
         // Send to lower layer (e.g., Ethernet)
-        // crate::net::ethernet::send_ipv6(&header, data);
+        // crate::kernel::net::ethernet::send_ipv6(&header, data);
 
         0
     }
 }
 
 /// Global IPv6 manager
-static IPV6_MANAGER: core::sync::OnceLock<Ipv6Manager> = core::sync::OnceLock::new();
+static IPV6_MANAGER: crate::sync_oncelock::OnceLock<Ipv6Manager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get IPv6 manager
 pub fn ipv6_manager() -> &'static Ipv6Manager {

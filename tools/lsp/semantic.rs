@@ -19,6 +19,8 @@
 // ! languagemeaninghighbright
 
 use super::{TextDocument, SemanticAnalyzer, SemanticTokens, Position, Range};
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// languagemeaningTokenType
 #[derive(Debug, Clone, Copy)]

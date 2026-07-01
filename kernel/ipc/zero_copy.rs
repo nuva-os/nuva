@@ -29,6 +29,7 @@ use alloc::sync::Arc;
 use spin::Mutex;
 
 use crate::kernel::mm::PhysicalAddress;
+use alloc::vec::Vec;
 
 /// Zero-copy IPC channel
 /// Uses shared memory and lock-free queues for maximum performance.

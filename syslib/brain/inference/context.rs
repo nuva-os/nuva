@@ -187,7 +187,7 @@ impl ContextManager {
     }
 }
 
-static CONTEXT_MANAGER: core::sync::OnceLock<ContextManager> = core::sync::OnceLock::new();
+static CONTEXT_MANAGER: crate::sync_oncelock::OnceLock<ContextManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn get_context_manager() -> &'static mut ContextManager {
     // SAFETY: access to mutable global static requires unsafe

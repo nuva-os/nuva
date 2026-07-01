@@ -52,7 +52,7 @@ use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 // Re-export types
 pub use socket::{Socket, SocketManager, SocketType, AddressFamily, Protocol, SockAddrInet};
-pub use net_device::{NetDevice, NetDeviceOps, NetDeviceType, NetDeviceFlags};
+pub use net_device::NetDevice;
 pub use ethernet::{EthernetHeader, EthernetType};
 pub use arp::{ArpHeader, ArpEntry, ArpTable};
 pub use ip::{IpHeader, IpAddr};
@@ -136,7 +136,7 @@ impl NetManager {
 }
 
 /// Global network manager
-static NET_MANAGER: core::sync::OnceLock<NetManager> = core::sync::OnceLock::new();
+static NET_MANAGER: crate::sync_oncelock::OnceLock<NetManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get network manager
 pub fn net_manager() -> &'static NetManager {

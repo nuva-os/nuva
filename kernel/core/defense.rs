@@ -811,7 +811,7 @@ impl Default for DefenseManager {
 }
 
 /// Global defense manager
-static DEFENSE_MANAGER: core::sync::OnceLock<DefenseManager> = core::sync::OnceLock::new();
+static DEFENSE_MANAGER: crate::sync_oncelock::OnceLock<DefenseManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get defense manager
 pub fn get_defense_manager() -> &'static mut DefenseManager {

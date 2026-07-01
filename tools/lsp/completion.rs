@@ -19,6 +19,9 @@
 // ! Codepatchall
 
 use super::{TextDocument, Position, SemanticAnalyzer, CompletionList, CompletionItem, CompletionItemKind};
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Codepatchall
 pub fn provide_completions(doc: &TextDocument, position: Position, analyzer: &SemanticAnalyzer) -> CompletionList {

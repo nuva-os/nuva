@@ -545,7 +545,7 @@ impl DeviceTree {
 static mut DEVICE_TREE: DeviceTree = DeviceTree::new();
 
 /// Get a reference to the global DeviceTree.
-pub fn get_device_tree() -> &'static DeviceTree {
+pub fn device_tree() -> &'static DeviceTree {
     // SAFETY: DEVICE_TREE is a mutable static accessed only during single-threaded
     // HAL initialization; after init completes, only immutable references are returned.
     unsafe { &DEVICE_TREE }

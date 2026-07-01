@@ -36,6 +36,7 @@
 
 use crate::Nuva_compiler::ast::*;
 use core::sync::atomic::{AtomicU32, Ordering};
+use alloc::boxed::Box;
 
 /// Type
 #[derive(Debug, Clone, PartialEq)]

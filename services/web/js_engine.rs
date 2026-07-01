@@ -30,6 +30,7 @@ use core::sync::atomic::{AtomicU64, AtomicU32, Ordering};
 
 use super::dom::{DomTree, NodeId};
 use super::error::{JsValue, WebError};
+use alloc::vec;
 
 /// Global context ID counter
 static NEXT_CONTEXT_ID: AtomicU64 = AtomicU64::new(1);

@@ -31,6 +31,7 @@ use crate::kernel::types::{
     NuvaProcessId, NuvaCapabilityId, NvTimestamp, NvDuration,
 };
 use crate::kernel::capability::nv_capability::NvRightsSet;
+use alloc::vec::Vec;
 
 /// Equipment service state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -114,6 +114,8 @@ mod tests {
         NvServiceName, NuvaProcessId, NvAddressSpaceId, NuvaCapabilityId,
     };
     use crate::kernel::equipment::fault_domain::NvEquipmentServiceConfig;
+use alloc::vec;
+use alloc::vec::Vec;
 
     fn make_domain(id: u64, port: u64) -> NvEquipmentFaultDomain {
         let mut d = NvEquipmentFaultDomain::new(

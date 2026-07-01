@@ -30,8 +30,11 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, AtomicBool, AtomicPtr, Ordering};
 use core::ptr;
-use crate::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_virt, virt_to_phys, phys_to_pfn, pfn_to_phys};
-use crate::mm::page_alloc::{Page, page_flags, alloc_pages, free_pages};
+use crate::kernel::mm::mem_map::{phys_to_virt, virt_to_phys}
+use crate::kernel::mm::memory::{PhysAddr, VirtAddr, PAGE_SIZE, phys_to_pfn, pfn_to_phys};
+use crate::kernel::mm::page_alloc::{alloc_pages, free_pages}
+use crate::kernel::mm::page_flags
+use crate::kernel::mm::Page;
 use crate::core_features::{ProcessControlBlock, ProcessState, get_scheduler, get_cow_manager};
 
 /// Error code
@@ -419,7 +422,7 @@ impl SyscallManager {
  log_debug!("SyscallManager: fork()");
 
  // GetCurrent process
- let scheduler = get_scheduler();
+ let scheduler = scheduler();
  let current = scheduler.get_current_process();
 
  if current.is_null() {
@@ -522,7 +525,7 @@ impl SyscallManager {
  let file_size = self.get_file_size(filename);
 
  // Plusload ELF File
- let mut loader = get_elf_loader();
+ let mut loader = elf_loader();
  let entry = loader.load_elf(file_data, file_size, argv, envp);
 
  if entry == 0 {
@@ -530,7 +533,7 @@ impl SyscallManager {
  }
 
  // SetenterportDot
- let scheduler = get_scheduler();
+ let scheduler = scheduler();
  let current = scheduler.get_current_process();
 
  if !current.is_null() {
@@ -577,7 +580,7 @@ impl SyscallManager {
  log_debug!("SyscallManager: wait4({})", pid);
 
  // GetCurrent process
- let scheduler = get_scheduler();
+ let scheduler = scheduler();
  let current = scheduler.get_current_process();
 
  if current.is_null() {
@@ -881,13 +884,13 @@ impl FileSystemManager {
 // ============================================================================
 
 /// Global ELF Plusloaddevice
-static ELF_LOADER: core::sync::OnceLock<ElfLoader> = core::sync::OnceLock::new();
+static ELF_LOADER: crate::sync_oncelock::OnceLock<ElfLoader> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalSystemtuneuseManager
-static SYSCALL_MANAGER: core::sync::OnceLock<SyscallManager> = core::sync::OnceLock::new();
+static SYSCALL_MANAGER: crate::sync_oncelock::OnceLock<SyscallManager> = crate::sync_oncelock::OnceLock::new();
 
 /// GlobalFile SystemManager
-static FILESYSTEM_MANAGER: core::sync::OnceLock<FileSystemManager> = core::sync::OnceLock::new();
+static FILESYSTEM_MANAGER: crate::sync_oncelock::OnceLock<FileSystemManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get ELF Plusloaddevice
 pub fn elf_loader() -> &'static ElfLoader {
@@ -917,7 +920,7 @@ pub fn init_system_features() {
  log_info!("Initializing system features");
 
  // Initialize ELF Plusloaddevice
- get_elf_loader().init();
+ elf_loader().init();
 
  // InitializeSystemcallManager
  syscall_manager().init();
@@ -933,7 +936,7 @@ pub fn print_system_stats() {
  log_info!("System Features Statistics:");
 
  // ELF PlusloaddeviceStatistics
- let loader = get_elf_loader();
+ let loader = elf_loader();
  log_info!(" ELF Loader:");
  log_info!(" Loaded segments: {}", loader.loaded_segments.load(Ordering::Acquire));
  log_info!(" Total loaded: {} bytes", loader.total_loaded.load(Ordering::Acquire));

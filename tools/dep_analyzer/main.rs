@@ -34,6 +34,8 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Architecture layer enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

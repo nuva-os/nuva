@@ -259,7 +259,7 @@ impl AiSchedExt {
 }
 
 /// Global AI scheduling extension
-static AI_SCHED_EXT: core::sync::OnceLock<AiSchedExt> = core::sync::OnceLock::new();
+static AI_SCHED_EXT: crate::sync_oncelock::OnceLock<AiSchedExt> = crate::sync_oncelock::OnceLock::new();
 
 /// Get global AI scheduling extension
 pub fn get_ai_sched_ext() -> &'static AiSchedExt {

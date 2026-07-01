@@ -202,6 +202,9 @@ impl ArchCompatSuite {
     /// Testing LoongArch entercontroltranslate
     fn test_loongarch_lbt(&self) -> TestResult {
         use std::time::Instant;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
         let start = Instant::now();
         // TODO: LBT (entercontroltranslate) Testing
         make_result(

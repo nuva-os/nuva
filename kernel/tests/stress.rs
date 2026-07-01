@@ -60,7 +60,7 @@ pub fn stress_memory_alloc_free(iterations: u64) -> StressTestResult {
         // Allocate batch
         for i in 0..BATCH_SIZE {
             // SAFETY: allocating memory
-            ptrs[i] = unsafe { alloc::alloc::alloc(layout) };
+            ptrs[i] = unsafe { alloc::alloc::alloc_layout(layout) };
             if ptrs[i].is_null() {
                 errors += 1;
                 // Free what we have so far
@@ -68,7 +68,7 @@ pub fn stress_memory_alloc_free(iterations: u64) -> StressTestResult {
                     if !ptrs[j].is_null() {
                         // SAFETY: ptrs[j] was allocated with layout above
                         unsafe {
-                            alloc::alloc::dealloc(ptrs[j], layout);
+                            alloc::alloc::dealloc_layout(ptrs[j], layout);
                         }
                         ptrs[j] = core::ptr::null_mut();
                     }
@@ -108,7 +108,7 @@ pub fn stress_memory_alloc_free(iterations: u64) -> StressTestResult {
                 }
                 // SAFETY: ptrs[i] was allocated with layout above
                 unsafe {
-                    alloc::alloc::dealloc(ptrs[i], layout);
+                    alloc::alloc::dealloc_layout(ptrs[i], layout);
                 }
                 ptrs[i] = core::ptr::null_mut();
             }
@@ -135,10 +135,10 @@ pub fn stress_process_create_destroy(iterations: u64) -> StressTestResult {
     let mut completed = false;
 
     use crate::kernel::process::ProcessState;
-    use crate::kernel::sched::get_scheduler;
+    use crate::kernel::sched::init_scheduler;
 
     for iter in 0..iterations {
-        let scheduler = get_scheduler();
+        let scheduler = init_scheduler();
         let nr_tasks_before = scheduler.nr_tasks.load(Ordering::Relaxed);
 
         let valid_states = matches!(

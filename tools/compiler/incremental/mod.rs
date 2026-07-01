@@ -389,6 +389,9 @@ impl ChangeDetector {
  /// ComputeFileHash
  fn compute_hash(&self, path: &PathBuf) -> Result<String, std::io::Error> {
  use std::io::Read;
+use alloc::vec;
+use alloc::format;
+use alloc::vec::Vec;
  
  let mut file = std::fs::File::open(path)?;
  let mut hasher = blake3::Hasher::new();

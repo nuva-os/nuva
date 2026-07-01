@@ -392,7 +392,7 @@ impl KernelThreadManager {
 }
 
 /// GlobalKernelThreadManager
-static KERNEL_THREAD_REGISTRY: core::sync::OnceLock<KernelThreadManager> = core::sync::OnceLock::new();
+static KERNEL_THREAD_REGISTRY: crate::sync_oncelock::OnceLock<KernelThreadManager> = crate::sync_oncelock::OnceLock::new();
 
 pub fn kthread_manager() -> &'static KernelThreadManager {
     KERNEL_THREAD_REGISTRY.get_or_init(KernelThreadManager::new)

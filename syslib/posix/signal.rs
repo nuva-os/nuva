@@ -86,6 +86,7 @@ impl Signal {
 
 bitflags::bitflags! {
     /// POSIX sigaction flags
+    #[derive(Clone, Copy)]
     #[repr(transparent)]
     pub struct SignalFlags: u32 {
         const SA_NOCLDSTOP = 0x00000001;

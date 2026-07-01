@@ -416,7 +416,7 @@ impl Default for PowerManager {
 }
 
 /// Global power manager
-static POWER_MANAGER: core::sync::OnceLock<PowerManager> = core::sync::OnceLock::new();
+static POWER_MANAGER: crate::sync_oncelock::OnceLock<PowerManager> = crate::sync_oncelock::OnceLock::new();
 
 /// Get power manager
 pub fn power_manager() -> &'static mut PowerManager {

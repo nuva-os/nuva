@@ -28,7 +28,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use spin::RwLock;
-use crate::types::{NuvaProcessId, NuvaCapabilityId, NuvaError};
+use crate::kernel::types::{NuvaProcessId, NuvaCapabilityId, NuvaError};
 use super::gpu_capability::{NvGpuCapability, NvGpuPermission};
 use super::gpu_memory::{NvGpuMemoryRegion, NvGpuMemoryType, NvVulkanMemoryAllocator};
 

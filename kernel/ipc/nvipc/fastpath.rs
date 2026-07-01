@@ -141,7 +141,7 @@ impl ZeroCopyManager {
         // SAFETY: The global allocator contract guarantees that if alloc
         // returns a non-null pointer, the memory is valid for the given
         // layout and properly aligned. We check for null immediately.
-        let ptr = unsafe { alloc::alloc::alloc(layout) };
+        let ptr = unsafe { alloc::alloc::alloc_layout(layout) };
         if ptr.is_null() {
             return Err(IpcError::NoMemory);
         }
@@ -234,7 +234,7 @@ impl LockFreeQueue {
         // the null pointer is checked and an error is returned. The
         // allocated memory is properly aligned for MessageSlot which
         // has align(128) for cache line optimization.
-        let buffer = unsafe { alloc::alloc::alloc(layout) as *mut MessageSlot };
+        let buffer = unsafe { alloc::alloc::alloc_layout(layout) as *mut MessageSlot };
         if buffer.is_null() {
             return Err(IpcError::NoMemory);
         }

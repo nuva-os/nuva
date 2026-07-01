@@ -22,6 +22,8 @@ use crate::NuvaSdk;
 use crate::error::SdkError;
 use crate::cli::args::DocCommand;
 use crate::cli::output;
+use alloc::vec;
+use alloc::format;
 
 /// Execute documentation generation command
 pub fn execute(sdk: &mut NuvaSdk, cmd: DocCommand) -> Result<(), SdkError> {

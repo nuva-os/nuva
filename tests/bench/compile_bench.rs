@@ -20,6 +20,8 @@
 
 use super::{BenchmarkContext, BenchmarkRunner, create_benchmark_project, measure_command};
 use std::time::Duration;
+use alloc::vec;
+use alloc::format;
 
 /// Benchmark cold build performance
 #[test]

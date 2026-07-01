@@ -43,7 +43,7 @@ pub use monitor::{
 pub use events::{
     PerfEventType, PerfEventAttr, PerfEventValue, PerfEvent, PerfEventFlags,
     PerfRingBuffer, PerfContext, PerfCpuContext, PerfStats, PerfManager,
-    Tracepoint, EventState, get_perf_manager, init_perf,
+    Tracepoint, EventState, init_perf_manager, init_perf,
     perf_read_cycles, perf_read_instructions, perf_read_cache_misses,
     perf_read_branch_misses,
 };
@@ -51,13 +51,13 @@ pub use events::{
 // Re-export ftrace types
 pub use ftrace::{
     FtraceRecord, FtraceCtx,
-    get_ftrace_ctx, ftrace_enable, ftrace_disable, ftrace_set_filter, init_ftrace,
+    ftrace_ctx, ftrace_enable, ftrace_disable, ftrace_set_filter, init_ftrace,
 };
 
 // Re-export PGO types
 pub use pgo::{
     PgoFuncEntry, PgoBranchEntry, PgoCallPath, PgoProfile,
-    get_pgo_profile, pgo_record_branch, pgo_record_call, pgo_dump_profile, init_pgo,
+    pgo_profile, pgo_record_branch, pgo_record_call, pgo_dump_profile, init_pgo,
 };
 
 /// Initialize performance monitoring subsystem

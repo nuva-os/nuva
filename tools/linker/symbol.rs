@@ -21,6 +21,7 @@
 use std::collections::HashMap;
 use super::object::ObjectFile;
 use super::{LinkError, elf::Symbol};
+use alloc::vec::Vec;
 
 /// symbolsignalparsedevice
 pub struct SymbolResolver {
